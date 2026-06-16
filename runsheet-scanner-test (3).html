@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cartage Australia - Run Sheet Scanner (OCR Test)</title>
+<style>
+  :root {
+    --navy: #1a2235; --orange: #f59e0b; --orange-dk: #d97706;
+    --white: #ffffff; --bg: #f1f5f9; --border: #e2e8f0;
+    --text: #1e293b; --label: #64748b; --muted: #94a3b8;
+    --green: #10b981; --red: #ef4444; --amber: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; }
+  .header { background: var(--navy); border-bottom: 3px solid var(--orange); padding: 16px 20px; }
+  .header h1 { color: white; font-size: 15px; font-weight: 700; }
+  .header p { color: var(--orange); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+  .container { max-width: 480px; margin: 0 auto; padding: 20px; }
+  .intro { font-size: 13px; color: var(--label); line-height: 1.6; margin-bottom: 16px; }
+  .key-banner {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e; line-height: 1.5;
+  }
+  .key-banner input {
+    width: 100%; margin-top: 8px; padding: 9px 12px; border-radius: 6px;
+    border: 1.5px solid #fde68a; font-size: 13px; box-sizing: border-box;
+  }
+  .photo-btn {
+    width: 100%; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px;
+    padding: 32px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    cursor: pointer;
+  }
+  .photo-btn span.label { font-size: 15px; font-weight: 600; color: var(--text); }
+  .photo-btn span.sub { font-size: 12px; color: var(--label); }
+  input[type="file"] { display: none; }
+  .error-box {
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 14px; font-size: 13px; color: #dc2626;
+  }
+  .scanning { display: flex; flex-direction: column; align-items: center; padding: 60px 20px; text-align: center; }
+  .scanning img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 24px; opacity: 0.5; }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--orange);
+    border-radius: 50%; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .scanning p { font-size: 14px; color: var(--label); margin-top: 16px; font-weight: 500; }
+  .status-banner {
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; display: flex; gap: 8px;
+  }
+  .status-banner.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .status-banner.ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
+  h3.section-title {
+    font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase;
+    letter-spacing: 0.1em; margin: 22px 0 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px;
+  }
+  .field { margin-bottom: 14px; }
+  .field-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .field label { font-size: 11px; font-weight: 600; color: var(--label); text-transform: uppercase; letter-spacing: 0.05em; }
+  .conf-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .conf-tag.low { background: #fef2f2; color: #dc2626; }
+  .conf-tag.medium { background: #fffbeb; color: #d97706; }
+  .conf-tag.high { background: #f0fdf4; color: #16a34a; }
+  .field input, .field select {
+    width: 100%; padding: 11px 13px; font-size: 15px; border-radius: 8px;
+    background: #f8fafc; color: var(--text); box-sizing: border-box;
+  }
+  .field input.conf-low, .field select.conf-low { border: 1.5px solid var(--red); }
+  .field input.conf-medium, .field select.conf-medium { border: 1.5px solid var(--amber); }
+  .field input.conf-high, .field select.conf-high, .field input.conf-, .field select.conf- { border: 1.5px solid var(--border); }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+  .btn-secondary, .btn-primary {
+    flex: 1; border-radius: 10px; padding: 13px; font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-secondary { background: transparent; border: 1.5px solid #cbd5e1; color: var(--label); }
+  .btn-primary {
+    flex: 2; background: linear-gradient(135deg, var(--orange), var(--orange-dk));
+    border: none; color: white; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 800;
+  }
+  .done-screen { text-align: center; padding: 60px 20px; }
+  .done-icon {
+    width: 64px; height: 64px; background: #f0fdf4; border: 2px solid var(--green); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 28px; color: var(--green);
+  }
+  .done-screen h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .done-screen p { font-size: 13px; color: var(--label); line-height: 1.6; margin-bottom: 20px; }
+  .btn-outline {
+    background: transparent; border: 1.5px solid var(--orange); color: var(--orange-dk);
+    border-radius: 10px; padding: 12px 24px; font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .json-output {
+    margin-top: 24px; background: var(--navy); color: #a5f3fc; font-family: monospace;
+    font-size: 11px; padding: 14px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap;
+    max-height: 300px; overflow-y: auto;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Cartage Australia</h1>
+  <p>Run Sheet Scanner - OCR Test</p>
+</div>
+
+<div class="container">
+
+  <div id="captureStage">
+    <p class="intro">Photograph a completed run sheet. Lay it flat in good light, hold the camera directly above it. This is a test build to check how accurately AI can read your drivers' handwriting before we wire it into the live app.</p>
+
+    <div class="key-banner">
+      This test page needs a Claude API key to run (the live app won't need you to do this - it'll be built in securely). Paste a key here just for testing:
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+    </div>
+
+    <div id="errorBox" class="error-box hidden"></div>
+
+    <div class="photo-btn" onclick="document.getElementById('fileInput').click()">
+      <span class="label">Photograph Run Sheet</span>
+      <span class="sub">Tap to open camera</span>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" capture="environment">
+  </div>
+
+  <div id="scanningStage" class="scanning hidden">
+    <img id="scanningPreview" src="" alt="">
+    <div class="spinner"></div>
+    <p>Reading your run sheet...</p>
+  </div>
+
+  <div id="reviewStage" class="hidden">
+    <div id="statusBanner" class="status-banner"></div>
+    <div id="fieldsContainer"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="retake()">Retake Photo</button>
+      <button class="btn-primary" onclick="showDone()">Confirm and Continue</button>
+    </div>
+    <div class="json-output" id="jsonOutput"></div>
+  </div>
+
+  <div id="doneStage" class="done-screen hidden">
+    <div class="done-icon">OK</div>
+    <h2>Data confirmed</h2>
+    <p>In the finished version, this data carries straight into your run sheet form - fields already filled in, ready to add photos and submit.</p>
+    <button class="btn-outline" onclick="retake()">Scan Another Run Sheet</button>
+  </div>
+
+</div>
+
+<script>
+const DRIVER_LOOKUP = {"9205":"Daniel Mcintosh","9208":"James Boasman","9209":"Shibeshi Asqedom","9210":"Patrick Doyle","9211":"Richard Lineham","9213":"Brett Austin","9216":"Damien Lowry","9220":"Michael Bland","9223":"Mesud Keskic","9225":"Surat Singh","6543":"Manu"};
+const TRUCK_LOOKUP = {"305":"XW61HK","307":"XW63HK","312":"XW70HK","304":"XW41HX","326":"XW13IG","367":"XW52NB","379":"XW25NE"};
+
+let extracted = null;
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    document.getElementById('scanningPreview').src = ev.target.result;
+    showStage('scanningStage');
+    runOCR(ev.target.result);
+  };
+  reader.readAsDataURL(file);
+});
+
+function showStage(id) {
+  ['captureStage','scanningStage','reviewStage','doneStage'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.classList.remove('hidden');
+  showStage('captureStage');
+}
+
+async function runOCR(dataUrl) {
+  const apiKey = document.getElementById('apiKeyInput')?.value?.trim();
+  document.getElementById('errorBox').classList.add('hidden');
+
+  try {
+    const base64Data = dataUrl.split(',')[1];
+    const mediaType = dataUrl.split(';')[0].split(':')[1];
+
+    const headers = { "Content-Type": "application/json" };
+    if (apiKey) {
+      headers["x-api-key"] = apiKey;
+      headers["anthropic-version"] = "2023-06-01";
+      headers["anthropic-dangerous-direct-browser-access"] = "true";
+    }
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1500,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: mediaType, data: base64Data } },
+            { type: "text", text: buildPrompt() }
+          ]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`API error ${response.status}: ${errText.slice(0,200)}`);
+    }
+
+    const data = await response.json();
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    if (!textBlock) throw new Error('No text response from AI');
+
+    let cleaned = textBlock.text.trim();
+    cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
+    extracted = JSON.parse(cleaned);
+
+    const driverIdVal = extracted.header.driverID.value;
+    const matchedName = DRIVER_LOOKUP[driverIdVal];
+    if (matchedName) extracted.header.driverName = { value: matchedName, confidence: 'high' };
+
+    const truckNoVal = extracted.header.truckNo.value;
+    const matchedRego = TRUCK_LOOKUP[truckNoVal];
+    if (matchedRego) extracted.header.rego = { value: matchedRego, confidence: 'high' };
+
+    renderReview();
+    showStage('reviewStage');
+  } catch (err) {
+    console.error(err);
+    showError('Could not read this photo: ' + err.message);
+  }
+}
+
+function buildPrompt() {
+  return `You are reading a handwritten Cartage Australia driver run sheet. Extract the data into strict JSON only, no markdown fences, no preamble.
+
+Read carefully - these are handwritten, often messy, sometimes with crossed-out corrections (trust the value in the actual printed field box, ignore stray marginal scribbles), AM/PM tick boxes instead of written text, and abbreviated location names (e.g. "D/Rd" = Devon Road, "Trug" = Truganina, "S/U" = Stick up).
+
+For every field, give a confidence rating: "high" if clearly legible, "medium" if you had to interpret, "low" if genuinely uncertain or illegible. If a field is blank on the sheet, return empty string and confidence "high".
+
+Return exactly this JSON shape:
+{
+  "header": {
+    "driverID": {"value": "", "confidence": ""},
+    "driverName": {"value": "", "confidence": ""},
+    "truckNo": {"value": "", "confidence": ""},
+    "rego": {"value": "", "confidence": ""},
+    "date": {"value": "", "confidence": ""},
+    "depot": {"value": "", "confidence": ""},
+    "startTime": {"value": "", "confidence": ""},
+    "finishTime": {"value": "", "confidence": ""},
+    "kmsStart": {"value": "", "confidence": ""},
+    "kmsFinish": {"value": "", "confidence": ""},
+    "fuel": {"value": "", "confidence": ""}
+  },
+  "loads": [
+    {
+      "docketNumber": {"value": "", "confidence": ""},
+      "pullFrom": {"value": "", "confidence": ""},
+      "deliverTo": {"value": "", "confidence": ""},
+      "product": {"value": "", "confidence": ""},
+      "gross": {"value": "", "confidence": ""},
+      "tare": {"value": "", "confidence": ""},
+      "net": {"value": "", "confidence": ""},
+      "comments": {"value": "", "confidence": ""}
+    }
+  ]
+}
+
+Only include rows in "loads" that actually have handwritten data in them. Do not read axle weight figures (Steer, Drive, P/Mover, Front Axle, Rear Tri Axle columns) - not needed.`;
+}
+
+function countLowConfidence() {
+  if (!extracted) return 0;
+  let count = 0;
+  Object.values(extracted.header).forEach(f => { if (f.confidence === 'low') count++; });
+  extracted.loads.forEach(load => Object.values(load).forEach(f => { if (f.confidence === 'low') count++; }));
+  return count;
+}
+
+function fieldHTML(label, obj, path) {
+  const conf = obj.confidence || 'high';
+  const tagText = conf === 'low' ? 'CHECK THIS' : conf === 'medium' ? 'VERIFY' : 'READ OK';
+  return `
+    <div class="field">
+      <div class="field-top">
+        <label>${label}</label>
+        <span class="conf-tag ${conf}">${tagText}</span>
+      </div>
+      <input type="text" value="${(obj.value||'').replace(/"/g,'&quot;')}" data-path="${path}" oninput="updateField(this)" class="conf-${conf}">
+    </div>
+  `;
+}
+
+function renderReview() {
+  const lowCount = countLowConfidence();
+  const banner = document.getElementById('statusBanner');
+  if (lowCount > 0) {
+    banner.className = 'status-banner warn';
+    banner.textContent = `${lowCount} field${lowCount>1?'s':''} need your attention - marked "CHECK THIS" below.`;
+  } else {
+    banner.className = 'status-banner ok';
+    banner.textContent = 'All fields read clearly. Please review before submitting.';
+  }
+
+  let html = '<h3 class="section-title">Driver &amp; Truck Details</h3>';
+  const h = extracted.header;
+  html += fieldHTML('Driver ID', h.driverID, 'header.driverID');
+  html += fieldHTML('Driver Name', h.driverName, 'header.driverName');
+  html += fieldHTML('Truck No', h.truckNo, 'header.truckNo');
+  html += fieldHTML('Rego', h.rego, 'header.rego');
+  html += fieldHTML('Date', h.date, 'header.date');
+  html += fieldHTML('Depot', h.depot, 'header.depot');
+  html += fieldHTML('Start Time', h.startTime, 'header.startTime');
+  html += fieldHTML('Finish Time', h.finishTime, 'header.finishTime');
+  html += fieldHTML('Kms Start', h.kmsStart, 'header.kmsStart');
+  html += fieldHTML('Kms Finish', h.kmsFinish, 'header.kmsFinish');
+  html += fieldHTML('Fuel', h.fuel, 'header.fuel');
+
+  extracted.loads.forEach((load, idx) => {
+    html += `<h3 class="section-title">Load ${idx+1}</h3>`;
+    html += fieldHTML('Docket Number', load.docketNumber, `loads.${idx}.docketNumber`);
+    html += fieldHTML('Pickup Location', load.pullFrom, `loads.${idx}.pullFrom`);
+    html += fieldHTML('Deliver To', load.deliverTo, `loads.${idx}.deliverTo`);
+    html += fieldHTML('Product', load.product, `loads.${idx}.product`);
+    html += '<div class="row-3">';
+    html += fieldHTML('Gross', load.gross, `loads.${idx}.gross`);
+    html += fieldHTML('Tare', load.tare, `loads.${idx}.tare`);
+    html += fieldHTML('Net', load.net, `loads.${idx}.net`);
+    html += '</div>';
+    if (load.comments && load.comments.value) {
+      html += fieldHTML('Comments', load.comments, `loads.${idx}.comments`);
+    }
+  });
+
+  document.getElementById('fieldsContainer').innerHTML = html;
+  document.getElementById('jsonOutput').textContent = JSON.stringify(extracted, null, 2);
+}
+
+function updateField(input) {
+  const path = input.dataset.path.split('.');
+  let obj = extracted;
+  for (let i = 0; i < path.length - 1; i++) obj = obj[path[i]];
+  obj[path[path.length-1]] = { value: input.value, confidence: 'high' };
+  input.className = 'conf-high';
+  const tag = input.closest('.field').querySelector('.conf-tag');
+  tag.className = 'conf-tag high';
+  tag.textContent = 'READ OK';
+  document.getElementById('jsonOutput').textContent = JSON.stringify(extracted, null, 2);
+}
+
+function retake() {
+  extracted = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('errorBox').classList.add('hidden');
+  showStage('captureStage');
+}
+
+function showDone() {
+  showStage('doneStage');
+}
+</script>
+</body>
+</html>
