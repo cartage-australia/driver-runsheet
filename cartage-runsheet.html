@@ -5,46 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0a0f1e">
+<meta name="theme-color" content="#1a2235">
 <title>Cartage Australia — Daily Run Sheet</title>
 <style>
-  /* ── TOKENS ── */
   :root {
     --navy:      #1a2235;
     --navy-mid:  #1a2235;
-    --navy-card: #ffffff;
-    --navy-border:#e2e8f0;
     --orange:    #f59e0b;
     --orange-dk: #d97706;
     --white:     #ffffff;
-    --grey-lt:   #f8fafc;
-    --grey-md:   #64748b;
-    --grey-dk:   #94a3b8;
+    --bg:        #f1f5f9;
+    --card:      #ffffff;
+    --border:    #e2e8f0;
     --text:      #1e293b;
+    --label:     #64748b;
+    --muted:     #94a3b8;
     --green:     #10b981;
     --red:       #ef4444;
     --yellow:    #fbbf24;
     --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --radius:    12px;
     --radius-sm: 8px;
-    --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow:    0 1px 3px rgba(0,0,0,0.08);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   body {
-    background: #f1f5f9;
+    background: var(--bg);
     color: var(--text);
     font-family: var(--font);
     min-height: 100vh;
-    padding-bottom: 40px;
+    padding-bottom: 48px;
   }
 
-  /* ── HEADER ── */
+  /* HEADER */
   .header {
     background: var(--navy);
     border-bottom: 3px solid var(--orange);
-    padding: 16px 20px 14px;
+    padding: 14px 20px;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -52,515 +51,378 @@
     top: 0;
     z-index: 100;
   }
-  .header img {
-    height: 36px;
-    width: auto;
-    object-fit: contain;
+  .header img { height: 34px; width: auto; object-fit: contain; }
+  .logo-fallback {
+    display: none;
+    width: 36px; height: 36px;
+    background: var(--orange);
+    border-radius: 6px;
+    align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 900; color: var(--navy);
   }
-  .header-text h1 {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--white);
-    letter-spacing: 0.02em;
-  }
-  .header-text p {
-    font-size: 11px;
-    color: var(--orange);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-top: 1px;
-  }
+  .header-text h1 { font-size: 15px; font-weight: 700; color: var(--white); }
+  .header-text p  { font-size: 11px; color: var(--orange); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 1px; }
 
-  /* ── PROGRESS BAR ── */
+  /* PROGRESS */
   .progress-wrap {
     background: var(--white);
-    padding: 10px 20px 14px;
-    border-bottom: 1px solid var(--navy-border);
+    padding: 10px 20px 12px;
+    border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow);
   }
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--grey-md);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .progress-bar {
-    height: 5px;
-    background: #e2e8f0;
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--orange), var(--yellow));
-    border-radius: 2px;
-    transition: width 0.4s ease;
-    width: 0%;
-  }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--label); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .progress-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--orange), var(--yellow)); border-radius: 3px; transition: width 0.4s ease; width: 0%; }
 
-  /* ── SECTIONS ── */
-  .section {
-    margin: 16px 16px 0;
-  }
+  /* SECTIONS */
+  .section { margin: 16px 16px 0; }
   .section-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--navy);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    font-size: 11px; font-weight: 700; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.1em;
     margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: flex; align-items: center; gap: 8px;
   }
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--navy-border);
-  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  /* ── CARD ── */
+  /* CARD */
   .card {
-    background: var(--white);
-    border: 1px solid var(--navy-border);
+    background: var(--card);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 16px;
     margin-bottom: 12px;
     box-shadow: var(--shadow);
   }
 
-  /* ── FIELD ── */
-  .field {
-    margin-bottom: 14px;
-  }
+  /* FIELDS */
+  .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
 
   label {
     display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--grey-md);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 6px;
+    font-size: 11px; font-weight: 600; color: var(--label);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 5px;
   }
-  label .req {
-    color: var(--orange);
-    margin-left: 2px;
-  }
+  label .req { color: var(--orange); margin-left: 2px; }
 
   input, select, textarea {
     width: 100%;
-    background: var(--grey-lt);
-    border: 1.5px solid var(--navy-border);
+    background: #f8fafc;
+    border: 1.5px solid var(--border);
     border-radius: var(--radius-sm);
     color: var(--text);
     font-family: var(--font);
     font-size: 16px;
-    padding: 12px 14px;
+    padding: 11px 13px;
     outline: none;
     transition: border-color 0.2s, background 0.2s;
     -webkit-appearance: none;
     appearance: none;
   }
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--orange);
-    background: var(--white);
-  }
-  input.error, select.error { border-color: var(--red); }
+  input:focus, select:focus, textarea:focus { border-color: var(--orange); background: var(--white); }
+  input.error, select.error { border-color: var(--red) !important; }
   input.valid, select.valid { border-color: var(--green); }
+  input[readonly] { color: var(--label); cursor: default; }
 
   select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 40px;
+    background-position: right 13px center;
+    padding-right: 38px;
   }
   select option { background: var(--white); color: var(--text); }
+  textarea { resize: none; min-height: 72px; }
 
-  textarea { resize: none; min-height: 80px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
-  .field-error {
-    font-size: 11px;
-    color: var(--red);
-    margin-top: 4px;
-    display: none;
-  }
+  .field-error { font-size: 11px; color: var(--red); margin-top: 3px; display: none; }
   .field-error.show { display: block; }
 
-  /* ── TWO COL ── */
-  .row-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  /* ── DATE/TIME AUTO ── */
   .auto-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10px;
-    color: var(--green);
+    display: inline-flex; align-items: center;
+    font-size: 10px; color: var(--green);
     background: rgba(16,185,129,0.08);
-    border: 1px solid rgba(16,185,129,0.3);
-    border-radius: 4px;
-    padding: 2px 6px;
-    margin-left: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 4px; padding: 1px 5px;
+    margin-left: 5px; text-transform: uppercase; letter-spacing: 0.04em;
   }
 
-  /* ── PHOTO CAPTURE ── */
-  .photo-section { }
+  /* LOAD ROWS */
+  .load-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .load-header {
+    background: var(--navy);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .load-header span {
+    font-size: 12px; font-weight: 700; color: var(--white);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .load-header .load-badge {
+    background: var(--orange);
+    color: var(--navy);
+    font-size: 11px; font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+  .load-body { padding: 14px 16px; }
 
+  .add-load-btn {
+    width: 100%;
+    background: transparent;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--label);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 4px;
+  }
+  .add-load-btn:active { background: #f8fafc; }
+
+  /* TIME INPUTS */
+  .time-wrap { position: relative; }
+  .time-wrap input { padding-right: 50px; }
+  .ampm-toggle {
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    background: var(--navy);
+    color: var(--white);
+    font-size: 10px; font-weight: 700;
+    padding: 4px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    letter-spacing: 0.04em;
+  }
+
+  /* BREAK ROWS */
+  .break-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 10px;
+  }
+  .break-row:last-child { margin-bottom: 0; }
+  .break-label {
+    font-size: 12px; font-weight: 600; color: var(--label);
+    padding-bottom: 11px;
+  }
+
+  /* PHOTO */
   .photo-btn {
     width: 100%;
     background: #f8fafc;
     border: 2px dashed #cbd5e1;
     border-radius: var(--radius);
-    padding: 20px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     cursor: pointer;
     transition: all 0.2s;
     margin-bottom: 10px;
   }
   .photo-btn:active { transform: scale(0.98); }
-  .photo-btn.captured {
-    border-color: var(--green);
-    border-style: solid;
-    background: rgba(16,185,129,0.04);
-  }
-  .photo-btn.blur-warn {
-    border-color: var(--red);
-    border-style: solid;
-    background: rgba(239,68,68,0.04);
-  }
-  .photo-btn svg { opacity: 0.5; }
-  .photo-btn .btn-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .photo-btn .btn-sub {
-    font-size: 11px;
-    color: var(--grey-md);
-  }
-  .photo-btn .status-tag {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
+  .photo-btn.captured { border-color: var(--green); border-style: solid; background: rgba(16,185,129,0.04); }
+  .photo-btn.blur-warn { border-color: var(--red); border-style: solid; background: rgba(239,68,68,0.04); }
+  .photo-btn .btn-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .photo-btn .btn-sub { font-size: 11px; color: var(--label); }
+  .status-tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; }
   .status-tag.ok { background: rgba(16,185,129,0.12); color: var(--green); }
   .status-tag.warn { background: rgba(239,68,68,0.12); color: var(--red); }
   .status-tag.checking { background: rgba(245,158,11,0.12); color: var(--orange-dk); }
 
-  .photo-preview {
-    display: none;
-    width: 100%;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    margin-top: 6px;
-    position: relative;
-  }
-  .photo-preview img {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    display: block;
-  }
+  .photo-preview { display: none; width: 100%; border-radius: var(--radius-sm); overflow: hidden; margin-top: 6px; position: relative; }
+  .photo-preview img { width: 100%; height: 150px; object-fit: cover; display: block; }
   .photo-preview .retake-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.6);
-    border: 1px solid rgba(255,255,255,0.3);
-    color: var(--white);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 5px 10px;
-    border-radius: 6px;
-    cursor: pointer;
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.3);
+    color: var(--white); font-size: 11px; font-weight: 600;
+    padding: 5px 10px; border-radius: 6px; cursor: pointer;
   }
 
-  .docket-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  .docket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .docket-slot {
-    background: #f8fafc;
-    border: 2px dashed #cbd5e1;
-    border-radius: var(--radius-sm);
-    padding: 14px 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-height: 100px;
-    position: relative;
+    background: #f8fafc; border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-sm); padding: 12px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    cursor: pointer; transition: all 0.2s; min-height: 95px;
   }
   .docket-slot:active { transform: scale(0.97); }
-  .docket-slot.captured {
-    border-color: var(--green);
-    border-style: solid;
-    background: rgba(16,185,129,0.04);
-  }
-  .docket-slot.blur-warn {
-    border-color: var(--red);
-    border-style: solid;
-  }
-  .docket-slot .slot-num {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--grey-md);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .docket-slot .slot-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
-    text-align: center;
-  }
-  .docket-slot .slot-preview {
-    width: 100%;
-    height: 70px;
-    object-fit: cover;
-    border-radius: 4px;
-    display: none;
-  }
-  .docket-slot .slot-status {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
+  .docket-slot.captured { border-color: var(--green); border-style: solid; background: rgba(16,185,129,0.04); }
+  .docket-slot.blur-warn { border-color: var(--red); border-style: solid; }
+  .docket-slot .slot-num { font-size: 10px; font-weight: 700; color: var(--label); text-transform: uppercase; letter-spacing: 0.06em; }
+  .docket-slot .slot-label { font-size: 11px; font-weight: 600; color: var(--text); text-align: center; }
+  .docket-slot .slot-preview { width: 100%; height: 60px; object-fit: cover; border-radius: 4px; display: none; }
+  .docket-slot .slot-status { font-size: 10px; font-weight: 700; text-transform: uppercase; }
   .slot-status.ok { color: var(--green); }
   .slot-status.warn { color: var(--red); }
   .slot-status.checking { color: var(--orange-dk); }
 
-  /* hidden file inputs */
   input[type="file"] { display: none; }
 
-  /* ── BLUR ALERT ── */
   .blur-alert {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    font-size: 12px;
-    color: #dc2626;
-    display: none;
-    margin-top: 8px;
-    line-height: 1.5;
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: var(--radius-sm); padding: 10px 13px;
+    font-size: 12px; color: #dc2626;
+    display: none; margin-top: 8px; line-height: 1.5;
   }
   .blur-alert.show { display: block; }
 
-  /* ── SUBMIT ── */
-  .submit-wrap {
-    margin: 24px 16px 0;
-  }
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
 
+  /* TOTALS BOX */
+  .totals-box {
+    background: var(--navy);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-top: 4px;
+  }
+  .totals-box .total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0;
+  }
+  .totals-box .total-label { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .totals-box .total-value { font-size: 15px; font-weight: 700; color: var(--orange); }
+  .totals-box .total-row.grand .total-label { color: var(--white); font-weight: 700; font-size: 13px; }
+  .totals-box .total-row.grand .total-value { font-size: 18px; }
+
+  /* SUBMIT */
+  .submit-wrap { margin: 24px 16px 0; }
   .submit-btn {
     width: 100%;
     background: linear-gradient(135deg, var(--orange), var(--orange-dk));
     color: var(--white);
-    font-size: 17px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    padding: 18px;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    text-transform: uppercase;
+    font-size: 17px; font-weight: 800; letter-spacing: 0.04em;
+    padding: 18px; border: none; border-radius: var(--radius);
+    cursor: pointer; text-transform: uppercase;
     transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 14px rgba(245,158,11,0.4);
+    box-shadow: 0 4px 14px rgba(245,158,11,0.35);
   }
   .submit-btn:active { transform: scale(0.98); box-shadow: none; }
-  .submit-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
+  .submit-note { text-align: center; font-size: 11px; color: var(--muted); margin-top: 10px; }
 
-  .submit-note {
-    text-align: center;
-    font-size: 11px;
-    color: var(--grey-dk);
-    margin-top: 10px;
-  }
-
-  /* ── VALIDATION SUMMARY ── */
+  /* VALIDATION */
   .val-summary {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: var(--radius-sm);
-    padding: 12px 14px;
-    margin-bottom: 14px;
-    display: none;
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    margin-bottom: 14px; display: none;
   }
   .val-summary.show { display: block; }
-  .val-summary p {
-    font-size: 12px;
-    color: #dc2626;
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .val-summary ul {
-    list-style: none;
-    padding: 0;
-  }
-  .val-summary ul li {
-    font-size: 12px;
-    color: #dc2626;
-    padding: 2px 0;
-  }
+  .val-summary p { font-size: 12px; color: #dc2626; font-weight: 600; margin-bottom: 6px; }
+  .val-summary ul { list-style: none; padding: 0; }
+  .val-summary ul li { font-size: 12px; color: #dc2626; padding: 2px 0; }
   .val-summary ul li::before { content: '→ '; }
 
-  /* ── SUCCESS SCREEN ── */
+  /* SUCCESS */
   .success-screen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 70vh;
-    padding: 40px 24px;
-    text-align: center;
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 80vh;
+    padding: 40px 24px; text-align: center;
   }
   .success-screen.show { display: flex; }
   .success-icon {
-    width: 80px;
-    height: 80px;
-    background: rgba(16,185,129,0.1);
-    border: 2px solid var(--green);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 24px;
-    animation: pop 0.4s ease;
+    width: 80px; height: 80px;
+    background: rgba(16,185,129,0.1); border: 2px solid var(--green);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px; animation: pop 0.4s ease;
   }
-  @keyframes pop {
-    0% { transform: scale(0.5); opacity: 0; }
-    80% { transform: scale(1.1); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  .success-screen h2 {
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-  .success-screen p {
-    font-size: 15px;
-    color: var(--grey-md);
-    line-height: 1.6;
-    max-width: 280px;
-  }
+  @keyframes pop { 0%{transform:scale(0.5);opacity:0} 80%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  .success-screen h2 { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+  .success-screen p { font-size: 15px; color: var(--label); line-height: 1.6; max-width: 280px; }
   .success-ref {
-    margin-top: 20px;
-    background: var(--white);
-    border: 1px solid var(--navy-border);
-    border-radius: var(--radius-sm);
-    padding: 14px 20px;
-    font-size: 13px;
-    color: var(--grey-md);
+    margin-top: 20px; background: var(--white);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 14px 24px; font-size: 13px; color: var(--label);
     box-shadow: var(--shadow);
   }
-  .success-ref strong {
-    color: var(--orange-dk);
-    font-size: 18px;
-    display: block;
-    margin-top: 4px;
-    letter-spacing: 0.06em;
-  }
+  .success-ref strong { color: var(--orange-dk); font-size: 20px; display: block; margin-top: 4px; letter-spacing: 0.06em; }
   .new-submission-btn {
-    margin-top: 28px;
-    background: transparent;
-    border: 2px solid var(--orange);
-    color: var(--orange-dk);
-    font-size: 14px;
-    font-weight: 700;
-    padding: 14px 32px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    margin-top: 28px; background: transparent;
+    border: 2px solid var(--orange); color: var(--orange-dk);
+    font-size: 14px; font-weight: 700; padding: 14px 32px;
+    border-radius: var(--radius); cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.06em;
   }
 
-  /* ── LOADING OVERLAY ── */
+  /* LOADING */
   .loading-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(248,250,252,0.92);
-    z-index: 200;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
+    display: none; position: fixed; inset: 0;
+    background: rgba(241,245,249,0.93); z-index: 200;
+    flex-direction: column; align-items: center; justify-content: center; gap: 16px;
   }
   .loading-overlay.show { display: flex; }
   .spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid #e2e8f0;
-    border-top-color: var(--orange);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    width: 48px; height: 48px;
+    border: 3px solid var(--border); border-top-color: var(--orange);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-overlay p {
-    font-size: 14px;
-    color: var(--grey-md);
-    font-weight: 500;
-  }
+  .loading-overlay p { font-size: 14px; color: var(--label); font-weight: 500; }
 
-  /* ── TOAST ── */
+  /* TOAST */
   .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
+    position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--white);
-    border: 1px solid var(--navy-border);
-    border-radius: var(--radius-sm);
-    padding: 12px 20px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    z-index: 300;
-    transition: transform 0.3s ease;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 20px;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    z-index: 300; transition: transform 0.3s ease;
+    white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.success { border-color: var(--green); color: var(--green); }
   .toast.error { border-color: var(--red); color: var(--red); }
   .toast.warning { border-color: var(--yellow); color: var(--orange-dk); }
+
+  /* SIGNATURE */
+  .sig-canvas-wrap {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #f8fafc;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas#sigCanvas {
+    display: block;
+    width: 100%;
+    height: 120px;
+    touch-action: none;
+  }
+  .sig-clear {
+    position: absolute; top: 6px; right: 8px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--label); font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 4px; cursor: pointer;
+  }
+  .sig-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
 </style>
 </head>
 <body>
 
-<!-- LOADING OVERLAY -->
+<!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <p id="loadingMsg">Submitting your run sheet…</p>
@@ -573,32 +435,40 @@
 <div class="header">
   <img src="https://cdn.prod.website-files.com/60d0143cfc485a21fd7a0e9c/60d01bc0000a6decc8e1ec32_cartage-logo-275-2.png"
        alt="Cartage Australia"
-       onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='flex'">
-  <div id="logoFallback" style="display:none; align-items:center; justify-content:center; width:36px; height:36px; background:var(--orange); border-radius:6px; font-size:14px; font-weight:900; color:var(--navy);">CA</div>
+       onerror="this.style.display='none';document.getElementById('logoFallback').style.display='flex'">
+  <div id="logoFallback" class="logo-fallback">CA</div>
   <div class="header-text">
     <h1>Cartage Australia</h1>
-    <p>Daily Run Sheet</p>
+    <p>Daily Run Sheet &amp; Dockets</p>
   </div>
 </div>
 
 <!-- PROGRESS -->
 <div class="progress-wrap">
-  <div class="progress-label">
-    <span>Completion</span>
-    <span id="progressPct">0%</span>
-  </div>
+  <div class="progress-label"><span>Form Completion</span><span id="progressPct">0%</span></div>
   <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 </div>
 
 <!-- MAIN FORM -->
 <div id="mainForm">
 
-  <!-- SECTION 1: DRIVER INFO -->
+  <!-- 1. DRIVER DETAILS -->
   <div class="section">
     <div class="section-title">Driver Details</div>
     <div class="card">
+      <div class="row-2">
+        <div class="field">
+          <label>Driver ID</label>
+          <input type="number" id="driverID" placeholder="e.g. 278" inputmode="numeric"
+                 oninput="updateProgress()">
+        </div>
+        <div class="field">
+          <label>Date <span class="auto-tag">✓ Auto</span></label>
+          <input type="date" id="jobDate" readonly>
+        </div>
+      </div>
       <div class="field">
-        <label>Driver Name <span class="req">*</span></label>
+        <label>Driver Name (First &amp; Last) <span class="req">*</span></label>
         <select id="driverName" onchange="validateField(this); updateProgress()">
           <option value="">— Select your name —</option>
           <option>Aaron Mitchell</option>
@@ -640,7 +510,7 @@
           <option>Liam Foster</option>
           <option>Luke Gray</option>
           <option>Mark Henderson</option>
-          <option>Matt Price</option>
+          <option>Matt Ferguson</option>
           <option>Michael Bennett</option>
           <option>Nathan Wood</option>
           <option>Nick Long</option>
@@ -661,97 +531,163 @@
           <option>Todd Russell</option>
           <option>Tom Brooks</option>
           <option>Troy Sanders</option>
+          <option>Ty Skinner</option>
           <option>Tyler Flores</option>
           <option>Wayne Coleman</option>
           <option>Other / Not Listed</option>
         </select>
         <div class="field-error" id="err-driverName">Please select your name</div>
       </div>
-      <div class="field">
-        <label>Truck Rego <span class="req">*</span></label>
-        <input type="text" id="truckRego" placeholder="e.g. ABC 123" maxlength="10"
-               oninput="this.value=this.value.toUpperCase(); validateField(this); updateProgress()"
-               autocomplete="off" autocorrect="off" autocapitalize="characters">
-        <div class="field-error" id="err-truckRego">Please enter your truck rego</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 2: JOB DETAILS -->
-  <div class="section">
-    <div class="section-title">Job Details</div>
-    <div class="card">
-      <div class="field">
-        <label>Date <span class="auto-tag">✓ Auto</span></label>
-        <input type="date" id="jobDate" readonly
-               style="color: var(--grey-md); cursor: default;">
-      </div>
-      <div class="field">
-        <label>Job / Purchase Order No. <span class="req">*</span></label>
-        <input type="text" id="jobNumber" placeholder="e.g. CA-2024-0483"
-               oninput="validateField(this); updateProgress()"
-               autocomplete="off" autocorrect="off" autocapitalize="characters">
-        <div class="field-error" id="err-jobNumber">Please enter a job or PO number</div>
-      </div>
-      <div class="field">
-        <label>Tip Site / Delivery Location <span class="req">*</span></label>
-        <input type="text" id="tipSite" placeholder="e.g. Boral Quarry, Deer Park"
-               oninput="validateField(this); updateProgress()"
-               autocomplete="off">
-        <div class="field-error" id="err-tipSite">Please enter the delivery location</div>
-      </div>
-      <div class="field">
-        <label>Material Type <span class="req">*</span></label>
-        <select id="materialType" onchange="validateField(this); updateProgress()">
-          <option value="">— Select material —</option>
-          <option>Crushed Rock</option>
-          <option>Blue Metal</option>
-          <option>Gravel</option>
-          <option>Sand</option>
-          <option>Fill / Clay</option>
-          <option>Topsoil</option>
-          <option>Road Base</option>
-          <option>Lime</option>
-          <option>Soda Ash</option>
-          <option>Cullet</option>
-          <option>Recycled Material</option>
-          <option>Other</option>
-        </select>
-        <div class="field-error" id="err-materialType">Please select the material type</div>
+      <div class="row-2">
+        <div class="field">
+          <label>Truck No. <span class="req">*</span></label>
+          <input type="text" id="truckNo" placeholder="e.g. 278"
+                 oninput="validateField(this); updateProgress()" autocomplete="off">
+          <div class="field-error" id="err-truckNo">Required</div>
+        </div>
+        <div class="field">
+          <label>Rego <span class="req">*</span></label>
+          <input type="text" id="truckRego" placeholder="e.g. XV67VO"
+                 oninput="this.value=this.value.toUpperCase(); validateField(this); updateProgress()"
+                 autocomplete="off" autocapitalize="characters">
+          <div class="field-error" id="err-truckRego">Required</div>
+        </div>
       </div>
       <div class="row-2">
         <div class="field">
-          <label>No. of Loads <span class="req">*</span></label>
-          <input type="number" id="numLoads" placeholder="0" min="1" max="99"
-                 oninput="validateField(this); updateProgress()"
-                 inputmode="numeric">
-          <div class="field-error" id="err-numLoads">Required</div>
+          <label>Depot <span class="req">*</span></label>
+          <select id="depot" onchange="validateField(this); updateProgress()">
+            <option value="">— Select —</option>
+            <option>Devon</option>
+            <option>Truganina</option>
+            <option>Other</option>
+          </select>
+          <div class="field-error" id="err-depot">Required</div>
         </div>
         <div class="field">
-          <label>Total Tonnes <span class="req">*</span></label>
-          <input type="number" id="totalTonnes" placeholder="0.0" min="0.1" step="0.1"
-                 oninput="validateField(this); updateProgress()"
-                 inputmode="decimal">
-          <div class="field-error" id="err-totalTonnes">Required</div>
+          <label>Fuel</label>
+          <input type="number" id="fuel" placeholder="Litres" inputmode="decimal" step="0.1"
+                 oninput="updateProgress()">
         </div>
-      </div>
-      <div class="field">
-        <label>Notes <span style="color:var(--grey-dk); font-weight:400; text-transform:none;">(optional)</span></label>
-        <textarea id="notes" placeholder="Any delays, issues or additional info…" rows="3"
-                  oninput="updateProgress()"></textarea>
       </div>
     </div>
   </div>
 
-  <!-- SECTION 3: RUN SHEET PHOTO -->
+  <!-- 2. SHIFT TIMES -->
+  <div class="section">
+    <div class="section-title">Shift Times</div>
+    <div class="card">
+      <div class="row-2">
+        <div class="field">
+          <label>Start Time <span class="req">*</span></label>
+          <input type="time" id="startTime"
+                 oninput="validateField(this); calcTotalHours(); updateProgress()">
+          <div class="field-error" id="err-startTime">Required</div>
+        </div>
+        <div class="field">
+          <label>Finish Time <span class="req">*</span></label>
+          <input type="time" id="finishTime"
+                 oninput="validateField(this); calcTotalHours(); updateProgress()">
+          <div class="field-error" id="err-finishTime">Required</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Odometer Reading <span class="req">*</span></label>
+        <input type="number" id="odometer" placeholder="e.g. 1600" inputmode="numeric"
+               oninput="validateField(this); updateProgress()">
+        <div class="field-error" id="err-odometer">Required</div>
+      </div>
+      <div class="field">
+        <label>Total Hours <span class="auto-tag">✓ Auto</span></label>
+        <input type="text" id="totalHours" readonly placeholder="Calculated automatically">
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. LOADS -->
+  <div class="section">
+    <div class="section-title">Loads</div>
+    <div id="loadsContainer"></div>
+    <button class="add-load-btn" id="addLoadBtn" onclick="addLoad()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      Add Another Load
+    </button>
+
+    <!-- TOTALS -->
+    <div class="totals-box">
+      <div class="total-row">
+        <span class="total-label">Total Loads</span>
+        <span class="total-value" id="totalLoadsDisplay">0</span>
+      </div>
+      <div class="total-row grand">
+        <span class="total-label">Total Tonnes</span>
+        <span class="total-value" id="totalTonnesDisplay">0.00 t</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. BREAKS -->
+  <div class="section">
+    <div class="section-title">Breaks</div>
+    <div class="card">
+      <div class="break-row">
+        <div class="break-label">1st Break</div>
+        <div class="field" style="margin:0">
+          <label>Start</label>
+          <input type="time" id="break1Start">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Duration (min)</label>
+          <input type="number" id="break1Dur" placeholder="15" inputmode="numeric" min="1" max="120">
+        </div>
+      </div>
+      <div class="break-row">
+        <div class="break-label">2nd Break</div>
+        <div class="field" style="margin:0">
+          <label>Start</label>
+          <input type="time" id="break2Start">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Duration (min)</label>
+          <input type="number" id="break2Dur" placeholder="15" inputmode="numeric" min="1" max="120">
+        </div>
+      </div>
+      <div class="break-row">
+        <div class="break-label">3rd Break</div>
+        <div class="field" style="margin:0">
+          <label>Start</label>
+          <input type="time" id="break3Start">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Duration (min)</label>
+          <input type="number" id="break3Dur" placeholder="15" inputmode="numeric" min="1" max="120">
+        </div>
+      </div>
+      <div class="break-row">
+        <div class="break-label">4th Break</div>
+        <div class="field" style="margin:0">
+          <label>Start</label>
+          <input type="time" id="break4Start">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Duration (min)</label>
+          <input type="number" id="break4Dur" placeholder="15" inputmode="numeric" min="1" max="120">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. PHOTOS -->
   <div class="section">
     <div class="section-title">Run Sheet Photo</div>
     <div class="card">
-      <p style="font-size:12px; color:var(--grey-md); margin-bottom:12px; line-height:1.5;">
-        Take a clear, well-lit photo of your completed run sheet. Lay it flat — avoid shadows and angles.
+      <p style="font-size:12px;color:var(--label);margin-bottom:12px;line-height:1.5;">
+        Lay your run sheet flat in good light. Hold your phone steady directly above it.
       </p>
-      <div class="photo-btn" id="runSheetBtn" onclick="triggerPhoto('runSheetInput', 'runSheet')">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
+      <div class="photo-btn" id="runSheetBtn" onclick="triggerPhoto('runSheetInput','runSheet')">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
           <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
           <circle cx="12" cy="13" r="4"/>
         </svg>
@@ -760,28 +696,47 @@
       </div>
       <div class="photo-preview" id="runSheetPreview">
         <img id="runSheetImg" src="" alt="Run sheet">
-        <button class="retake-btn" onclick="retakePhoto('runSheetInput', 'runSheet')">Retake</button>
+        <button class="retake-btn" onclick="retakePhoto('runSheetInput','runSheet')">Retake</button>
       </div>
-      <div class="blur-alert" id="runSheetBlurAlert">
-        ⚠️ This photo appears blurry or too dark. Please retake it in better light, holding your phone steady.
-      </div>
-      <input type="file" id="runSheetInput" accept="image/*" capture="environment"
-             onchange="handlePhoto(this, 'runSheet')">
+      <div class="blur-alert" id="runSheetBlurAlert">⚠️ Photo is blurry or too dark. Please retake it.</div>
+      <input type="file" id="runSheetInput" accept="image/*" capture="environment" onchange="handlePhoto(this,'runSheet')">
     </div>
   </div>
 
-  <!-- SECTION 4: DOCKET PHOTOS -->
   <div class="section">
     <div class="section-title">Weighbridge Dockets</div>
     <div class="card">
-      <p style="font-size:12px; color:var(--grey-md); margin-bottom:14px; line-height:1.5;">
-        Photograph each docket clearly. At least 1 required. Up to 6 dockets total.
+      <p style="font-size:12px;color:var(--label);margin-bottom:14px;line-height:1.5;">
+        Photograph each docket clearly. Minimum 1 required, up to 6.
       </p>
-      <div class="docket-grid" id="docketGrid">
-        <!-- slots generated by JS -->
+      <div class="docket-grid" id="docketGrid"></div>
+      <div class="blur-alert" id="docketBlurAlert">⚠️ One or more docket photos are blurry. Please retake.</div>
+    </div>
+  </div>
+
+  <!-- 6. DRIVER SIGNATURE -->
+  <div class="section">
+    <div class="section-title">Driver Signature</div>
+    <div class="card">
+      <div class="field">
+        <label>Sign below <span class="req">*</span></label>
+        <div class="sig-canvas-wrap">
+          <canvas id="sigCanvas"></canvas>
+          <button class="sig-clear" onclick="clearSignature()">Clear</button>
+        </div>
+        <p class="sig-hint">Use your finger or stylus to sign</p>
+        <div class="field-error" id="err-signature">Please sign before submitting</div>
       </div>
-      <div class="blur-alert" id="docketBlurAlert">
-        ⚠️ One or more docket photos are blurry. Please retake the highlighted dockets in better lighting.
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="section">
+    <div class="section-title">Additional Notes</div>
+    <div class="card">
+      <div class="field">
+        <label>Notes <span style="color:var(--muted);font-weight:400;text-transform:none;">(optional)</span></label>
+        <textarea id="notes" placeholder="Any delays, diversions, issues or additional information…"></textarea>
       </div>
     </div>
   </div>
@@ -796,15 +751,13 @@
 
   <!-- SUBMIT -->
   <div class="submit-wrap">
-    <button class="submit-btn" id="submitBtn" onclick="submitForm()">
-      Submit Run Sheet
-    </button>
-    <p class="submit-note">Your submission is sent directly to the Cartage Australia office</p>
+    <button class="submit-btn" onclick="submitForm()">Submit Run Sheet</button>
+    <p class="submit-note">Sent directly to the Cartage Australia office</p>
   </div>
 
 </div><!-- /mainForm -->
 
-<!-- SUCCESS SCREEN -->
+<!-- SUCCESS -->
 <div class="success-screen" id="successScreen">
   <div class="success-icon">
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5">
@@ -812,7 +765,7 @@
     </svg>
   </div>
   <h2>Run Sheet Submitted</h2>
-  <p>Your run sheet and dockets have been received by the office.</p>
+  <p>Your run sheet and dockets have been received by the Cartage Australia office.</p>
   <div class="success-ref">
     Reference Number
     <strong id="refNumber">—</strong>
@@ -822,36 +775,185 @@
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
-// Replace this URL with your Google Apps Script Web App URL after setup
-const SUBMIT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+const SUBMIT_URL = 'YOUR_POWER_AUTOMATE_URL_HERE';
 
 // ── STATE ────────────────────────────────────────────────────
-const photoData = {
-  runSheet: null,
-  dockets: [null, null, null, null, null, null]
-};
-const blurStatus = {
-  runSheet: null,
-  dockets: [null, null, null, null, null, null]
-};
+let loadCount = 0;
+const MAX_LOADS = 6;
 const NUM_DOCKETS = 6;
+const photoData = { runSheet: null, dockets: Array(NUM_DOCKETS).fill(null) };
+const blurStatus = { runSheet: null, dockets: Array(NUM_DOCKETS).fill(null) };
+let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   setTodayDate();
+  addLoad();
   buildDocketGrid();
+  initSignature();
   updateProgress();
 });
 
 function setTodayDate() {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
   document.getElementById('jobDate').value = `${yyyy}-${mm}-${dd}`;
 }
 
-// ── DOCKET GRID ───────────────────────────────────────────────
+// ── LOADS ─────────────────────────────────────────────────────
+function addLoad() {
+  if (loadCount >= MAX_LOADS) { showToast('Maximum 6 loads reached','warning'); return; }
+  loadCount++;
+  const idx = loadCount;
+  const container = document.getElementById('loadsContainer');
+  const div = document.createElement('div');
+  div.className = 'load-card';
+  div.id = `loadCard${idx}`;
+  div.innerHTML = `
+    <div class="load-header">
+      <span>Load Details</span>
+      <span class="load-badge">Load ${idx}</span>
+    </div>
+    <div class="load-body">
+      <div class="field">
+        <label>Ticket No. <span class="req">*</span></label>
+        <input type="text" id="ticketNo${idx}" placeholder="e.g. 24089128"
+               oninput="validateField(this); updateProgress()" autocomplete="off">
+        <div class="field-error" id="err-ticketNo${idx}">Required</div>
+      </div>
+      <div class="field">
+        <label>Pull From (Pickup Location) <span class="req">*</span></label>
+        <input type="text" id="pullFrom${idx}" placeholder="e.g. Point Wilson"
+               oninput="validateField(this); updateProgress()" autocomplete="off">
+        <div class="field-error" id="err-pullFrom${idx}">Required</div>
+      </div>
+      <div class="field">
+        <label>Deliver To <span class="req">*</span></label>
+        <input type="text" id="deliverTo${idx}" placeholder="e.g. P Dandenong"
+               oninput="validateField(this); updateProgress()" autocomplete="off">
+        <div class="field-error" id="err-deliverTo${idx}">Required</div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Product <span class="req">*</span></label>
+          <select id="product${idx}" onchange="validateField(this); updateProgress()">
+            <option value="">— Select —</option>
+            <option>Crushed Rock</option>
+            <option>Blue Metal</option>
+            <option>Sand</option>
+            <option>Gravel</option>
+            <option>Road Base</option>
+            <option>Fill / Clay</option>
+            <option>Topsoil</option>
+            <option>Lime</option>
+            <option>Soda Ash</option>
+            <option>Cullet</option>
+            <option>Recycled Material</option>
+            <option>Other</option>
+          </select>
+          <div class="field-error" id="err-product${idx}">Required</div>
+        </div>
+        <div class="field">
+          <label>Tonnes <span class="req">*</span></label>
+          <input type="number" id="tonnes${idx}" placeholder="0.00" min="0.1" step="0.01"
+                 oninput="validateField(this); calcTotals(); updateProgress()" inputmode="decimal">
+          <div class="field-error" id="err-tonnes${idx}">Required</div>
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Arrive (Customer)</label>
+          <input type="time" id="arrive${idx}">
+        </div>
+        <div class="field">
+          <label>Depart (Customer)</label>
+          <input type="time" id="depart${idx}">
+        </div>
+      </div>
+      ${idx > 1 ? `<button onclick="removeLoad(${idx})" style="margin-top:8px;background:transparent;border:1px solid #fecaca;color:#dc2626;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;">Remove Load ${idx}</button>` : ''}
+    </div>
+  `;
+  container.appendChild(div);
+  calcTotals();
+  updateAddLoadBtn();
+  updateProgress();
+}
+
+function removeLoad(idx) {
+  const card = document.getElementById(`loadCard${idx}`);
+  if (card) card.remove();
+  calcTotals();
+  updateProgress();
+}
+
+function updateAddLoadBtn() {
+  const btn = document.getElementById('addLoadBtn');
+  if (loadCount >= MAX_LOADS) btn.style.display = 'none';
+  else btn.style.display = 'flex';
+}
+
+function calcTotals() {
+  let totalT = 0, totalL = 0;
+  for (let i = 1; i <= MAX_LOADS; i++) {
+    const tEl = document.getElementById(`tonnes${i}`);
+    if (tEl && tEl.closest('.load-card')) {
+      const v = parseFloat(tEl.value) || 0;
+      if (v > 0) { totalT += v; totalL++; }
+    }
+  }
+  document.getElementById('totalLoadsDisplay').textContent = totalL;
+  document.getElementById('totalTonnesDisplay').textContent = totalT.toFixed(2) + ' t';
+}
+
+// ── TIME / HOURS ───────────────────────────────────────────
+function calcTotalHours() {
+  const s = document.getElementById('startTime').value;
+  const f = document.getElementById('finishTime').value;
+  if (!s || !f) return;
+  const [sh,sm] = s.split(':').map(Number);
+  const [fh,fm] = f.split(':').map(Number);
+  let mins = (fh*60+fm) - (sh*60+sm);
+  if (mins < 0) mins += 1440;
+  const h = Math.floor(mins/60);
+  const m = mins % 60;
+  document.getElementById('totalHours').value = `${h}h ${m}m`;
+}
+
+// ── SIGNATURE ─────────────────────────────────────────────
+function initSignature() {
+  sigCanvas = document.getElementById('sigCanvas');
+  sigCtx = sigCanvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = sigCanvas.getBoundingClientRect();
+  sigCanvas.width = (rect.width || 300) * dpr;
+  sigCanvas.height = 120 * dpr;
+  sigCtx.scale(dpr, dpr);
+  sigCtx.strokeStyle = '#1e293b';
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+
+  sigCanvas.addEventListener('mousedown', e => { isSigning=true; hasSig=true; sigCtx.beginPath(); const r=sigCanvas.getBoundingClientRect(); sigCtx.moveTo(e.clientX-r.left, e.clientY-r.top); });
+  sigCanvas.addEventListener('mousemove', e => { if(!isSigning) return; const r=sigCanvas.getBoundingClientRect(); sigCtx.lineTo(e.clientX-r.left, e.clientY-r.top); sigCtx.stroke(); });
+  sigCanvas.addEventListener('mouseup', () => isSigning=false);
+  sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); isSigning=true; hasSig=true; const t=e.touches[0]; sigCtx.beginPath(); const r=sigCanvas.getBoundingClientRect(); sigCtx.moveTo(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
+  sigCanvas.addEventListener('touchmove', e => { e.preventDefault(); if(!isSigning) return; const t=e.touches[0]; const r=sigCanvas.getBoundingClientRect(); sigCtx.lineTo(t.clientX-r.left, t.clientY-r.top); sigCtx.stroke(); }, {passive:false});
+  sigCanvas.addEventListener('touchend', () => isSigning=false);
+}
+
+function clearSignature() {
+  const dpr = window.devicePixelRatio || 1;
+  sigCtx.clearRect(0, 0, sigCanvas.width/dpr, sigCanvas.height/dpr);
+  hasSig = false;
+}
+
+function getSignatureDataUrl() {
+  return hasSig ? sigCanvas.toDataURL('image/png') : null;
+}
+
+// ── DOCKET GRID ───────────────────────────────────────────
 function buildDocketGrid() {
   const grid = document.getElementById('docketGrid');
   grid.innerHTML = '';
@@ -859,10 +961,10 @@ function buildDocketGrid() {
     const slot = document.createElement('div');
     slot.className = 'docket-slot';
     slot.id = `docketSlot${i}`;
-    slot.onclick = () => triggerPhoto(`docketInput${i}`, `docket${i}`);
+    slot.onclick = () => document.getElementById(`docketInput${i}`).click();
     slot.innerHTML = `
-      <span class="slot-num">Docket ${i + 1}</span>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--grey-dk)" stroke-width="1.5">
+      <span class="slot-num">Docket ${i+1}</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5">
         <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
         <circle cx="12" cy="13" r="4"/>
       </svg>
@@ -870,95 +972,67 @@ function buildDocketGrid() {
       <img class="slot-preview" id="docketPreview${i}" src="" alt="">
       <span class="slot-status" id="docketStatus${i}"></span>
       <input type="file" id="docketInput${i}" accept="image/*" capture="environment"
-             onchange="handlePhoto(this, 'docket${i}')">
+             onchange="handlePhoto(this,'docket${i}')">
     `;
     grid.appendChild(slot);
   }
 }
 
-// ── PHOTO HANDLING ────────────────────────────────────────────
-function triggerPhoto(inputId, key) {
-  document.getElementById(inputId).click();
-}
-
-function retakePhoto(inputId, key) {
-  document.getElementById(inputId).value = '';
-  document.getElementById(inputId).click();
-}
+// ── PHOTO HANDLING ────────────────────────────────────────
+function triggerPhoto(inputId) { document.getElementById(inputId).click(); }
+function retakePhoto(inputId) { document.getElementById(inputId).value=''; document.getElementById(inputId).click(); }
 
 function handlePhoto(input, key) {
   const file = input.files[0];
   if (!file) return;
-
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = e => {
     const dataUrl = e.target.result;
-
     if (key === 'runSheet') {
       photoData.runSheet = dataUrl;
       document.getElementById('runSheetImg').src = dataUrl;
       document.getElementById('runSheetPreview').style.display = 'block';
-
       const btn = document.getElementById('runSheetBtn');
       btn.querySelector('.btn-label').textContent = 'Run Sheet Captured';
       btn.querySelector('.btn-sub').textContent = 'Checking quality…';
-
-      const statusEl = btn.querySelector('.status-tag') || document.createElement('span');
-      statusEl.className = 'status-tag checking';
-      statusEl.textContent = 'Checking…';
-      if (!btn.querySelector('.status-tag')) btn.appendChild(statusEl);
-
-      checkBlur(dataUrl, (blurry) => {
+      let st = btn.querySelector('.status-tag');
+      if (!st) { st = document.createElement('span'); st.className='status-tag checking'; btn.appendChild(st); }
+      st.className='status-tag checking'; st.textContent='Checking…';
+      checkBlur(dataUrl, blurry => {
         blurStatus.runSheet = blurry;
         if (blurry) {
-          btn.classList.add('blur-warn');
-          btn.classList.remove('captured');
-          statusEl.className = 'status-tag warn';
-          statusEl.textContent = '⚠ Blurry — Retake';
-          btn.querySelector('.btn-sub').textContent = 'Please retake in better light';
+          btn.classList.add('blur-warn'); btn.classList.remove('captured');
+          st.className='status-tag warn'; st.textContent='⚠ Blurry — Retake';
+          btn.querySelector('.btn-sub').textContent='Please retake in better light';
           document.getElementById('runSheetBlurAlert').classList.add('show');
         } else {
-          btn.classList.add('captured');
-          btn.classList.remove('blur-warn');
-          statusEl.className = 'status-tag ok';
-          statusEl.textContent = '✓ Clear';
-          btn.querySelector('.btn-sub').textContent = 'Photo looks good';
+          btn.classList.add('captured'); btn.classList.remove('blur-warn');
+          st.className='status-tag ok'; st.textContent='✓ Clear';
+          btn.querySelector('.btn-sub').textContent='Photo looks good';
           document.getElementById('runSheetBlurAlert').classList.remove('show');
         }
         updateProgress();
       });
-
     } else if (key.startsWith('docket')) {
-      const idx = parseInt(key.replace('docket', ''));
+      const idx = parseInt(key.replace('docket',''));
       photoData.dockets[idx] = dataUrl;
       blurStatus.dockets[idx] = null;
-
       const slot = document.getElementById(`docketSlot${idx}`);
       const preview = document.getElementById(`docketPreview${idx}`);
       const label = document.getElementById(`docketLabel${idx}`);
       const status = document.getElementById(`docketStatus${idx}`);
-
-      preview.src = dataUrl;
-      preview.style.display = 'block';
-      label.textContent = 'Captured';
-      status.className = 'slot-status checking';
-      status.textContent = 'Checking…';
-      slot.classList.remove('captured', 'blur-warn');
-
-      checkBlur(dataUrl, (blurry) => {
+      preview.src = dataUrl; preview.style.display='block';
+      label.textContent='Captured'; status.className='slot-status checking'; status.textContent='Checking…';
+      slot.classList.remove('captured','blur-warn');
+      checkBlur(dataUrl, blurry => {
         blurStatus.dockets[idx] = blurry;
         if (blurry) {
-          slot.classList.add('blur-warn');
-          status.className = 'slot-status warn';
-          status.textContent = '⚠ Retake';
+          slot.classList.add('blur-warn'); status.className='slot-status warn'; status.textContent='⚠ Retake';
           document.getElementById('docketBlurAlert').classList.add('show');
         } else {
-          slot.classList.add('captured');
-          status.className = 'slot-status ok';
-          status.textContent = '✓ Clear';
-          // hide blur alert if all captured dockets are ok
-          const anyBlurry = blurStatus.dockets.some((v, i) => photoData.dockets[i] && v === true);
-          if (!anyBlurry) document.getElementById('docketBlurAlert').classList.remove('show');
+          slot.classList.add('captured'); status.className='slot-status ok'; status.textContent='✓ Clear';
+          if (!blurStatus.dockets.some((v,i) => photoData.dockets[i] && v===true))
+            document.getElementById('docketBlurAlert').classList.remove('show');
         }
         updateProgress();
       });
@@ -967,239 +1041,201 @@ function handlePhoto(input, key) {
   reader.readAsDataURL(file);
 }
 
-// ── BLUR DETECTION ────────────────────────────────────────────
-// Uses Laplacian variance on a downsampled canvas — runs entirely on device, no server needed
+// ── BLUR DETECTION ────────────────────────────────────────
 function checkBlur(dataUrl, callback) {
   const img = new Image();
   img.onload = () => {
-    const canvas = document.createElement('canvas');
-    const SIZE = 200;
-    canvas.width = SIZE;
-    canvas.height = SIZE;
+    const S = 200, canvas = document.createElement('canvas');
+    canvas.width = S; canvas.height = S;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, SIZE, SIZE);
-
-    const imageData = ctx.getImageData(0, 0, SIZE, SIZE);
-    const pixels = imageData.data;
-
-    // Convert to grayscale
-    const gray = new Float32Array(SIZE * SIZE);
-    for (let i = 0; i < SIZE * SIZE; i++) {
-      gray[i] = 0.299 * pixels[i*4] + 0.587 * pixels[i*4+1] + 0.114 * pixels[i*4+2];
+    ctx.drawImage(img, 0, 0, S, S);
+    const pixels = ctx.getImageData(0,0,S,S).data;
+    const gray = new Float32Array(S*S);
+    for (let i=0;i<S*S;i++) gray[i]=0.299*pixels[i*4]+0.587*pixels[i*4+1]+0.114*pixels[i*4+2];
+    let sum=0, sumSq=0, count=0, bright=0;
+    for (let y=1;y<S-1;y++) for (let x=1;x<S-1;x++) {
+      const lap = -gray[(y-1)*S+x]-gray[(y+1)*S+x]-gray[y*S+(x-1)]-gray[y*S+(x+1)]+4*gray[y*S+x];
+      sum+=lap; sumSq+=lap*lap; count++;
     }
-
-    // Laplacian filter
-    let sum = 0, sumSq = 0, count = 0;
-    for (let y = 1; y < SIZE - 1; y++) {
-      for (let x = 1; x < SIZE - 1; x++) {
-        const lap =
-          -gray[(y-1)*SIZE+x] +
-          -gray[(y+1)*SIZE+x] +
-          -gray[y*SIZE+(x-1)] +
-          -gray[y*SIZE+(x+1)] +
-           4*gray[y*SIZE+x];
-        sum += lap;
-        sumSq += lap * lap;
-        count++;
-      }
-    }
-    const mean = sum / count;
-    const variance = (sumSq / count) - (mean * mean);
-
-    // Also check average brightness
-    let brightness = 0;
-    for (let i = 0; i < gray.length; i++) brightness += gray[i];
-    brightness /= gray.length;
-
-    // Thresholds — tuned for document/docket photos
-    const isBlurry = variance < 80;
-    const isDark = brightness < 40;
-
-    callback(isBlurry || isDark);
+    for (let i=0;i<gray.length;i++) bright+=gray[i];
+    const variance=(sumSq/count)-Math.pow(sum/count,2);
+    callback(variance<80 || (bright/gray.length)<40);
   };
   img.src = dataUrl;
 }
 
-// ── FIELD VALIDATION ──────────────────────────────────────────
+// ── FIELD VALIDATION ──────────────────────────────────────
 function validateField(el) {
   const errEl = document.getElementById(`err-${el.id}`);
   if (!errEl) return;
-  if (el.value.trim() === '' || el.value === '') {
-    el.classList.add('error');
-    el.classList.remove('valid');
-    errEl.classList.add('show');
-  } else {
-    el.classList.remove('error');
-    el.classList.add('valid');
-    errEl.classList.remove('show');
-  }
+  const empty = el.value.trim()==='' || el.value==='';
+  el.classList.toggle('error', empty);
+  el.classList.toggle('valid', !empty);
+  errEl.classList.toggle('show', empty);
 }
 
-// ── PROGRESS ──────────────────────────────────────────────────
+// ── PROGRESS ──────────────────────────────────────────────
 function updateProgress() {
-  const fields = ['driverName','truckRego','jobNumber','tipSite','materialType','numLoads','totalTonnes'];
-  let filled = 0;
-  fields.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && el.value.trim() !== '') filled++;
-  });
-  const hasRunSheet = photoData.runSheet !== null;
-  const hasDocket = photoData.dockets.some(d => d !== null);
-  if (hasRunSheet) filled++;
-  if (hasDocket) filled++;
-
-  const total = fields.length + 2;
-  const pct = Math.round((filled / total) * 100);
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressPct').textContent = pct + '%';
+  const baseFields = ['driverName','truckNo','truckRego','depot','startTime','finishTime','odometer'];
+  let filled = 0, total = baseFields.length + 4;
+  baseFields.forEach(id => { const el=document.getElementById(id); if(el&&el.value.trim()!=='') filled++; });
+  if (photoData.runSheet) filled++;
+  if (photoData.dockets.some(d=>d!==null)) filled++;
+  // Check load 1
+  const t1 = document.getElementById('ticketNo1');
+  const p1 = document.getElementById('pullFrom1');
+  const d1 = document.getElementById('deliverTo1');
+  const tn1 = document.getElementById('tonnes1');
+  if (t1&&t1.value.trim()) filled++;
+  if (tn1&&tn1.value.trim()) filled++;
+  if (hasSig) filled++;
+  const pct = Math.round((filled/total)*100);
+  document.getElementById('progressFill').style.width = Math.min(pct,100)+'%';
+  document.getElementById('progressPct').textContent = Math.min(pct,100)+'%';
 }
 
-// ── FORM SUBMISSION ───────────────────────────────────────────
+// ── SUBMIT ────────────────────────────────────────────────
 function submitForm() {
   const errors = [];
-
   const required = [
-    { id: 'driverName', label: 'Driver Name' },
-    { id: 'truckRego', label: 'Truck Rego' },
-    { id: 'jobNumber', label: 'Job / PO Number' },
-    { id: 'tipSite', label: 'Tip Site / Delivery Location' },
-    { id: 'materialType', label: 'Material Type' },
-    { id: 'numLoads', label: 'Number of Loads' },
-    { id: 'totalTonnes', label: 'Total Tonnes' },
+    {id:'driverName',label:'Driver Name'},
+    {id:'truckNo',label:'Truck Number'},
+    {id:'truckRego',label:'Truck Rego'},
+    {id:'depot',label:'Depot'},
+    {id:'startTime',label:'Start Time'},
+    {id:'finishTime',label:'Finish Time'},
+    {id:'odometer',label:'Odometer Reading'},
   ];
-
   required.forEach(f => {
     const el = document.getElementById(f.id);
-    if (!el.value.trim()) {
-      el.classList.add('error');
-      document.getElementById(`err-${f.id}`)?.classList.add('show');
-      errors.push(f.label);
-    }
+    if (!el||!el.value.trim()) { el&&el.classList.add('error'); document.getElementById(`err-${f.id}`)?.classList.add('show'); errors.push(f.label); }
   });
-
+  // Validate load 1
+  ['ticketNo1','pullFrom1','deliverTo1','tonnes1'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if (!el||!el.value.trim()) { el&&el.classList.add('error'); document.getElementById(`err-${id}`)?.classList.add('show'); errors.push(['Ticket No (Load 1)','Pull From (Load 1)','Deliver To (Load 1)','Tonnes (Load 1)'][i]); }
+  });
   if (!photoData.runSheet) errors.push('Run Sheet photo');
-  if (!photoData.dockets.some(d => d !== null)) errors.push('At least 1 Weighbridge Docket photo');
+  if (!photoData.dockets.some(d=>d!==null)) errors.push('At least 1 Weighbridge Docket photo');
+  if (!hasSig) errors.push('Driver Signature');
+  if (blurStatus.runSheet===true) errors.push('Run Sheet photo is blurry — please retake');
+  if (blurStatus.dockets.some((v,i)=>photoData.dockets[i]&&v===true)) errors.push('One or more docket photos are blurry — please retake');
 
-  // Check for unresolved blur
-  if (blurStatus.runSheet === true) errors.push('Run Sheet photo is blurry — please retake');
-  const blurryDockets = blurStatus.dockets.filter((v, i) => photoData.dockets[i] && v === true);
-  if (blurryDockets.length > 0) errors.push(`${blurryDockets.length} docket photo(s) are blurry — please retake`);
-
-  if (errors.length > 0) {
-    const summary = document.getElementById('valSummary');
-    const list = document.getElementById('valList');
-    list.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+  if (errors.length>0) {
+    const summary=document.getElementById('valSummary');
+    document.getElementById('valList').innerHTML=errors.map(e=>`<li>${e}</li>`).join('');
     summary.classList.add('show');
-    summary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    summary.scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
-
   document.getElementById('valSummary').classList.remove('show');
 
-  // Build payload
+  // Build loads data
+  const loads = [];
+  for (let i=1;i<=MAX_LOADS;i++) {
+    const el=document.getElementById(`ticketNo${i}`);
+    if (el&&el.closest('.load-card')) {
+      loads.push({
+        load: i,
+        ticketNo: document.getElementById(`ticketNo${i}`)?.value||'',
+        pullFrom: document.getElementById(`pullFrom${i}`)?.value||'',
+        deliverTo: document.getElementById(`deliverTo${i}`)?.value||'',
+        product: document.getElementById(`product${i}`)?.value||'',
+        tonnes: document.getElementById(`tonnes${i}`)?.value||'',
+        arrive: document.getElementById(`arrive${i}`)?.value||'',
+        depart: document.getElementById(`depart${i}`)?.value||'',
+      });
+    }
+  }
+
   const payload = {
-    driverName:   document.getElementById('driverName').value,
-    truckRego:    document.getElementById('truckRego').value.toUpperCase(),
-    jobDate:      document.getElementById('jobDate').value,
-    jobNumber:    document.getElementById('jobNumber').value,
-    tipSite:      document.getElementById('tipSite').value,
-    materialType: document.getElementById('materialType').value,
-    numLoads:     document.getElementById('numLoads').value,
-    totalTonnes:  document.getElementById('totalTonnes').value,
-    notes:        document.getElementById('notes').value,
-    submittedAt:  new Date().toISOString(),
+    driverID: document.getElementById('driverID').value,
+    driverName: document.getElementById('driverName').value,
+    truckNo: document.getElementById('truckNo').value,
+    truckRego: document.getElementById('truckRego').value,
+    depot: document.getElementById('depot').value,
+    jobDate: document.getElementById('jobDate').value,
+    startTime: document.getElementById('startTime').value,
+    finishTime: document.getElementById('finishTime').value,
+    totalHours: document.getElementById('totalHours').value,
+    odometer: document.getElementById('odometer').value,
+    fuel: document.getElementById('fuel').value,
+    loads: loads,
+    totalLoads: loads.length,
+    totalTonnes: document.getElementById('totalTonnesDisplay').textContent,
+    breaks: {
+      break1: { start: document.getElementById('break1Start').value, duration: document.getElementById('break1Dur').value },
+      break2: { start: document.getElementById('break2Start').value, duration: document.getElementById('break2Dur').value },
+      break3: { start: document.getElementById('break3Start').value, duration: document.getElementById('break3Dur').value },
+      break4: { start: document.getElementById('break4Start').value, duration: document.getElementById('break4Dur').value },
+    },
+    notes: document.getElementById('notes').value,
+    signature: getSignatureDataUrl(),
     runSheetPhoto: photoData.runSheet,
-    docketPhotos: photoData.dockets.filter(d => d !== null),
+    docketPhotos: photoData.dockets.filter(d=>d!==null),
+    submittedAt: new Date().toISOString(),
   };
 
   showLoading('Submitting your run sheet…');
 
-  // If no real endpoint yet, simulate success
-  if (SUBMIT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    setTimeout(() => {
-      hideLoading();
-      showSuccess(payload);
-    }, 2000);
+  if (SUBMIT_URL==='YOUR_POWER_AUTOMATE_URL_HERE') {
+    setTimeout(() => { hideLoading(); showSuccess(payload); }, 2000);
     return;
   }
 
   fetch(SUBMIT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   })
-  .then(r => r.json())
-  .then(data => {
-    hideLoading();
-    if (data.status === 'ok') {
-      showSuccess(payload, data.ref);
-    } else {
-      showToast('Submission failed. Please try again.', 'error');
-    }
-  })
-  .catch(() => {
-    hideLoading();
-    showToast('Network error. Check signal and retry.', 'error');
-  });
+  .then(r=>r.json())
+  .then(data => { hideLoading(); data.status==='ok' ? showSuccess(payload,data.ref) : showToast('Submission failed. Please try again.','error'); })
+  .catch(() => { hideLoading(); showToast('Network error. Check signal and retry.','error'); });
 }
 
 function showSuccess(payload, ref) {
-  const refNum = ref || 'CA-' + payload.jobDate.replace(/-/g,'') + '-' + Math.floor(Math.random()*9000+1000);
+  const d = payload.jobDate.replace(/-/g,'');
+  const refNum = ref || `CA-${d}-${Math.floor(Math.random()*9000+1000)}`;
   document.getElementById('refNumber').textContent = refNum;
   document.getElementById('mainForm').style.display = 'none';
   document.getElementById('successScreen').classList.add('show');
-  window.scrollTo(0, 0);
+  window.scrollTo(0,0);
 }
 
 function resetForm() {
   document.getElementById('successScreen').classList.remove('show');
   document.getElementById('mainForm').style.display = 'block';
-
-  // Reset fields
-  ['driverName','truckRego','jobNumber','tipSite','materialType','numLoads','totalTonnes','notes'].forEach(id => {
-    const el = document.getElementById(id);
-    el.value = '';
-    el.classList.remove('error','valid');
+  document.getElementById('loadsContainer').innerHTML = '';
+  loadCount = 0;
+  addLoad();
+  ['driverID','driverName','truckNo','truckRego','depot','startTime','finishTime','totalHours','odometer','fuel','notes',
+   'break1Start','break1Dur','break2Start','break2Dur','break3Start','break3Dur','break4Start','break4Dur'].forEach(id => {
+    const el=document.getElementById(id); if(el){el.value='';el.classList.remove('error','valid');}
   });
   setTodayDate();
-
-  // Reset photos
-  photoData.runSheet = null;
-  photoData.dockets = [null,null,null,null,null,null];
-  blurStatus.runSheet = null;
-  blurStatus.dockets = [null,null,null,null,null,null];
-
-  const btn = document.getElementById('runSheetBtn');
+  photoData.runSheet=null; photoData.dockets=Array(NUM_DOCKETS).fill(null);
+  blurStatus.runSheet=null; blurStatus.dockets=Array(NUM_DOCKETS).fill(null);
+  const btn=document.getElementById('runSheetBtn');
   btn.classList.remove('captured','blur-warn');
-  btn.querySelector('.btn-label').textContent = 'Photograph Run Sheet';
-  btn.querySelector('.btn-sub').textContent = 'Tap to open camera';
-  const st = btn.querySelector('.status-tag');
-  if (st) st.remove();
-  document.getElementById('runSheetPreview').style.display = 'none';
+  btn.querySelector('.btn-label').textContent='Photograph Run Sheet';
+  btn.querySelector('.btn-sub').textContent='Tap to open camera';
+  const st=btn.querySelector('.status-tag'); if(st) st.remove();
+  document.getElementById('runSheetPreview').style.display='none';
   document.getElementById('runSheetBlurAlert').classList.remove('show');
   document.getElementById('docketBlurAlert').classList.remove('show');
-
-  buildDocketGrid();
-  updateProgress();
+  clearSignature(); buildDocketGrid(); updateProgress(); updateAddLoadBtn();
   window.scrollTo(0,0);
 }
 
-// ── UI HELPERS ────────────────────────────────────────────────
-function showLoading(msg) {
-  document.getElementById('loadingMsg').textContent = msg || 'Please wait…';
-  document.getElementById('loadingOverlay').classList.add('show');
-}
-function hideLoading() {
-  document.getElementById('loadingOverlay').classList.remove('show');
-}
+function showLoading(msg) { document.getElementById('loadingMsg').textContent=msg||'Please wait…'; document.getElementById('loadingOverlay').classList.add('show'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
 
 let toastTimer;
-function showToast(msg, type = '') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
+function showToast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast ${type} show`;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 </script>
 </body>
