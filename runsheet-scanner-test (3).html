@@ -342,7 +342,9 @@ async function runOCR(dataUrl) {
 function buildPrompt() {
   return `You are reading a handwritten Cartage Australia driver run sheet. Extract the data into strict JSON only, no markdown fences, no preamble.
 
-DO NOT READ DRIVER ID. This sheet has a box printed top-right labelled "Driver ID" - ignore it completely, do not extract it, do not let it influence any other field. It is irrelevant to this task.
+DO NOT READ DRIVER ID, EVER. Different versions of this run sheet exist with slightly different layouts, but on every version, there is a box printed in the top-right area labelled "Driver ID" with a number in it (often bold or colored ink). Regardless of which layout variant you are looking at, completely ignore that box - do not extract it, do not read it, do not let it influence your reading of any other field including Truck No. It is irrelevant to this task on every version of this sheet.
+
+DRIVER NAME: Find the field specifically labelled "Driver:" (a colon after the word Driver) and read the handwritten name written next to or below it. This is a different field from Driver ID - it is the driver's actual name, not a number. If the handwriting next to "Driver:" is genuinely illegible or the field is blank, return an empty string for driverName with confidence "low" rather than guessing a name.
 
 CRITICAL - TRUCK NO FIELD: Truck No is in its own clearly labelled box, typically near the top of the sheet, separate from and NOT the same as the Driver ID box. Truck No is normally a 3-digit number (e.g. 326, 304, 367, 379). The Driver ID box is often printed in bold or colored ink and may look more visually prominent - do not let that prominence cause you to misread or substitute it into Truck No. Locate the box specifically labelled "Truck No" and read only the handwritten digits inside that exact box.
 
