@@ -791,69 +791,6 @@
     </div>
   </div>
 
-  <!-- 4. BREAKS -->
-  <div class="section">
-    <div class="section-title">Breaks</div>
-    <div class="card">
-      <div class="break-row">
-        <div class="break-label">1st Break</div>
-        <div class="field" style="margin:0">
-          <label>Start</label>
-          <div class="time-picker-trigger small" id="break1Start_trigger" onclick="openTimePicker('break1Start')">
-            <span id="break1Start_display" class="time-picker-placeholder">Set time</span>
-          </div>
-          <input type="hidden" id="break1Start">
-        </div>
-        <div class="field" style="margin:0">
-          <label>Duration (min)</label>
-          <input type="number" id="break1Dur" placeholder="15" inputmode="numeric" min="1" max="120">
-        </div>
-      </div>
-      <div class="break-row">
-        <div class="break-label">2nd Break</div>
-        <div class="field" style="margin:0">
-          <label>Start</label>
-          <div class="time-picker-trigger small" id="break2Start_trigger" onclick="openTimePicker('break2Start')">
-            <span id="break2Start_display" class="time-picker-placeholder">Set time</span>
-          </div>
-          <input type="hidden" id="break2Start">
-        </div>
-        <div class="field" style="margin:0">
-          <label>Duration (min)</label>
-          <input type="number" id="break2Dur" placeholder="15" inputmode="numeric" min="1" max="120">
-        </div>
-      </div>
-      <div class="break-row">
-        <div class="break-label">3rd Break</div>
-        <div class="field" style="margin:0">
-          <label>Start</label>
-          <div class="time-picker-trigger small" id="break3Start_trigger" onclick="openTimePicker('break3Start')">
-            <span id="break3Start_display" class="time-picker-placeholder">Set time</span>
-          </div>
-          <input type="hidden" id="break3Start">
-        </div>
-        <div class="field" style="margin:0">
-          <label>Duration (min)</label>
-          <input type="number" id="break3Dur" placeholder="15" inputmode="numeric" min="1" max="120">
-        </div>
-      </div>
-      <div class="break-row">
-        <div class="break-label">4th Break</div>
-        <div class="field" style="margin:0">
-          <label>Start</label>
-          <div class="time-picker-trigger small" id="break4Start_trigger" onclick="openTimePicker('break4Start')">
-            <span id="break4Start_display" class="time-picker-placeholder">Set time</span>
-          </div>
-          <input type="hidden" id="break4Start">
-        </div>
-        <div class="field" style="margin:0">
-          <label>Duration (min)</label>
-          <input type="number" id="break4Dur" placeholder="15" inputmode="numeric" min="1" max="120">
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- 5. PHOTOS -->
   <div class="section">
     <div class="section-title">Weighbridge Dockets</div>
@@ -1102,6 +1039,29 @@ function applyScanResults(ex) {
   const h = ex.header || {};
   let fieldsApplied = 0;
 
+  // Rego: read from sheet, auto-fill rego field and reverse-lookup truck number
+  if (h.rego && h.rego.value && h.rego.confidence !== 'low') {
+    const scannedRego = h.rego.value.toUpperCase().trim();
+    const regoEl = document.getElementById('truckRego');
+    if (regoEl && !regoEl.value.trim()) {
+      regoEl.value = scannedRego;
+      regoEl.classList.add('valid');
+      fieldsApplied++;
+      // Reverse lookup: find truck number from rego
+      const truckNoEl = document.getElementById('truckNo');
+      if (truckNoEl && !truckNoEl.value.trim()) {
+        for (const [truckNo, rego] of Object.entries(TRUCK_LOOKUP)) {
+          if (rego.toUpperCase() === scannedRego) {
+            truckNoEl.value = truckNo;
+            truckNoEl.classList.add('valid');
+            document.getElementById('regoAutoTag').style.display = 'inline-flex';
+            break;
+          }
+        }
+      }
+    }
+  }
+
   if (h.startTime && h.startTime.value) { setTimeFromScan('startTime', h.startTime.value); fieldsApplied++; }
   if (h.finishTime && h.finishTime.value) { setTimeFromScan('finishTime', h.finishTime.value); fieldsApplied++; }
 
@@ -1203,24 +1163,40 @@ function applyScanResults(ex) {
 function buildScanPrompt() {
   return `You are reading a handwritten Cartage Australia driver run sheet. Extract only the fields listed below into strict JSON. No markdown fences, no preamble.
 
-DO NOT READ: The "Driver ID" box (top-right corner, often bold or colored ink). Never read it, never include it. Also do not read driver name, truck number, rego, depot, date, or fuel - these have already been entered by the driver manually.
+DO NOT READ: The "Driver ID" box (top-right corner, often bold or colored ink). Never read it.
 
-READ ONLY these fields:
+READ THESE FIELDS:
 
-HEADER: Start Time, Finish Time, Kms Start, Kms Finish.
+HEADER:
+- Rego: Find the field labelled "Rego:" on the sheet. Read the handwritten value in the box immediately to the right of that label. This is a vehicle registration number, typically 6 characters mixing letters and numbers (e.g. XW13IG, XW52NB). Read it carefully character by character.
+- Start Time: the time the shift started. Check AM/PM tick boxes independently.
+- Finish Time: the time the shift finished. Check AM/PM tick boxes independently. NOTE - Start Time will always be earlier in the day than Finish Time. If you are unsure which is which, the earlier time is always Start Time.
+- Kms Start: the LOWER odometer number - this is always the smaller of the two kms readings since the truck has driven less distance at the start of the shift. Typically 5-7 digits.
+- Kms Finish: the HIGHER odometer number - this is always the larger of the two kms readings since more distance has been covered by end of shift. Must be greater than Kms Start. If your reading gives Finish less than Start, you have them swapped - re-read and swap them.
 
-LOADS: For each row with handwritten data, read: Docket Number (also labelled "Ticket No"), Pickup Location ("P/up From"), Deliver To, Product, Gross weight, Tare weight, Net weight, Comments/Reason for Delay. Skip blank rows entirely. Do not read axle weight columns (Steer, Drive, P/Mover, Front Axle, Rear Tri).
+LOADS: For each row with handwritten data read:
+- Docket Number (also labelled "Ticket No")
+- Pickup Location ("P/up From")
+- Deliver To
+- Product
+- Gross weight
+- Tare weight
+- Net weight
+- Comments: ONLY read from the column specifically labelled "Comments" or "Reason for Delay" on the paper sheet. Do not read from any other column. If that column is blank for this row, return empty string.
+
+Skip blank load rows entirely. Do not read axle weight columns (Steer, Drive, P/Mover, Front Axle, Rear Tri).
 
 CRITICAL ACCURACY RULES:
 1. For every number, count each digit one at a time left to right, then re-count before writing your answer. Never truncate long numbers.
-2. Kms Start and Kms Finish are odometer readings, typically 5-7 digits (e.g. 410111.6). Read every digit.
+2. Kms Start must always be less than Kms Finish - if not, you have them reversed, swap them.
 3. Docket Number is alphanumeric - carefully distinguish N/M, 0/O, 1/I/7.
-4. Gross/Tare/Net are typically 2 digits before decimal, 2 after (e.g. 68.40). If a field is blank, return empty string.
-5. Start/Finish Time: check AM/PM tick boxes independently for each. Report as e.g. "8:00 AM" or "2:15 PM".
+4. Gross/Tare/Net are typically 2 digits before decimal, 2 after (e.g. 68.40). If a field is blank return empty string.
+5. Rego is typically 6 characters - read each character individually.
 
 Return exactly this JSON:
 {
   "header": {
+    "rego": {"value": "", "confidence": ""},
     "startTime": {"value": "", "confidence": ""},
     "finishTime": {"value": "", "confidence": ""},
     "kmsStart": {"value": "", "confidence": ""},
@@ -1830,8 +1806,6 @@ function openTimePicker(fieldId) {
 
   const labelMap = {
     startTime: 'Start Time', finishTime: 'Finish Time',
-    break1Start: '1st Break Start', break2Start: '2nd Break Start',
-    break3Start: '3rd Break Start', break4Start: '4th Break Start',
   };
   const title = labelMap[fieldId] || 'Set Time';
   document.getElementById('timePickerTitle').textContent = title;
@@ -2163,12 +2137,6 @@ function submitForm() {
     loads: loads,
     totalLoads: loads.length,
     totalTonnes: document.getElementById('totalTonnesDisplay').textContent,
-    breaks: {
-      break1: { start: document.getElementById('break1Start').value, duration: document.getElementById('break1Dur').value },
-      break2: { start: document.getElementById('break2Start').value, duration: document.getElementById('break2Dur').value },
-      break3: { start: document.getElementById('break3Start').value, duration: document.getElementById('break3Dur').value },
-      break4: { start: document.getElementById('break4Start').value, duration: document.getElementById('break4Dur').value },
-    },
     notes: document.getElementById('notes').value,
     signature: getSignatureDataUrl(),
     docketPhotos: photoData.dockets.filter(d=>d!==null),
@@ -2207,8 +2175,7 @@ function resetForm() {
   document.getElementById('loadsContainer').innerHTML = '';
   loadCount = 0;
   addLoad();
-  ['driverID','driverName','truckNo','truckRego','depot','startTime','finishTime','totalHours','odometerStart','odometerFinish','totalKms','fuel','notes',
-   'break1Start','break1Dur','break2Start','break2Dur','break3Start','break3Dur','break4Start','break4Dur'].forEach(id => {
+  ['driverID','driverName','truckNo','truckRego','depot','startTime','finishTime','totalHours','odometerStart','odometerFinish','totalKms','fuel','notes'].forEach(id => {
     const el=document.getElementById(id); if(el){el.value='';el.classList.remove('error','valid');}
   });
   verifiedDriverName = null;
@@ -2219,7 +2186,7 @@ function resetForm() {
   document.getElementById('truckNoWarning').style.display='none';
   document.getElementById('regoAutoTag').style.display='none';
   // Reset all time picker triggers
-  ['startTime','finishTime','break1Start','break2Start','break3Start','break4Start'].forEach(id => {
+  ['startTime','finishTime'].forEach(id => {
     const display = document.getElementById(`${id}_display`);
     const trigger = document.getElementById(`${id}_trigger`);
     if (display) { display.textContent = id.includes('break') ? 'Set time' : 'Tap to set time'; display.classList.add('time-picker-placeholder'); }
