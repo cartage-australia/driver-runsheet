@@ -693,7 +693,7 @@
 
   <!-- 2. SCAN RUN SHEET -->
   <div class="section" id="scanSection">
-    <div class="section-title">Scan Run Sheet</div>
+    <div class="section-title">Scan Run Sheet <span style="font-size:11px; font-weight:400; color:var(--muted); text-transform:none; letter-spacing:0;">(optional — requires internet)</span></div>
     <div class="card">
       <p style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:14px;">
         Photograph your completed run sheet to auto-fill times, odometer, and load details below. Review all fields after scanning.
@@ -934,10 +934,31 @@ function matchList(readValue, list, threshold) {
   if (!readValue || !readValue.trim()) return null;
   const cleaned = readValue.toLowerCase().trim();
   let bestMatch = null, bestScore = 0;
+  const readWords = cleaned.split(/\s+/).filter(w => w.length > 2);
   for (const item of list) {
     const itemLower = item.toLowerCase();
+    const itemWords = itemLower.split(/\s+/).filter(w => w.length > 2);
     let score = simScore(cleaned, itemLower);
-    if (itemLower.startsWith(cleaned) || cleaned.startsWith(itemLower)) score = Math.max(score, 0.85);
+    // Prefix match boost
+    if (itemLower.startsWith(cleaned) || cleaned.startsWith(itemLower)) {
+      score = Math.max(score, 0.85);
+    }
+    // Word-level matching: check each read word against each item word
+    // This catches e.g. "Sparswood" matching "Spotswood" within "Visy Spotswood"
+    let wordScore = 0;
+    let wordMatches = 0;
+    readWords.forEach(rw => {
+      let best = 0;
+      itemWords.forEach(iw => {
+        const s = simScore(rw, iw);
+        if (s > best) best = s;
+      });
+      if (best > 0.7) { wordScore += best; wordMatches++; }
+    });
+    if (wordMatches > 0 && readWords.length > 0) {
+      const avgWordScore = (wordScore / readWords.length) * (wordMatches / Math.max(readWords.length, itemWords.length));
+      score = Math.max(score, avgWordScore * 0.95);
+    }
     if (score > bestScore) { bestScore = score; bestMatch = item; }
   }
   return bestScore >= threshold ? bestMatch : null;
@@ -1031,7 +1052,10 @@ async function handleScanPhoto(input) {
     document.getElementById('scanProgressUI').style.display = 'none';
     document.getElementById('scanIdleUI').style.display = 'block';
     document.getElementById('scanError').style.display = 'block';
-    document.getElementById('scanError').textContent = 'Could not read this photo. Try again in better light, holding the camera directly above the sheet. (' + err.message + ')';
+    const isNetworkError = err.message.includes('Load failed') || err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('network');
+    document.getElementById('scanError').textContent = isNetworkError
+      ? 'No internet connection - scan unavailable. Please fill in the form manually below.'
+      : 'Could not read this photo. Try again in better light, holding the camera directly above the sheet. (' + err.message + ')';
   }
 }
 
@@ -1123,8 +1147,7 @@ function applyScanResults(ex) {
       } else if (rawPullFrom) {
         pfSel.value = 'Other';
         if (pfOtherWrap) pfOtherWrap.style.display = 'block';
-        if (pfOtherInput) pfOtherInput.value = rawPullFrom;
-        fieldsApplied++;
+        if (pfOtherInput) pfOtherInput.value = '';
       }
     }
 
@@ -1141,8 +1164,7 @@ function applyScanResults(ex) {
       } else if (rawDeliverTo) {
         dtSel.value = 'Other';
         if (dtOtherWrap) dtOtherWrap.style.display = 'block';
-        if (dtOtherInput) dtOtherInput.value = rawDeliverTo;
-        fieldsApplied++;
+        if (dtOtherInput) dtOtherInput.value = '';
       }
     }
 
@@ -1159,8 +1181,7 @@ function applyScanResults(ex) {
       } else if (rawProduct) {
         prodSel.value = 'Other';
         if (prodOtherWrap) prodOtherWrap.style.display = 'block';
-        if (prodOtherInput) prodOtherInput.value = rawProduct;
-        fieldsApplied++;
+        if (prodOtherInput) prodOtherInput.value = '';
       }
     }
 
