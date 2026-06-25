@@ -950,8 +950,8 @@ let verifiedDriverName = null;
 // -- OCR / SCAN FUNCTIONS -------------------------------------
 
 const NAME_LOOKUP = {"david batrouney":{"id":"501953","properName":"David Batrouney"},"paul charalambous":{"id":"500007","properName":"Paul Charalambous"},"justin dickison":{"id":"500101","properName":"Justin Dickison"},"daniel mcintosh":{"id":"500156","properName":"Daniel Mcintosh"},"daryl lammas":{"id":"500308","properName":"Daryl Lammas"},"james boasman":{"id":"500316","properName":"James Boasman"},"shibeshi asqedom":{"id":"500337","properName":"Shibeshi Asqedom"},"patrick doyle":{"id":"500379","properName":"Patrick Doyle"},"richard lineham":{"id":"500380","properName":"Richard Lineham"},"mark cauchi":{"id":"500393","properName":"Mark Cauchi"},"brett austin":{"id":"500408","properName":"Brett Austin"},"damien lowry":{"id":"500574","properName":"Damien Lowry"},"michael bland":{"id":"500624","properName":"Michael Bland"},"sheryl champion":{"id":"500627","properName":"Sheryl Champion"},"andrew fulham":{"id":"500636","properName":"Andrew Fulham"},"mesud keskic":{"id":"500657","properName":"Mesud Keskic"},"mandeep sekhon":{"id":"500667","properName":"Mandeep Sekhon"},"surat singh":{"id":"500676","properName":"Surat Singh"},"pankajdeep singh":{"id":"500690","properName":"Pankajdeep Singh"},"jaibaaz singh":{"id":"500737","properName":"Jaibaaz Singh"},"joga singh 500741":{"id":"500741","properName":"Joga Singh 500741"},"emmanuel bugeja":{"id":"500750","properName":"Emmanuel Bugeja"},"radek hermanek":{"id":"500767","properName":"Radek Hermanek"},"sukhpreet singh hari ke":{"id":"500770","properName":"Sukhpreet Singh Hari Ke"},"mohit gulati":{"id":"501883","properName":"Mohit Gulati"},"gurhimat singh":{"id":"500793","properName":"Gurhimat Singh"},"kent wells":{"id":"500805","properName":"Kent Wells"},"deborah thomas":{"id":"500806","properName":"Deborah Thomas"},"gurpreet singh":{"id":"500810","properName":"Gurpreet Singh"},"dean emery":{"id":"500815","properName":"Dean Emery"},"hardeep singh":{"id":"500822","properName":"Hardeep Singh"},"ervin agalliu":{"id":"500852","properName":"Ervin Agalliu"},"jason thompson":{"id":"500857","properName":"Jason Thompson"},"deane kenneth":{"id":"500863","properName":"Deane Kenneth"},"mark kinash":{"id":"500881","properName":"Mark Kinash"},"brayden pietrzykowski":{"id":"500886","properName":"Brayden Pietrzykowski"},"jason mead":{"id":"500909","properName":"Jason Mead"},"maree batrouney":{"id":"500930","properName":"Maree Batrouney"},"matthew cox":{"id":"500945","properName":"Matthew Cox"},"abdel beitsayah":{"id":"500984","properName":"Abdel Beitsayah"},"farid amouri":{"id":"500988","properName":"Farid Amouri"},"tekotahitanga beckham-sionetali":{"id":"501019","properName":"Tekotahitanga Beckham-Sionetali"},"frank bigoni":{"id":"501041","properName":"Frank Bigoni"},"arashdeep singh brar":{"id":"501054","properName":"Arashdeep Singh Brar"},"lachlan grant":{"id":"501058","properName":"Lachlan Grant"},"harjit bassi":{"id":"501062","properName":"Harjit Bassi"},"brendon derwin":{"id":"501065","properName":"Brendon Derwin"},"andy olivario":{"id":"501074","properName":"Andy Olivario"},"craig macgregor":{"id":"501075","properName":"Craig Macgregor"},"lindsay jack":{"id":"501081","properName":"Lindsay Jack"},"parwinder pal singh":{"id":"501095","properName":"Parwinder Pal Singh"},"ty skinner":{"id":"501103","properName":"Ty Skinner"},"gurpreet singh rana":{"id":"501126","properName":"Gurpreet Singh Rana"},"bayram kaykisiz":{"id":"501127","properName":"Bayram Kaykisiz"},"amandeep sarao":{"id":"501135","properName":"Amandeep Sarao"},"jagraj singh":{"id":"501168","properName":"Jagraj Singh"},"parminder singh":{"id":"501170","properName":"Parminder Singh"},"paul james":{"id":"501172","properName":"Paul James"},"emily rondinella":{"id":"501177","properName":"Emily Rondinella"},"nikola vesic":{"id":"501188","properName":"Nikola Vesic"},"neville palmer":{"id":"501191","properName":"Neville Palmer"},"gurjot singh 501201":{"id":"501201","properName":"Gurjot Singh 501201"},"luke shortis":{"id":"501204","properName":"Luke Shortis"},"mafi pese":{"id":"501220","properName":"Mafi Pese"},"jaspreet singh 501222":{"id":"501222","properName":"Jaspreet Singh 501222"},"ajaypal sekhon":{"id":"501227","properName":"Ajaypal Sekhon"},"thomas john":{"id":"501232","properName":"Thomas John"},"robert kovac":{"id":"501239","properName":"Robert Kovac"},"manpreet singh 501244":{"id":"501244","properName":"Manpreet Singh 501244"},"jarrod hauser":{"id":"501249","properName":"Jarrod Hauser"},"navsangeet singh":{"id":"501250","properName":"Navsangeet Singh"},"matthew lees":{"id":"801266","properName":"Matthew Lees"},"varinder singh":{"id":"501270","properName":"Varinder Singh"},"manbir sandhu":{"id":"501274","properName":"Manbir Sandhu"},"rohan taylor":{"id":"501275","properName":"Rohan Taylor"},"viraj samaranayake":{"id":"501283","properName":"Viraj Samaranayake"},"michael sawdon":{"id":"501285","properName":"Michael Sawdon"},"margaret lorton":{"id":"501294","properName":"Margaret Lorton"},"malinderjeet hira":{"id":"501302","properName":"Malinderjeet Hira"},"amrinder singh 501305":{"id":"501305","properName":"Amrinder Singh 501305"},"ravinesh jattan":{"id":"501321","properName":"Ravinesh Jattan"},"vikasjeet rana":{"id":"501325","properName":"Vikasjeet Rana"},"dapinder jawanda":{"id":"501326","properName":"Dapinder Jawanda"},"wayne collier":{"id":"501341","properName":"Wayne Collier"},"james heyden":{"id":"501352","properName":"James Heyden"},"sililo elia":{"id":"501354","properName":"Sililo Elia"},"harmanjit sekhon":{"id":"501356","properName":"Harmanjit Sekhon"},"pokoina tiaiti":{"id":"501361","properName":"Pokoina Tiaiti"},"nuufou sauiluma":{"id":"501381","properName":"Nuufou Sauiluma"},"dharani sai aluri":{"id":"501386","properName":"Dharani Sai Aluri"},"scott allen":{"id":"501397","properName":"Scott Allen"},"aleksandar tan":{"id":"501398","properName":"Aleksandar Tan"},"jaspreet singh 501399":{"id":"501399","properName":"Jaspreet Singh 501399"},"brennan pell":{"id":"501402","properName":"Brennan Pell"},"jasvir pannu":{"id":"501403","properName":"Jasvir Pannu"},"manpreet singh 501405":{"id":"501405","properName":"Manpreet Singh 501405"},"taulagi johnson":{"id":"501409","properName":"Taulagi Johnson"},"tarsem singh":{"id":"501413","properName":"Tarsem Singh"},"sanampreet singh":{"id":"501417","properName":"Sanampreet Singh"},"jatindeep gujral":{"id":"501423","properName":"Jatindeep Gujral"},"jaswant dhaliwal":{"id":"501425","properName":"Jaswant Dhaliwal"},"andrew jopp":{"id":"501427","properName":"Andrew Jopp"},"leanne micallef":{"id":"501432","properName":"Leanne Micallef"},"simon haslett":{"id":"501441","properName":"Simon Haslett"},"davood zolfaghari":{"id":"501446","properName":"Davood Zolfaghari"},"james (jim) spiers":{"id":"501447","properName":"James (Jim) Spiers"},"benjamin bardzinski":{"id":"801448","properName":"Benjamin Bardzinski"},"amandeep singh 501450":{"id":"501450","properName":"Amandeep Singh 501450"},"gavin langton":{"id":"501454","properName":"Gavin Langton"},"mussa ali":{"id":"501455","properName":"Mussa Ali"},"amandeep singh 501463":{"id":"501463","properName":"Amandeep Singh 501463"},"dwight neville":{"id":"501474","properName":"Dwight Neville"},"karandeep singh":{"id":"501478","properName":"Karandeep Singh"},"rajinderpal singh":{"id":"501482","properName":"Rajinderpal Singh"},"tarlok singh":{"id":"501488","properName":"Tarlok Singh"},"kuldip singh maan":{"id":"501498","properName":"Kuldip Singh Maan"},"zakaria dor":{"id":"501515","properName":"Zakaria Dor"},"satinder singh":{"id":"501518","properName":"Satinder Singh"},"riely holdsworth":{"id":"501526","properName":"Riely Holdsworth"},"jasbir singh":{"id":"501529","properName":"Jasbir Singh"},"harmandeep singh":{"id":"501533","properName":"Harmandeep Singh"},"andrew mclean":{"id":"501538","properName":"Andrew Mclean"},"adrian leishman":{"id":"501543","properName":"Adrian Leishman"},"fitugafulu faafuata":{"id":"501548","properName":"Fitugafulu Faafuata"},"sam sboto":{"id":"501572","properName":"Sam Sboto"},"gurpreet singh sidhu":{"id":"501582","properName":"Gurpreet Singh Sidhu"},"utoikamanu afemui":{"id":"501585","properName":"Utoikamanu Afemui"},"amandip singh":{"id":"501589","properName":"Amandip Singh"},"palwinder singh aulakh":{"id":"501593","properName":"Palwinder Singh Aulakh"},"rahul gandhi":{"id":"501597","properName":"Rahul Gandhi"},"lachlan mcfarlane":{"id":"501598","properName":"Lachlan Mcfarlane"},"steve siania":{"id":"501600","properName":"Steve Siania"},"rajat mittal":{"id":"501602","properName":"Rajat Mittal"},"richard adamson":{"id":"501610","properName":"Richard Adamson"},"rodney palmer":{"id":"501615","properName":"Rodney Palmer"},"jamie wassell":{"id":"501625","properName":"Jamie Wassell"},"timbira kago":{"id":"501626","properName":"Timbira Kago"},"samuel hastings":{"id":"501632","properName":"Samuel Hastings"},"tavita mauigoa":{"id":"501636","properName":"Tavita Mauigoa"},"shamsher singh":{"id":"501637","properName":"Shamsher Singh"},"sunil bishnoi":{"id":"501639","properName":"Sunil Bishnoi"},"beljeek ajang agour lual":{"id":"501643","properName":"Beljeek Ajang Agour Lual"},"mohammad nazif":{"id":"501647","properName":"Mohammad Nazif"},"hassan latif":{"id":"501649","properName":"Hassan Latif"},"simranpreet singh":{"id":"501654","properName":"Simranpreet Singh"},"richard clarke":{"id":"501657","properName":"Richard Clarke"},"simranjeet brar":{"id":"501659","properName":"Simranjeet Brar"},"amrit pal singh":{"id":"501681","properName":"Amrit Pal Singh"},"harold paskins":{"id":"501691","properName":"Harold Paskins"},"amrinder singh 501693":{"id":"501693","properName":"Amrinder Singh 501693"},"danny komorr":{"id":"501697","properName":"Danny Komorr"},"ian price":{"id":"501699","properName":"Ian Price"},"george mamatis":{"id":"501701","properName":"George Mamatis"},"bhupinder singh 501704":{"id":"501704","properName":"Bhupinder Singh 501704"},"julie heke":{"id":"501712","properName":"Julie Heke"},"gurjeet dhaliwal":{"id":"501716","properName":"Gurjeet Dhaliwal"},"davinder randhawa":{"id":"501721","properName":"Davinder Randhawa"},"reece carton":{"id":"501726","properName":"Reece Carton"},"gregg aguado":{"id":"501728","properName":"Gregg Aguado"},"jatin kataria":{"id":"501730","properName":"Jatin Kataria"},"raymond cauchi":{"id":"S50004","properName":"Raymond Cauchi"},"ellice vella":{"id":"S50006","properName":"Ellice Vella"},"wayne vella":{"id":"S50007","properName":"Wayne Vella"},"danial cauchi":{"id":"500153","properName":"Danial Cauchi"},"jake cauchi":{"id":"500189","properName":"Jake Cauchi"},"caleb vella":{"id":"500785","properName":"Caleb Vella"},"jed vella":{"id":"500923","properName":"Jed Vella"},"lisa thomas":{"id":"501146","properName":"Lisa Thomas"},"das harpreet singh":{"id":"501757","properName":"Das Harpreet Singh"},"sukhvir singh":{"id":"501758","properName":"Sukhvir Singh"},"ashish bhandari":{"id":"501731","properName":"Ashish Bhandari"},"vilmos kovac":{"id":"501734","properName":"Vilmos Kovac"},"dane barlow":{"id":"501743","properName":"Dane Barlow"},"yvonne elkington":{"id":"501747","properName":"Yvonne Elkington"},"dayle pitcon":{"id":"501748","properName":"Dayle Pitcon"},"rachel tamanui":{"id":"501756","properName":"Rachel Tamanui"},"dominic ring":{"id":"501439","properName":"Dominic Ring"},"emma johnson":{"id":"501759","properName":"Emma Johnson"},"ramanvir singh mann":{"id":"501943","properName":"Ramanvir Singh Mann"},"corey bisognin":{"id":"501764","properName":"Corey Bisognin"},"mandeep singh":{"id":"501033","properName":"Mandeep Singh"},"rohitendra nand":{"id":"501768","properName":"Rohitendra Nand"},"manpreet singh 501769":{"id":"501769","properName":"Manpreet Singh 501769"},"satnamsingh saini":{"id":"501771","properName":"Satnamsingh Saini"},"paramjit singh":{"id":"501619","properName":"Paramjit Singh"},"rafal pendecki":{"id":"501774","properName":"Rafal Pendecki"},"raminder sandhu":{"id":"501777","properName":"Raminder Sandhu"},"mandeep singh 501461":{"id":"501461","properName":"Mandeep Singh 501461"},"abraham schultink":{"id":"501778","properName":"Abraham Schultink"},"connor skillicorn":{"id":"500977","properName":"Connor Skillicorn"},"jake white":{"id":"501787","properName":"Jake White"},"john marinas":{"id":"501805","properName":"John Marinas"},"himanshu joshi":{"id":"501806","properName":"Himanshu Joshi"},"john mari andan":{"id":"501810","properName":"John Mari Andan"},"kieth hansen":{"id":"501812","properName":"Kieth Hansen"},"paul koolen":{"id":"501814","properName":"Paul Koolen"},"rampreet sidhu":{"id":"501827","properName":"Rampreet Sidhu"},"anthony george":{"id":"501821","properName":"Anthony George"},"varinder pal":{"id":"501824","properName":"Varinder Pal"},"harjot attri":{"id":"501826","properName":"Harjot Attri"},"eh doh hso":{"id":"501825","properName":"Eh Doh Hso"},"colin ginn":{"id":"401823","properName":"Colin Ginn"},"simon stalman":{"id":"501831","properName":"Simon Stalman"},"mohammed ahsad":{"id":"501830","properName":"Mohammed Ahsad"},"andrew coad":{"id":"401839","properName":"Andrew Coad"},"sukhwinder singh":{"id":"501841","properName":"Sukhwinder Singh"},"dishant patel":{"id":"801939","properName":"Dishant Patel"},"jaspreet singh 501844":{"id":"501844","properName":"Jaspreet Singh 501844"},"jared biggs":{"id":"401845","properName":"Jared Biggs"},"pawan kumar":{"id":"501849","properName":"Pawan Kumar"},"clint armstrong":{"id":"401836","properName":"Clint Armstrong"},"melissa wolfe":{"id":"501854","properName":"Melissa Wolfe"},"shivam gupta":{"id":"501852","properName":"Shivam Gupta"},"karan behl":{"id":"501878","properName":"Karan Behl"},"harbhinder singh":{"id":"501853","properName":"Harbhinder Singh"},"blake johns":{"id":"501862","properName":"Blake Johns"},"harpreet singh":{"id":"501857","properName":"Harpreet Singh"},"john bardsley":{"id":"501860","properName":"John Bardsley"},"satnam singh":{"id":"501863","properName":"Satnam Singh"},"imitiaz shah":{"id":"401855","properName":"Imitiaz Shah"},"mark boys":{"id":"401865","properName":"Mark Boys"},"michael van breda-foxwell":{"id":"501864","properName":"Michael Van Breda-Foxwell"},"aseem pal utreja":{"id":"501873","properName":"Aseem Pal Utreja"},"paul edwards":{"id":"401879","properName":"Paul Edwards"},"jasmin hawksworth":{"id":"501886","properName":"Jasmin Hawksworth"},"gagandeep singh aulakh":{"id":"501888","properName":"Gagandeep Singh Aulakh"},"jarrod hicks":{"id":"801889","properName":"Jarrod Hicks"},"harwinder marar":{"id":"501895","properName":"Harwinder Marar"},"ruzzell bondoc":{"id":"801899","properName":"Ruzzell Bondoc"},"jordan rihs":{"id":"501900","properName":"Jordan Rihs"},"amandeep singh sarao 501901":{"id":"501901","properName":"Amandeep Singh Sarao 501901"},"maninderjeet garcha":{"id":"501903","properName":"Maninderjeet Garcha"},"allan munsie":{"id":"401898","properName":"Allan Munsie"},"gurwinder singh":{"id":"501905","properName":"Gurwinder Singh"},"marty watson":{"id":"401910","properName":"Marty Watson"},"greg brownsey":{"id":"401912","properName":"Greg Brownsey"},"michael van rijswijk":{"id":"501915","properName":"Michael Van Rijswijk"},"ronald deane":{"id":"401917","properName":"Ronald Deane"},"ali haider":{"id":"501918","properName":"Ali Haider"},"harinderjit singh mann":{"id":"501925","properName":"Harinderjit Singh Mann"},"sukhmandeep s sidhu":{"id":"501916","properName":"Sukhmandeep S Sidhu"},"darren morris":{"id":"501927","properName":"Darren Morris"},"john o'sullivan":{"id":"401929","properName":"John O'Sullivan"},"nathan streeter":{"id":"401924","properName":"Nathan Streeter"},"abubakar abdirahman":{"id":"501932","properName":"Abubakar Abdirahman"},"thomas atherton":{"id":"501937","properName":"Thomas Atherton"},"amarprit singh":{"id":"501938","properName":"Amarprit Singh"},"rupinder masson":{"id":"501940","properName":"Rupinder Masson"},"parvinder singh sandhu":{"id":"501942","properName":"Parvinder Singh Sandhu"},"sourabh -":{"id":"501944","properName":"Sourabh -"},"gregory collins":{"id":"801945","properName":"Gregory Collins"},"gurpreet singh 801948":{"id":"801948","properName":"Gurpreet Singh 801948"},"amrinder singh randhawa":{"id":"801949","properName":"Amrinder Singh Randhawa"},"lisa pollard":{"id":"501951","properName":"Lisa Pollard"},"tracy borkowski":{"id":"501952","properName":"Tracy Borkowski"},"rueben mickan-keipert":{"id":"801947","properName":"Rueben Mickan-Keipert"}};
-const KNOWN_LOCATIONS = ["Austrak Point Wilson","Boral Concrete Clayton","Boral Concrete Cranbourne","Boral Concrete Healesville","Boral Concrete Waurn Ponds","Cemix Somerton","Cemix Whittelsea","Central Deer Park","Cmv Bookings Dandenong","Cmv Bookings Laverton","Eastern Freeway","Epping Premix","Flinstones Garden Supplies Donnybrook","Flinstones Garden Supplies Grovedale","Grovedale Concrete Plant","Heidelberg Materials Brooklyn","Heidelberg Materials Westall","Hercules","Hytec Dandenong","Hytec Kilsyth","Hytec Laverton","Hytec Mitcham","Hytec Somerton","Hytec South Wharf","Lantrak Pt Wilson","Melbourne Sand","Moolap Concrete Plant","Mulchxpress","Pronto Bacchus Marsh","Pronto Coburg","Pronto Dandenong","Pronto Donnybrook","Pronto Laverton","Pronto Mt Evelyn","Pronto Port Melbourne","Pronto Pt Melbourne","Pronto Pt Wilson","Pronto Ringwood","Pronto Springvale","Pronto Sunbury","Pronto Sunshine","Pronto Werribee","Riversdale Blvd","Scania","Truganina Workshop","Vic Civil","Visy Spotswood","Westerns","Youleys Garden Supplies"];
-const KNOWN_PRODUCTS = ["Melbourne Sand","South East Sands Concrete Sand","14mm Graded Boral Lysterfield","Boral Deer Park 14mm","Boral Deer Park 7mm","LTE 80-100mm Rubble","Veolia Dandenong","GPQ A4 filter sand","SES Coastal Beige Brick Sand","South East Sands Coastal Beige Sand","South East Sands Packing Sand","Tribuzi Quarry","Holcim Lang Lang Glass Sand","Visy Flint","Visy Green","Visy Amber","MVQ Point Wilson 14mm","Menheers Loam","MVQ Point Wilson 20mm","Local Mix Anakie 20mm CR","MVQ Little River Mansand","Devon Rd Premium Loam","MVQ Wyndhamvale 7mm - Bin 4","MVQ Wyndhamvale 14mm - Bin 5","MVQ Wyndhamvale 20mm - Bin 6","MVQ Wyndhamvale Dust - Bin 10","Boral Wollert Recycled Crushed Concrete - Bin 13","Devon Rd Sandy Loam - Bin 22","MVQ Little River 7mm You Yang Granite - Bin 42","MVQ Little River 7mm","Sand Supplies Glen Forbes","Boral Lysterfield 20mm - 100t","Boral Lysterfield 14mm","Boral Montrose 7mm","Boral Montrose Man Sand","Boral Lysterfield 20mm","Boral Coldstream 14mm","Boral Coldstream 7mm","Boral Wollert","Boral Montrose 14/10/7","Hanson Lysterfield 14mm","Castella 7mm","FH Tynong Dust","FH Tynong 14mm","Hanson Lysterfield 20mm","Metro Nyora Sand","Castella 14mm","Castella Dust","Central Rockbank 20mm","Central Rockbank 14mm","Central Rockbank Mansand","Hanson Wollert 20mm","Hanson Wollert 14mm","Wyndham Vale 20mm","Wyndham Vale 14mm","Maude 7mm","Little River 20mm","Little River Dust","Point Wilson 20mm","Point Wilson 14mm","Seymour 14mm","Seymour 20mm","Bacchus Marsh 9 Mile Sand","Maude 14mm","Maude Sand","Chelvon Maude Sand","W/Vale 14mm Blue","Melbourne Sands (Sand)","W/Vale 20mm Blue","Little River 14mm","Little River 7mm","W/Vale 7mm Blue","Melbourne Sand (Sand)"];
+const KNOWN_LOCATIONS = ["49-55 Quinzeh Creek Rd","Austrak Point Wilson","B2N","Bellwether Kalbar","Boral Concrete Clayton","Boral Concrete Cranbourne","Boral Concrete Healesville","Boral Concrete Waurn Ponds","Bromelton","Bromelton Quarry","CCS","CCS Group Jimboomba","Cemix Somerton","Cemix Whittelsea","Central Deer Park","Civil Lines","Cmv Bookings Dandenong","Cmv Bookings Laverton","Coastal Sands","DMC Tenterfield","Di Tullio","Downer","Eastern Freeway","Epping Premix","Fernvale","Flinstones Garden Supplies Donnybrook","Flinstones Garden Supplies Grovedale","Fraser Coast","Grovedale Concrete Plant","Heidelberg Materials Brooklyn","Heidelberg Materials Westall","Hercules","Hervey Bay Readymix","Holcim","Holcim Beenleigh","Holcim Petrie","Holcim Southport","Hytec Dandenong","Hytec Kilsyth","Hytec Laverton","Hytec Mitcham","Hytec Somerton","Hytec South Wharf","Ipswich","Kontek","Lantrak","Lantrak Pt Wilson","Maryborough","Melbourne Sand","Moolap Concrete Plant","Mt Cotton","Mt Marrow","Mulchxpress","North Maclean","Oakridge","Pronto Bacchus Marsh","Pronto Coburg","Pronto Dandenong","Pronto Donnybrook","Pronto Ipswich","Pronto Laverton","Pronto Mt Cotton","Pronto Mt Evelyn","Pronto Port Melbourne","Pronto Pt Melbourne","Pronto Pt Wilson","Pronto Ringwood","Pronto Springvale","Pronto Sunbury","Pronto Sunshine","Pronto Werribee","RAF Base","Riversdale Blvd","Scania","Serman","Sunstate Asphalt","Tarampa","Truganina Workshop","Vic Civil","Visy Spotswood","Wagners - Carrara","Wagners - Pinkenba","Westerns","Youleys Garden Supplies"];
+const KNOWN_PRODUCTS = ["10/7mm","10mm","10mm Natural","14mm","14mm Graded Boral Lysterfield","16mm White","20mm","7mm","Bacchus Marsh 9 Mile Sand","Boral Coldstream 14mm","Boral Coldstream 7mm","Boral Deer Park 14mm","Boral Deer Park 7mm","Boral Lysterfield 14mm","Boral Lysterfield 20mm","Boral Lysterfield 20mm - 100t","Boral Montrose 14/10/7","Boral Montrose 7mm","Boral Montrose Man Sand","Boral Wollert","Boral Wollert Recycled Crushed Concrete - Bin 13","Brown","Brown Transfer","Castella 14mm","Castella 7mm","Castella Dust","Central Rockbank 14mm","Central Rockbank 20mm","Central Rockbank Mansand","Chelvon Maude Sand","Course Sand","Demand","Demand (Lantrak)","Devon Rd Premium Loam","Devon Rd Sandy Loam - Bin 22","FH Tynong 14mm","FH Tynong Dust","Fine Sand","GPQ A4 filter sand","Hanson Lysterfield 14mm","Hanson Lysterfield 20mm","Hanson Wollert 14mm","Hanson Wollert 20mm","Holcim Lang Lang Glass Sand","LTE 80-100mm Rubble","Little River 14mm","Little River 20mm","Little River 7mm","Little River Dust","Local Mix Anakie 20mm CR","MVQ Little River 7mm","MVQ Little River 7mm You Yang Granite - Bin 42","MVQ Little River Mansand","MVQ Point Wilson 14mm","MVQ Point Wilson 20mm","MVQ Wyndhamvale 14mm - Bin 5","MVQ Wyndhamvale 20mm - Bin 6","MVQ Wyndhamvale 7mm - Bin 4","MVQ Wyndhamvale Dust - Bin 10","Mansand","Maude 14mm","Maude 7mm","Maude Sand","Melbourne Sand","Melbourne Sand (Sand)","Melbourne Sands (Sand)","Menheers Loam","Metro Nyora Sand","Natural","Point Wilson 14mm","Point Wilson 20mm","Q10 Black","SES Coastal Beige Brick Sand","Sand Supplies Glen Forbes","Seymour 14mm","Seymour 20mm","South East Sands Coastal Beige Sand","South East Sands Concrete Sand","South East Sands Packing Sand","Tribuzi Quarry","Veolia Dandenong","Visy Amber","Visy Flint","Visy Green","W/Vale 14mm Blue","W/Vale 20mm Blue","W/Vale 7mm Blue","Wyndham Vale 14mm","Wyndham Vale 20mm"];
 
 function levenshtein(a, b) {
   a = a.toLowerCase().trim(); b = b.toLowerCase().trim();
@@ -1402,8 +1402,8 @@ function parseScheduleRows(rows) {
 
   const IGNORE_Q = new Set(['allocations legend','customer (demand)','customer (plant)',
                              'quarry/product','','nan']);
-  const IGNORE_R = new Set(['quarry/product','','nan','waste','breakdown',
-                             'early fin','shift earnings','column2','sc plant']);
+  // Values that mean a row genuinely has no useful product info
+  const SKIP_R = new Set(['quarry/product','','nan']);
 
   // Get time map from row 0
   const timeRow = rows[0] || [];
@@ -1414,30 +1414,22 @@ function parseScheduleRows(rows) {
   }
 
   let currentDeliverTo = null;
-  const loads = []; // {deliverTo, pickup, product, truckTimes: [{truck, timeSort}]}
+  const loads = [];
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
     const qVal = String(row[COL_Q] || '').trim();
     const rVal = String(row[COL_R] || '').trim();
 
-    if (IGNORE_Q.has(qVal.toLowerCase()) && IGNORE_R.has(rVal.toLowerCase())) continue;
     if (qVal.toLowerCase().includes('legend')) continue;
 
-    // Skip contact/phone rows
+    // Skip contact/phone rows for deliver-to update only
     const isContact = /\d{4}\s?\d{3}\s?\d{3}/.test(qVal);
     if (qVal && !IGNORE_Q.has(qVal.toLowerCase()) && !isContact) {
       currentDeliverTo = qVal;
     }
 
-    // Skip numeric/date/non-product R values
-    if (!rVal || IGNORE_R.has(rVal.toLowerCase()) || /^[\d.,e\-\+]+$/.test(rVal) || /^\d{4}-\d{2}/.test(rVal)) continue;
-
-    // Split quarry/material
-    const {pickup, product} = splitQuarryMaterial(rVal);
-    if (!pickup) continue;
-
-    // Collect truck occurrences with their time
+    // Collect truck numbers first - if none, skip the row
     const truckTimes = [];
     for (let c = COL_U_START; c < row.length; c++) {
       const v = String(row[c] || '').trim();
@@ -1448,7 +1440,27 @@ function parseScheduleRows(rows) {
       }
     }
 
-    loads.push({deliverTo: currentDeliverTo || '', pickup, product, truckTimes});
+    // No trucks on this row - skip it entirely
+    if (truckTimes.length === 0) continue;
+
+    // Work out pickup and product from R value
+    let pickup = '';
+    let product = '';
+
+    if (rVal && !SKIP_R.has(rVal.toLowerCase()) &&
+        !/^[\d.,e\-\+]+$/.test(rVal) && !/^\d{4}-\d{2}/.test(rVal)) {
+      const split = splitQuarryMaterial(rVal);
+      pickup = split.pickup;
+      product = split.product;
+    }
+    // If rVal is empty/skipped, pickup and product stay blank (will go to Other in UI)
+
+    loads.push({
+      deliverTo: currentDeliverTo || '',
+      pickup,
+      product,
+      truckTimes
+    });
   }
 
   // Build per-truck list sorted by time
@@ -1546,16 +1558,22 @@ function loadJobsFromSchedule() {
     const pfSel = document.getElementById('pullFrom' + idx);
     const pfOtherWrap = document.getElementById('otherPullFromWrap' + idx);
     const pfOtherInput = document.getElementById('otherPullFrom' + idx);
-    if (pfSel && job.pickup) {
-      // Try to match against known list
-      const match = matchList(job.pickup, KNOWN_LOCATIONS, 0.7);
-      if (match) {
-        pfSel.value = match;
-        if (pfOtherWrap) pfOtherWrap.style.display = 'none';
+    if (pfSel) {
+      if (job.pickup) {
+        const match = matchList(job.pickup, KNOWN_LOCATIONS, 0.7);
+        if (match) {
+          pfSel.value = match;
+          if (pfOtherWrap) pfOtherWrap.style.display = 'none';
+        } else {
+          pfSel.value = 'Other';
+          if (pfOtherWrap) pfOtherWrap.style.display = 'block';
+          if (pfOtherInput) pfOtherInput.value = job.pickup;
+        }
       } else {
+        // No pickup info - show Other with blank text for driver to fill in
         pfSel.value = 'Other';
         if (pfOtherWrap) pfOtherWrap.style.display = 'block';
-        if (pfOtherInput) pfOtherInput.value = job.pickup;
+        if (pfOtherInput) pfOtherInput.value = '';
       }
     }
 
@@ -1563,15 +1581,21 @@ function loadJobsFromSchedule() {
     const dtSel = document.getElementById('deliverTo' + idx);
     const dtOtherWrap = document.getElementById('otherDeliverToWrap' + idx);
     const dtOtherInput = document.getElementById('otherDeliverTo' + idx);
-    if (dtSel && job.deliverTo) {
-      const match = matchList(job.deliverTo, KNOWN_LOCATIONS, 0.7);
-      if (match) {
-        dtSel.value = match;
-        if (dtOtherWrap) dtOtherWrap.style.display = 'none';
+    if (dtSel) {
+      if (job.deliverTo) {
+        const match = matchList(job.deliverTo, KNOWN_LOCATIONS, 0.7);
+        if (match) {
+          dtSel.value = match;
+          if (dtOtherWrap) dtOtherWrap.style.display = 'none';
+        } else {
+          dtSel.value = 'Other';
+          if (dtOtherWrap) dtOtherWrap.style.display = 'block';
+          if (dtOtherInput) dtOtherInput.value = job.deliverTo;
+        }
       } else {
         dtSel.value = 'Other';
         if (dtOtherWrap) dtOtherWrap.style.display = 'block';
-        if (dtOtherInput) dtOtherInput.value = job.deliverTo;
+        if (dtOtherInput) dtOtherInput.value = '';
       }
     }
 
@@ -1579,15 +1603,21 @@ function loadJobsFromSchedule() {
     const prodSel = document.getElementById('product' + idx);
     const prodOtherWrap = document.getElementById('otherProductWrap' + idx);
     const prodOtherInput = document.getElementById('otherProduct' + idx);
-    if (prodSel && job.product) {
-      const match = matchList(job.product, KNOWN_PRODUCTS, 0.7);
-      if (match) {
-        prodSel.value = match;
-        if (prodOtherWrap) prodOtherWrap.style.display = 'none';
+    if (prodSel) {
+      if (job.product) {
+        const match = matchList(job.product, KNOWN_PRODUCTS, 0.7);
+        if (match) {
+          prodSel.value = match;
+          if (prodOtherWrap) prodOtherWrap.style.display = 'none';
+        } else {
+          prodSel.value = 'Other';
+          if (prodOtherWrap) prodOtherWrap.style.display = 'block';
+          if (prodOtherInput) prodOtherInput.value = job.product;
+        }
       } else {
         prodSel.value = 'Other';
         if (prodOtherWrap) prodOtherWrap.style.display = 'block';
-        if (prodOtherInput) prodOtherInput.value = job.product;
+        if (prodOtherInput) prodOtherInput.value = '';
       }
     }
   });
@@ -1947,6 +1977,21 @@ function addLoad() {
           <option>Visy Spotswood</option>
           <option>Westerns</option>
           <option>Youleys Garden Supplies</option>
+          <option disabled>-- QLD Quarries --</option>
+          <option>Bromelton</option>
+          <option>CCS</option>
+          <option>Coastal Sands</option>
+          <option>DMC Tenterfield</option>
+          <option>Fernvale</option>
+          <option>Fraser Coast</option>
+          <option>Holcim Beenleigh</option>
+          <option>Holcim Petrie</option>
+          <option>Ipswich</option>
+          <option>Lantrak</option>
+          <option>Maryborough</option>
+          <option>Mt Cotton</option>
+          <option>Mt Marrow</option>
+          <option>Pronto Mt Cotton</option>
           <option value="Other">Other (type below)</option>
         </select>
         <div id="otherPullFromWrap${idx}" style="display:none; margin-top:8px;">
@@ -2008,6 +2053,30 @@ function addLoad() {
           <option>Visy Spotswood</option>
           <option>Westerns</option>
           <option>Youleys Garden Supplies</option>
+          <option disabled>-- QLD Locations --</option>
+          <option>49-55 Quinzeh Creek Rd</option>
+          <option>B2N</option>
+          <option>Bellwether Kalbar</option>
+          <option>Bromelton Quarry</option>
+          <option>CCS Group Jimboomba</option>
+          <option>Civil Lines</option>
+          <option>Di Tullio</option>
+          <option>Downer</option>
+          <option>Hervey Bay Readymix</option>
+          <option>Holcim</option>
+          <option>Holcim Southport</option>
+          <option>Kontek</option>
+          <option>Mt Cotton</option>
+          <option>North Maclean</option>
+          <option>Oakridge</option>
+          <option>Pronto Ipswich</option>
+          <option>Pronto Mt Cotton</option>
+          <option>RAF Base</option>
+          <option>Serman</option>
+          <option>Sunstate Asphalt</option>
+          <option>Tarampa</option>
+          <option>Wagners - Carrara</option>
+          <option>Wagners - Pinkenba</option>
           <option value="Other">Other (type below)</option>
         </select>
         <div id="otherDeliverToWrap${idx}" style="display:none; margin-top:8px;">
@@ -2094,6 +2163,23 @@ function addLoad() {
             <option>Little River 7mm</option>
             <option>W/Vale 7mm Blue</option>
             <option>Melbourne Sand (Sand)</option>
+            <option disabled>-- QLD Products --</option>
+            <option>7mm</option>
+            <option>10mm</option>
+            <option>10/7mm</option>
+            <option>10mm Natural</option>
+            <option>14mm</option>
+            <option>16mm White</option>
+            <option>20mm</option>
+            <option>Brown</option>
+            <option>Brown Transfer</option>
+            <option>Course Sand</option>
+            <option>Demand</option>
+            <option>Demand (Lantrak)</option>
+            <option>Fine Sand</option>
+            <option>Mansand</option>
+            <option>Natural</option>
+            <option>Q10 Black</option>
             <option value="Other">Other (type below)</option>
           </select>
           <div class="field-error" id="err-product${idx}">Required</div>
