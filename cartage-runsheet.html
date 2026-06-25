@@ -611,6 +611,7 @@
     <h1>Cartage Australia</h1>
     <p>Daily Run Sheet &amp; Dockets</p>
   </div>
+  <button onclick="toggleDispatcher()" id="dispatcherToggleBtn" style="margin-left:auto; background:transparent; border:1.5px solid rgba(255,255,255,0.3); color:white; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">Dispatcher</button>
 </div>
 
 <!-- PROGRESS -->
@@ -621,6 +622,30 @@
 
 <!-- MAIN FORM -->
 <div id="mainForm">
+
+  <!-- DISPATCHER SECTION -->
+  <div id="dispatcherSection" style="display:none;">
+    <div class="section">
+      <div class="section-title">Dispatcher — Upload Today's Schedule</div>
+      <div class="card">
+        <p style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:14px;">
+          Upload today's QLD booking Excel file. Drivers will see their pre-allocated loads automatically.
+        </p>
+        <div id="dispatchUploadError" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 13px; font-size:12px; color:#dc2626; margin-bottom:12px;"></div>
+        <button onclick="document.getElementById('scheduleFileInput').click()" style="width:100%; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:10px; padding:24px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span style="font-size:14px; font-weight:700; color:var(--text);">Upload Booking Sheet</span>
+          <span style="font-size:12px; color:var(--muted);">Select today's QLD Excel file</span>
+        </button>
+        <input type="file" id="scheduleFileInput" accept=".xlsx,.xls" style="display:none;" onchange="processScheduleFile(this)">
+        <div id="dispatchProgress" style="display:none; text-align:center; padding:20px;">
+          <div style="width:28px; height:28px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 10px;"></div>
+          <span style="font-size:13px; color:var(--label);">Processing schedule...</span>
+        </div>
+        <div id="dispatchSuccess" style="display:none; margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px 14px; font-size:13px; color:#16a34a;"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- 1. DRIVER DETAILS -->
   <div class="section">
@@ -772,6 +797,10 @@
   <!-- 3. LOADS -->
   <div class="section">
     <div class="section-title">Loads</div>
+    <div id="loadJobsBanner" style="display:none; margin-bottom:12px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 14px;">
+      <div style="font-size:13px; color:#92400e; font-weight:600; margin-bottom:8px;">Today's allocated loads available</div>
+      <button onclick="loadJobsFromSchedule()" style="width:100%; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:11px; font-size:13px; font-weight:700; color:white; cursor:pointer;">Load Today's Jobs</button>
+    </div>
     <div id="loadsContainer"></div>
     <button class="add-load-btn" id="addLoadBtn" onclick="addLoad()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -793,15 +822,27 @@
     </div>
   </div>
 
-  <!-- 5. PHOTOS -->
+  <!-- 5. RUN SHEET PHOTO -->
   <div class="section">
-    <div class="section-title">Weighbridge Dockets</div>
+    <div class="section-title">Run Sheet Photo</div>
     <div class="card">
-      <p style="font-size:12px;color:var(--label);margin-bottom:14px;line-height:1.5;">
-        Photograph each docket clearly. Minimum 1 required, up to 6.
+      <p style="font-size:12px;color:var(--label);margin-bottom:12px;line-height:1.5;">
+        Photograph your completed paper run sheet as a record.
       </p>
-      <div class="docket-grid" id="docketGrid"></div>
-      <div class="blur-alert" id="docketBlurAlert">⚠️ One or more docket photos are blurry. Please retake.</div>
+      <div class="photo-btn" id="runSheetPhotoBtn" onclick="document.getElementById('runSheetPhotoInput').click()" style="padding:20px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <span class="btn-label" id="runSheetPhotoBtnLabel">Photograph Run Sheet</span>
+        <span class="btn-sub">Stored as record only</span>
+      </div>
+      <input type="file" id="runSheetPhotoInput" accept="image/*" capture="environment"
+             onchange="handleRunSheetPhoto(this)" style="display:none;">
+      <div id="runSheetPhotoPreview" style="display:none; margin-top:10px;">
+        <img id="runSheetPhotoImg" src="" alt="Run sheet" style="width:100%; border-radius:8px; max-height:180px; object-fit:cover;">
+        <button onclick="document.getElementById('runSheetPhotoInput').click()" style="margin-top:8px; width:100%; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake Photo</button>
+      </div>
     </div>
   </div>
 
@@ -1279,6 +1320,397 @@ function resetScan() {
   document.getElementById('scanError').style.display = 'none';
 }
 
+// ── DISPATCHER ────────────────────────────────────────────────
+let scheduleData = {}; // truck -> [{deliverTo, pickup, product}]
+
+function toggleDispatcher() {
+  const section = document.getElementById('dispatcherSection');
+  const btn = document.getElementById('dispatcherToggleBtn');
+  const visible = section.style.display !== 'none';
+  section.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? 'Dispatcher' : 'Close';
+  btn.style.borderColor = visible ? 'rgba(255,255,255,0.3)' : 'var(--orange)';
+  btn.style.color = visible ? 'white' : 'var(--orange)';
+}
+
+function processScheduleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('dispatchProgress').style.display = 'block';
+  document.getElementById('dispatchSuccess').style.display = 'none';
+  document.getElementById('dispatchUploadError').style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
+      const workbook = XLSX.read(data, {type: 'array'});
+
+      // Find today's sheet
+      const today = new Date();
+      const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+      const dayStr = days[today.getDay()];
+      const dd = String(today.getDate()).padStart(2,'0');
+      const mm = String(today.getMonth()+1).padStart(2,'0');
+      const yy = String(today.getFullYear()).slice(2);
+      const targetDate = `${dd}.${mm}.${yy}`;
+
+      let sheetName = workbook.SheetNames.find(s => s.includes(targetDate));
+      if (!sheetName) {
+        // Fall back to most recent date sheet
+        sheetName = workbook.SheetNames.find(s => /^(MON|TUE|WED|THU|FRI|SAT|SUN)\s/.test(s));
+      }
+      if (!sheetName) throw new Error('Could not find today\'s sheet in this file');
+
+      const ws = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
+
+      scheduleData = parseScheduleRows(rows);
+      const truckCount = Object.keys(scheduleData).length;
+      const loadCount = Object.values(scheduleData).reduce((s,v) => s+v.length, 0);
+
+      document.getElementById('dispatchProgress').style.display = 'none';
+      const successEl = document.getElementById('dispatchSuccess');
+      successEl.style.display = 'block';
+      successEl.textContent = `Loaded ${sheetName}: ${truckCount} trucks, ${loadCount} total loads. Drivers can now tap "Load Today\'s Jobs".`;
+
+      // Save to localStorage for drivers
+      localStorage.setItem('cartage_schedule', JSON.stringify({
+        date: targetDate,
+        sheet: sheetName,
+        data: scheduleData
+      }));
+
+      // Check if current truck has jobs
+      checkForScheduledJobs();
+      toggleDispatcher();
+    } catch(err) {
+      document.getElementById('dispatchProgress').style.display = 'none';
+      const errEl = document.getElementById('dispatchUploadError');
+      errEl.style.display = 'block';
+      errEl.textContent = 'Error reading file: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseScheduleRows(rows) {
+  const COL_Q = 16;
+  const COL_R = 17;
+  const COL_U_START = 20;
+
+  const IGNORE_Q = new Set(['allocations legend','customer (demand)','customer (plant)',
+                             'quarry/product','','nan']);
+  const IGNORE_R = new Set(['quarry/product','','nan','waste','breakdown',
+                             'early fin','shift earnings','column2','sc plant']);
+
+  // Get time map from row 0
+  const timeRow = rows[0] || [];
+  const timeMap = {};
+  for (let c = COL_U_START; c < timeRow.length; c++) {
+    const v = String(timeRow[c] || '').trim();
+    if (v && (v.includes('am') || v.includes('pm'))) timeMap[c] = v;
+  }
+
+  let currentDeliverTo = null;
+  const loads = []; // {deliverTo, pickup, product, truckTimes: [{truck, timeSort}]}
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const qVal = String(row[COL_Q] || '').trim();
+    const rVal = String(row[COL_R] || '').trim();
+
+    if (IGNORE_Q.has(qVal.toLowerCase()) && IGNORE_R.has(rVal.toLowerCase())) continue;
+    if (qVal.toLowerCase().includes('legend')) continue;
+
+    // Skip contact/phone rows
+    const isContact = /\d{4}\s?\d{3}\s?\d{3}/.test(qVal);
+    if (qVal && !IGNORE_Q.has(qVal.toLowerCase()) && !isContact) {
+      currentDeliverTo = qVal;
+    }
+
+    // Skip numeric/date/non-product R values
+    if (!rVal || IGNORE_R.has(rVal.toLowerCase()) || /^[\d.,e\-\+]+$/.test(rVal) || /^\d{4}-\d{2}/.test(rVal)) continue;
+
+    // Split quarry/material
+    const {pickup, product} = splitQuarryMaterial(rVal);
+    if (!pickup) continue;
+
+    // Collect truck occurrences with their time
+    const truckTimes = [];
+    for (let c = COL_U_START; c < row.length; c++) {
+      const v = String(row[c] || '').trim();
+      if (/^\d{3,4}$/.test(v)) {
+        const timeStr = timeMap[c] || '';
+        const timeSort = parseTimeToMinutes(timeStr);
+        truckTimes.push({truck: v, timeSort, timeStr});
+      }
+    }
+
+    loads.push({deliverTo: currentDeliverTo || '', pickup, product, truckTimes});
+  }
+
+  // Build per-truck list sorted by time
+  const truckLoads = {};
+  for (const load of loads) {
+    for (const {truck, timeSort, timeStr} of load.truckTimes) {
+      if (!truckLoads[truck]) truckLoads[truck] = [];
+      truckLoads[truck].push({
+        deliverTo: load.deliverTo,
+        pickup: load.pickup,
+        product: load.product,
+        timeSort,
+        timeStr
+      });
+    }
+  }
+
+  // Sort each truck's loads by time
+  for (const truck in truckLoads) {
+    truckLoads[truck].sort((a,b) => a.timeSort - b.timeSort);
+  }
+
+  return truckLoads;
+}
+
+function splitQuarryMaterial(rVal) {
+  const patterns = [
+    [/^(Bromelton)\s+(.+)$/i, 'Bromelton'],
+    [/^(Mt Marrow)\s+(.+)$/i, 'Mt Marrow'],
+    [/^(Maryborough)\s+(.+)$/i, 'Maryborough'],
+    [/^(Fernvale)\s+(.+)$/i, 'Fernvale'],
+    [/^(CCS)\s*[-–]\s*(.+)$/i, 'CCS'],
+    [/^(DMC\s+TENTERFIELD)\s+(.+)$/i, 'DMC Tenterfield'],
+    [/^(Mt Cotton)\s+(.+)$/i, 'Mt Cotton'],
+    [/^(Fraser Coast)\s+(.+)$/i, 'Fraser Coast'],
+    [/^(Ipswich)\s+(.+)$/i, 'Ipswich'],
+    [/^(Holcim\s+\w+)$/i, null],
+    [/^(Coastal Sands)$/i, null],
+    [/^(Lantrak)$/i, null],
+  ];
+  for (const [pat, quarryOverride] of patterns) {
+    const m = rVal.match(pat);
+    if (m) {
+      const pickup = quarryOverride || m[1];
+      const product = m[2] ? m[2].trim() : '';
+      return {pickup: pickup.trim(), product};
+    }
+  }
+  // Default: whole string is pickup, no product
+  return {pickup: rVal, product: ''};
+}
+
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return 9999;
+  const m = timeStr.match(/(\d+)\.?(\d*)\s*(am|pm)/i);
+  if (!m) return 9999;
+  let h = parseInt(m[1]);
+  const mins = m[2] ? parseInt(m[2]) : 0;
+  const period = m[3].toLowerCase();
+  if (period === 'pm' && h !== 12) h += 12;
+  if (period === 'am' && h === 12) h = 0;
+  return h * 60 + mins;
+}
+
+function checkForScheduledJobs() {
+  const stored = localStorage.getItem('cartage_schedule');
+  if (!stored) return;
+  try {
+    const {data} = JSON.parse(stored);
+    scheduleData = data;
+    const truckNo = document.getElementById('truckNo')?.value?.trim();
+    const banner = document.getElementById('loadJobsBanner');
+    if (truckNo && scheduleData[truckNo] && scheduleData[truckNo].length > 0) {
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+function loadJobsFromSchedule() {
+  const truckNo = document.getElementById('truckNo')?.value?.trim();
+  if (!truckNo || !scheduleData[truckNo]) return;
+  const jobs = scheduleData[truckNo];
+
+  // Clear existing loads and rebuild from schedule
+  document.getElementById('loadsContainer').innerHTML = '';
+  loadCount = 0;
+
+  jobs.forEach((job, i) => {
+    addLoad();
+    const idx = i + 1;
+
+    // Set Pickup Location
+    const pfSel = document.getElementById('pullFrom' + idx);
+    const pfOtherWrap = document.getElementById('otherPullFromWrap' + idx);
+    const pfOtherInput = document.getElementById('otherPullFrom' + idx);
+    if (pfSel && job.pickup) {
+      // Try to match against known list
+      const match = matchList(job.pickup, KNOWN_LOCATIONS, 0.7);
+      if (match) {
+        pfSel.value = match;
+        if (pfOtherWrap) pfOtherWrap.style.display = 'none';
+      } else {
+        pfSel.value = 'Other';
+        if (pfOtherWrap) pfOtherWrap.style.display = 'block';
+        if (pfOtherInput) pfOtherInput.value = job.pickup;
+      }
+    }
+
+    // Set Deliver To
+    const dtSel = document.getElementById('deliverTo' + idx);
+    const dtOtherWrap = document.getElementById('otherDeliverToWrap' + idx);
+    const dtOtherInput = document.getElementById('otherDeliverTo' + idx);
+    if (dtSel && job.deliverTo) {
+      const match = matchList(job.deliverTo, KNOWN_LOCATIONS, 0.7);
+      if (match) {
+        dtSel.value = match;
+        if (dtOtherWrap) dtOtherWrap.style.display = 'none';
+      } else {
+        dtSel.value = 'Other';
+        if (dtOtherWrap) dtOtherWrap.style.display = 'block';
+        if (dtOtherInput) dtOtherInput.value = job.deliverTo;
+      }
+    }
+
+    // Set Product
+    const prodSel = document.getElementById('product' + idx);
+    const prodOtherWrap = document.getElementById('otherProductWrap' + idx);
+    const prodOtherInput = document.getElementById('otherProduct' + idx);
+    if (prodSel && job.product) {
+      const match = matchList(job.product, KNOWN_PRODUCTS, 0.7);
+      if (match) {
+        prodSel.value = match;
+        if (prodOtherWrap) prodOtherWrap.style.display = 'none';
+      } else {
+        prodSel.value = 'Other';
+        if (prodOtherWrap) prodOtherWrap.style.display = 'block';
+        if (prodOtherInput) prodOtherInput.value = job.product;
+      }
+    }
+  });
+
+  document.getElementById('loadJobsBanner').style.display = 'none';
+  updateProgress();
+  showToast(`${jobs.length} loads loaded from today's schedule`, 'success');
+}
+
+// ── DOCKET PHOTO OCR ─────────────────────────────────────────
+const docketPhotos = {};
+
+function triggerDocketPhoto(idx) {
+  document.getElementById('docketInput' + idx)?.click();
+}
+
+function handleDocketPhoto(idx, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    docketPhotos[idx] = e.target.result;
+    const img = document.getElementById('docketImg' + idx);
+    if (img) img.src = e.target.result;
+    document.getElementById('docketPreview' + idx).style.display = 'block';
+    document.getElementById('docketScanResult' + idx).style.display = 'none';
+    document.getElementById('docketScanError' + idx).style.display = 'none';
+    updateProgress();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function scanDocket(idx) {
+  const photo = docketPhotos[idx];
+  if (!photo) return;
+
+  document.getElementById('docketScanProgress' + idx).style.display = 'block';
+  document.getElementById('docketScanResult' + idx).style.display = 'none';
+  document.getElementById('docketScanError' + idx).style.display = 'none';
+  document.getElementById('scanDocketBtn' + idx).style.display = 'none';
+
+  try {
+    const base64Data = photo.split(',')[1];
+    const mediaType = photo.split(';')[0].split(':')[1];
+
+    const response = await fetch('https://sparkly-kheer-878cb9.netlify.app/api/scan', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: [
+            {type: 'image', source: {type: 'base64', media_type: mediaType, data: base64Data}},
+            {type: 'text', text: `Read this weighbridge docket and extract ONLY the tonnage weights and docket number. Return strict JSON only, no markdown:
+{
+  "docketNumber": "",
+  "gross": "",
+  "tare": "",
+  "net": ""
+}
+Gross, Tare and Net are weights in tonnes (e.g. 28.56). Docket number is alphanumeric. If a field is not clearly visible return empty string.`}
+          ]
+        }]
+      })
+    });
+
+    if (!response.ok) throw new Error('API error ' + response.status);
+    const data = await response.json();
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    if (!textBlock) throw new Error('No response');
+
+    let cleaned = textBlock.text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'');
+    const parsed = JSON.parse(cleaned);
+
+    // Apply to load fields
+    if (parsed.docketNumber) {
+      const el = document.getElementById('ticketNo' + idx);
+      if (el && !el.value) {
+        el.value = parsed.docketNumber;
+        el.setAttribute('data-needs-confirm','true');
+        el.classList.add('error');
+        const errEl = document.getElementById('err-ticketNo' + idx);
+        if (errEl) { errEl.textContent = 'AI read this - please verify'; errEl.classList.add('show'); }
+      }
+    }
+    if (parsed.gross) { const el = document.getElementById('gross' + idx); if (el && !el.value) { el.value = parsed.gross; calcNet(idx); } }
+    if (parsed.tare) { const el = document.getElementById('tare' + idx); if (el && !el.value) { el.value = parsed.tare; calcNet(idx); } }
+
+    const resultEl = document.getElementById('docketScanResult' + idx);
+    resultEl.style.display = 'block';
+    resultEl.textContent = `Read: Gross ${parsed.gross||'?'} / Tare ${parsed.tare||'?'} / Net ${parsed.net||'?'} / Docket ${parsed.docketNumber||'?'}`;
+
+    document.getElementById('docketScanProgress' + idx).style.display = 'none';
+    updateProgress();
+  } catch(err) {
+    document.getElementById('docketScanProgress' + idx).style.display = 'none';
+    document.getElementById('scanDocketBtn' + idx).style.display = 'block';
+    const errEl = document.getElementById('docketScanError' + idx);
+    errEl.style.display = 'block';
+    const isNetwork = err.message.includes('Load failed') || err.message.includes('fetch');
+    errEl.textContent = isNetwork ? 'No internet - enter weights manually.' : 'Could not read docket. Enter weights manually. (' + err.message + ')';
+  }
+}
+
+// ── RUN SHEET PHOTO ──────────────────────────────────────────
+let runSheetPhotoData = null;
+
+function handleRunSheetPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    runSheetPhotoData = e.target.result;
+    document.getElementById('runSheetPhotoImg').src = e.target.result;
+    document.getElementById('runSheetPhotoPreview').style.display = 'block';
+    document.getElementById('runSheetPhotoBtnLabel').textContent = 'Run Sheet Captured';
+    updateProgress();
+  };
+  reader.readAsDataURL(file);
+}
+
 let driverLookupInProgress = false;
 
 function lookupDriver() {
@@ -1409,6 +1841,7 @@ function lookupTruck() {
     }
     warningEl.style.display = 'block';
   }
+  checkForScheduledJobs();
 }
 
 // ── STATE ────────────────────────────────────────────────────
@@ -1423,9 +1856,9 @@ let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 document.addEventListener('DOMContentLoaded', () => {
   setTodayDate();
   addLoad();
-  buildDocketGrid();
   initSignature();
   updateProgress();
+  checkForScheduledJobs();
 });
 
 function setTodayDate() {
@@ -1696,11 +2129,42 @@ function addLoad() {
         </div>
       </div>
       <div class="field">
-        <label>Comments <span style="color:var(--muted);font-weight:400;text-transform:none;">(optional — e.g. delay, diversion, stick up)</span></label>
-        <textarea id="comments${idx}" placeholder="e.g. Diverted to Springvale, stick up at site…"
+        <label>Comments <span style="color:var(--muted);font-weight:400;text-transform:none;">(optional)</span></label>
+        <textarea id="comments${idx}" placeholder="e.g. delay, diversion, stick up…"
                   oninput="updateProgress()" rows="2"></textarea>
       </div>
-      ${idx > 1 ? `<button onclick="removeLoad(${idx})" style="margin-top:8px;background:transparent;border:1px solid #fecaca;color:#dc2626;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;">Remove Load ${idx}</button>` : ''}
+
+      <!-- DOCKET PHOTO + OCR -->
+      <div style="margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
+        <label style="font-size:11px; font-weight:700; color:var(--label); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:10px;">
+          Weighbridge Docket Photo <span class="req">*</span>
+        </label>
+        <div id="docketPhotoBtn${idx}" class="photo-btn" onclick="triggerDocketPhoto(${idx})" style="padding:18px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span class="btn-label" id="docketBtnLabel${idx}">Photograph Docket</span>
+          <span class="btn-sub">Tap to open camera</span>
+        </div>
+        <input type="file" id="docketInput${idx}" accept="image/*" capture="environment"
+               onchange="handleDocketPhoto(${idx}, this)" style="display:none;">
+        <div id="docketPreview${idx}" style="display:none; margin-top:10px;">
+          <img id="docketImg${idx}" src="" alt="Docket" style="width:100%; border-radius:8px; max-height:200px; object-fit:cover;">
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button onclick="triggerDocketPhoto(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake</button>
+            <button onclick="scanDocket(${idx})" id="scanDocketBtn${idx}" style="flex:2; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Read Docket Weights</button>
+          </div>
+        </div>
+        <div id="docketScanProgress${idx}" style="display:none; text-align:center; padding:12px 0;">
+          <div style="width:24px; height:24px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 8px;"></div>
+          <span style="font-size:12px; color:var(--label);">Reading docket...</span>
+        </div>
+        <div id="docketScanResult${idx}" style="display:none; margin-top:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px; font-size:12px; color:#16a34a;"></div>
+        <div id="docketScanError${idx}" style="display:none; margin-top:8px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 12px; font-size:12px; color:#dc2626;"></div>
+      </div>
+
+      ${idx > 1 ? `<button onclick="removeLoad(${idx})" style="margin-top:12px;background:transparent;border:1px solid #fecaca;color:#dc2626;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;">Remove Load ${idx}</button>` : ''}
     </div>
   `;
   container.appendChild(div);
@@ -1975,67 +2439,6 @@ function confirmTimePicker() {
 }
 
 // ── DOCKET GRID ───────────────────────────────────────────
-function buildDocketGrid() {
-  const grid = document.getElementById('docketGrid');
-  grid.innerHTML = '';
-  for (let i = 0; i < NUM_DOCKETS; i++) {
-    const slot = document.createElement('div');
-    slot.className = 'docket-slot';
-    slot.id = `docketSlot${i}`;
-    slot.onclick = () => document.getElementById(`docketInput${i}`).click();
-    slot.innerHTML = `
-      <span class="slot-num">Docket ${i+1}</span>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5">
-        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-        <circle cx="12" cy="13" r="4"/>
-      </svg>
-      <span class="slot-label" id="docketLabel${i}">Tap to capture</span>
-      <img class="slot-preview" id="docketPreview${i}" src="" alt="">
-      <span class="slot-status" id="docketStatus${i}"></span>
-      <input type="file" id="docketInput${i}" accept="image/*" capture="environment"
-             onchange="handlePhoto(this,'docket${i}')">
-    `;
-    grid.appendChild(slot);
-  }
-}
-
-// ── PHOTO HANDLING ────────────────────────────────────────
-function triggerPhoto(inputId) { document.getElementById(inputId).click(); }
-function retakePhoto(inputId) { document.getElementById(inputId).value=''; document.getElementById(inputId).click(); }
-
-function handlePhoto(input, key) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const dataUrl = e.target.result;
-    if (key.startsWith('docket')) {
-      const idx = parseInt(key.replace('docket',''));
-      photoData.dockets[idx] = dataUrl;
-      blurStatus.dockets[idx] = null;
-      const slot = document.getElementById(`docketSlot${idx}`);
-      const preview = document.getElementById(`docketPreview${idx}`);
-      const label = document.getElementById(`docketLabel${idx}`);
-      const status = document.getElementById(`docketStatus${idx}`);
-      preview.src = dataUrl; preview.style.display='block';
-      label.textContent='Captured'; status.className='slot-status checking'; status.textContent='Checking…';
-      slot.classList.remove('captured','blur-warn');
-      checkBlur(dataUrl, blurry => {
-        blurStatus.dockets[idx] = blurry;
-        if (blurry) {
-          slot.classList.add('blur-warn'); status.className='slot-status warn'; status.textContent='⚠ Retake';
-          document.getElementById('docketBlurAlert').classList.add('show');
-        } else {
-          slot.classList.add('captured'); status.className='slot-status ok'; status.textContent='✓ Clear';
-          if (!blurStatus.dockets.some((v,i) => photoData.dockets[i] && v===true))
-            document.getElementById('docketBlurAlert').classList.remove('show');
-        }
-        updateProgress();
-      });
-    }
-  };
-  reader.readAsDataURL(file);
-}
 
 // ── BLUR DETECTION ────────────────────────────────────────
 function checkBlur(dataUrl, callback) {
@@ -2085,7 +2488,7 @@ function updateProgress() {
   const baseFields = ['driverID','truckNo','truckRego','depot','startTime','finishTime','odometerStart','odometerFinish'];
   let filled = 0, total = baseFields.length + 4;
   baseFields.forEach(id => { const el=document.getElementById(id); if(el&&el.value.trim()!=='') filled++; });
-  if (photoData.dockets.some(d=>d!==null)) filled++;
+  if (Object.keys(docketPhotos).length > 0) filled++;
   // Check load 1
   const t1 = document.getElementById('ticketNo1');
   const g1 = document.getElementById('gross1');
@@ -2150,9 +2553,8 @@ function submitForm() {
     errors.push('Deliver To (Load 1)');
   }
   if (document.getElementById('tonnes1')?.value === 'Check weights') errors.push('Load 1: Gross weight must be greater than Tare weight');
-  if (!photoData.dockets.some(d=>d!==null)) errors.push('At least 1 Weighbridge Docket photo');
+  if (!Object.keys(docketPhotos).length) errors.push('At least 1 Weighbridge Docket photo required');
   if (!hasSig) errors.push('Driver Signature');
-  if (blurStatus.dockets.some((v,i)=>photoData.dockets[i]&&v===true)) errors.push('One or more docket photos are blurry — please retake');
 
   if (errors.length>0) {
     const summary=document.getElementById('valSummary');
@@ -2201,7 +2603,8 @@ function submitForm() {
     totalTonnes: document.getElementById('totalTonnesDisplay').textContent,
     notes: document.getElementById('notes').value,
     signature: getSignatureDataUrl(),
-    docketPhotos: photoData.dockets.filter(d=>d!==null),
+    docketPhotos: docketPhotos,
+    runSheetPhoto: runSheetPhotoData,
     submittedAt: new Date().toISOString(),
   };
 
@@ -2255,11 +2658,14 @@ function resetForm() {
     if (trigger) trigger.classList.remove('filled','error');
   });
   setTodayDate();
-  photoData.dockets=Array(NUM_DOCKETS).fill(null);
-  blurStatus.dockets=Array(NUM_DOCKETS).fill(null);
+  // Clear per-load docket photos
+  Object.keys(docketPhotos).forEach(k => delete docketPhotos[k]);
+  // Clear run sheet photo
+  runSheetPhotoData = null;
+  document.getElementById('runSheetPhotoPreview').style.display = 'none';
+  document.getElementById('runSheetPhotoBtnLabel').textContent = 'Photograph Run Sheet';
   resetScan();
-  document.getElementById('docketBlurAlert').classList.remove('show');
-  clearSignature(); buildDocketGrid(); updateProgress(); updateAddLoadBtn();
+  clearSignature(); updateProgress(); updateAddLoadBtn();
   window.scrollTo(0,0);
 }
 
