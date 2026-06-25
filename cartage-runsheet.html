@@ -611,7 +611,7 @@
     <h1>Cartage Australia</h1>
     <p>Daily Run Sheet &amp; Dockets</p>
   </div>
-  <button onclick="toggleDispatcher()" id="dispatcherToggleBtn" style="margin-left:auto; background:transparent; border:1.5px solid rgba(255,255,255,0.3); color:white; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">Dispatcher</button>
+  <button onclick="toggleDispatcher()" id="dispatcherToggleBtn" style="display:none; margin-left:auto; background:transparent; border:1.5px solid rgba(255,255,255,0.3); color:white; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">Dispatcher</button>
 </div>
 
 <!-- PROGRESS -->
@@ -1859,6 +1859,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initSignature();
   updateProgress();
   checkForScheduledJobs();
+  // Show dispatcher button only for dispatchers via secret URL
+  if (new URLSearchParams(window.location.search).get('dispatcher') === 'true') {
+    document.getElementById('dispatcherToggleBtn').style.display = 'block';
+  }
 });
 
 function setTodayDate() {
