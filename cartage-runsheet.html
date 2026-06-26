@@ -629,18 +629,23 @@
       <div class="section-title">Dispatcher - Upload Today's Schedule</div>
       <div class="card">
         <p style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:14px;">
-          Upload today's QLD booking Excel file. Drivers will see their pre-allocated loads automatically.
+          Upload today's QLD booking Excel file. Drivers will see their pre-allocated loads automatically on any device.
         </p>
         <div id="dispatchUploadError" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 13px; font-size:12px; color:#dc2626; margin-bottom:12px;"></div>
-        <button onclick="document.getElementById('scheduleFileInput').click()" style="width:100%; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:10px; padding:24px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;">
+        <div id="dispatchDropZone"
+          onclick="document.getElementById('scheduleFileInput').click()"
+          ondragover="event.preventDefault(); this.style.borderColor='var(--orange)'; this.style.background='#fffbeb';"
+          ondragleave="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';"
+          ondrop="event.preventDefault(); this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc'; processScheduleFile({files: event.dataTransfer.files});"
+          style="width:100%; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:10px; padding:24px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; box-sizing:border-box; transition: all 0.2s;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <span style="font-size:14px; font-weight:700; color:var(--text);">Upload Booking Sheet</span>
-          <span style="font-size:12px; color:var(--muted);">Select today's QLD Excel file</span>
-        </button>
+          <span style="font-size:12px; color:var(--muted);">Click to select or drag and drop the QLD Excel file here</span>
+        </div>
         <input type="file" id="scheduleFileInput" accept=".xlsx,.xls" style="display:none;" onchange="processScheduleFile(this)">
         <div id="dispatchProgress" style="display:none; text-align:center; padding:20px;">
           <div style="width:28px; height:28px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 10px;"></div>
-          <span style="font-size:13px; color:var(--label);">Processing schedule...</span>
+          <span style="font-size:13px; color:var(--label);">Processing and saving schedule for all drivers...</span>
         </div>
         <div id="dispatchSuccess" style="display:none; margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px 14px; font-size:13px; color:#16a34a;"></div>
       </div>
@@ -1321,7 +1326,8 @@ function resetScan() {
 }
 
 // -- DISPATCHER ------------------------------------------------
-let scheduleData = {}; // truck -> [{deliverTo, pickup, product}]
+let scheduleData = {}; // truck -> {depot, driver, loads[]}
+let scheduleSheetDate = ''; // date string from sheet name e.g. "25.06.26"
 
 function toggleDispatcher() {
   const section = document.getElementById('dispatcherSection');
@@ -1350,7 +1356,6 @@ function processScheduleFile(input) {
       // Find today's sheet
       const today = new Date();
       const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-      const dayStr = days[today.getDay()];
       const dd = String(today.getDate()).padStart(2,'0');
       const mm = String(today.getMonth()+1).padStart(2,'0');
       const yy = String(today.getFullYear()).slice(2);
@@ -1358,29 +1363,45 @@ function processScheduleFile(input) {
 
       let sheetName = workbook.SheetNames.find(s => s.includes(targetDate));
       if (!sheetName) {
-        // Fall back to most recent date sheet
-        sheetName = workbook.SheetNames.find(s => /^(MON|TUE|WED|THU|FRI|SAT|SUN)\s/.test(s));
+        // Today's sheet not found - show what's available
+        const dateSheets = workbook.SheetNames.filter(s => /^(MON|TUE|WED|THU|FRI|SAT|SUN)\s/.test(s));
+        if (dateSheets.length === 0) throw new Error('No date sheets found in this file');
+        throw new Error(`Today's sheet (${targetDate}) not found. Available sheets: ${dateSheets.slice(-3).join(', ')}. Has today's tab been added yet?`);
       }
-      if (!sheetName) throw new Error('Could not find today\'s sheet in this file');
 
       const ws = workbook.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
 
       scheduleData = parseScheduleRows(rows);
+      // Extract date from sheet name e.g. "THU 25.06.26" -> "25.06.26"
+      const sheetDateMatch = sheetName.match(/(\d{2}\.\d{2}\.\d{2})/);
+      scheduleSheetDate = sheetDateMatch ? sheetDateMatch[1] : '';
       const truckCount = Object.keys(scheduleData).length;
       const loadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+
+      const schedulePayload = {
+        date: targetDate,
+        sheet: sheetName,
+        sheetDate: scheduleSheetDate,
+        data: scheduleData
+      };
+
+      // Save to localStorage as immediate local backup
+      localStorage.setItem('cartage_schedule', JSON.stringify(schedulePayload));
+
+      // Save to Netlify so all driver devices can access it
+      try {
+        await fetch('https://sparkly-kheer-878cb9.netlify.app/api/schedule', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(schedulePayload)
+        });
+      } catch(e) { /* Netlify save failed - localStorage still works locally */ }
 
       document.getElementById('dispatchProgress').style.display = 'none';
       const successEl = document.getElementById('dispatchSuccess');
       successEl.style.display = 'block';
       successEl.textContent = `Loaded ${sheetName}: ${truckCount} trucks, ${loadCount} total loads. Drivers can now tap "Load Today\'s Jobs".`;
-
-      // Save to localStorage for drivers
-      localStorage.setItem('cartage_schedule', JSON.stringify({
-        date: targetDate,
-        sheet: sheetName,
-        data: scheduleData
-      }));
 
       // Check if current truck has jobs
       checkForScheduledJobs();
@@ -1520,25 +1541,105 @@ function parseTimeToMinutes(timeStr) {
 
 function checkForScheduledJobs() {
   const stored = localStorage.getItem('cartage_schedule');
-  if (!stored) return;
+  if (stored) {
+    applyStoredSchedule(stored);
+  } else {
+    // Try fetching from Netlify (driver on a different device)
+    fetch('https://sparkly-kheer-878cb9.netlify.app/api/schedule')
+      .then(r => r.json())
+      .then(res => {
+        if (res.ok && res.schedule) {
+          const json = JSON.stringify(res.schedule);
+          localStorage.setItem('cartage_schedule', json);
+          applyStoredSchedule(json);
+        }
+      })
+      .catch(() => {}); // No schedule available, that's fine
+  }
+}
+
+function applyStoredSchedule(json) {
   try {
-    const {data} = JSON.parse(stored);
-    scheduleData = data;
+    const parsed = JSON.parse(json);
+    scheduleData = parsed.data;
+    scheduleSheetDate = parsed.sheetDate || '';
+
+    // Check if stored schedule matches today
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2,'0');
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const yy = String(today.getFullYear()).slice(2);
+    const todayStr = `${dd}.${mm}.${yy}`;
+    const isToday = scheduleSheetDate === todayStr;
+
     const truckNo = document.getElementById('truckNo')?.value?.trim();
+    const driverName = document.getElementById('driverName')?.value?.trim();
     const banner = document.getElementById('loadJobsBanner');
-    if (truckNo && scheduleData[truckNo] && scheduleData[truckNo].loads && scheduleData[truckNo].loads.length > 0) {
+
+    // Check by truck number or by driver name
+    const matchedTruck = truckNo && scheduleData[truckNo] ? truckNo :
+      driverName ? findTruckByDriverName(driverName) : null;
+
+    if (matchedTruck && scheduleData[matchedTruck]?.loads?.length > 0) {
       banner.style.display = 'block';
+      const bannerMsg = banner.querySelector('div');
+      if (bannerMsg) {
+        if (isToday) {
+          bannerMsg.textContent = `Today's allocated loads available (${parsed.sheet})`;
+          bannerMsg.style.color = '#92400e';
+        } else {
+          bannerMsg.textContent = `Warning: schedule is from ${parsed.sheet}, not today. Check with dispatcher.`;
+          bannerMsg.style.color = '#dc2626';
+        }
+      }
     } else {
       banner.style.display = 'none';
     }
   } catch(e) {}
 }
 
+function findTruckByDriverName(name) {
+  if (!name || !scheduleData) return null;
+  const lower = name.toLowerCase();
+  for (const truck in scheduleData) {
+    const d = scheduleData[truck].driver || '';
+    if (d.toLowerCase().includes(lower) || lower.includes(d.toLowerCase())) {
+      return truck;
+    }
+  }
+  return null;
+}
+
 function loadJobsFromSchedule() {
   const truckNo = document.getElementById('truckNo')?.value?.trim();
-  if (!truckNo || !scheduleData[truckNo]) return;
-  const truckData = scheduleData[truckNo];
+  const driverName = document.getElementById('driverName')?.value?.trim();
+
+  // Find matching truck - by truck number first, then by driver name
+  let matchedTruck = null;
+  if (truckNo && scheduleData[truckNo]) {
+    matchedTruck = truckNo;
+  } else if (driverName) {
+    matchedTruck = findTruckByDriverName(driverName);
+  }
+
+  if (!matchedTruck || !scheduleData[matchedTruck]) {
+    showToast('No loads found for this truck/driver in today\'s schedule', 'warning');
+    return;
+  }
+
+  const truckData = scheduleData[matchedTruck];
   const jobs = truckData.loads || [];
+
+  // Set date from sheet date (e.g. "25.06.26" -> "2026-06-25")
+  if (scheduleSheetDate) {
+    const parts = scheduleSheetDate.split('.');
+    if (parts.length === 3) {
+      const yyyy = '20' + parts[2];
+      const formattedDate = `${yyyy}-${parts[1]}-${parts[0]}`;
+      const dateEl = document.getElementById('jobDate');
+      if (dateEl) dateEl.value = formattedDate;
+    }
+  }
 
   // Auto-fill depot if not already set
   if (truckData.depot) {
@@ -1846,6 +1947,7 @@ function lookupDriverByName() {
     }
     okEl.style.display = 'block';
     document.getElementById('err-driverName')?.classList.remove('show');
+    checkForScheduledJobs();
   } else {
     verifiedDriverName = null;
     if (name.length >= 4) noMatchEl.style.display = 'block';
