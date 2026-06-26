@@ -1567,27 +1567,53 @@ function parseTimeToMinutes(timeStr) {
   return h * 60 + mins;
 }
 
+function showDebug(msg) {
+  let el = document.getElementById('debugBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'debugBanner';
+    el.style.cssText = 'background:#1a2235;color:#f59e0b;font-size:11px;padding:8px 12px;font-family:monospace;white-space:pre-wrap;word-break:break-all;';
+    document.body.insertBefore(el, document.body.firstChild);
+  }
+  el.textContent += msg + '\n';
+}
+
 function fetchScheduleFromJsonbin() {
+  showDebug('Fetching from JSONbin...');
   fetch(`${JSONBIN_BASE}/b/${JSONBIN_ID}/latest`, {
     headers: {'X-Master-Key': JSONBIN_API_KEY}
   })
-    .then(r => r.json())
+    .then(r => { showDebug('HTTP status: ' + r.status); return r.json(); })
     .then(res => {
+      showDebug('Response keys: ' + Object.keys(res).join(', '));
+      if (res.record) {
+        showDebug('Record keys: ' + Object.keys(res.record).join(', '));
+        showDebug('Trucks in data: ' + Object.keys(res.record.data || {}).join(', '));
+      }
       if (res.record && res.record.data && Object.keys(res.record.data).length > 0) {
         const json = JSON.stringify(res.record);
         localStorage.setItem('cartage_schedule', json);
         applyStoredSchedule(json);
+      } else {
+        showDebug('No valid data in record');
       }
     })
-    .catch(() => {
-      // Fall back to localStorage if JSONbin unavailable
+    .catch(err => {
+      showDebug('Fetch error: ' + err.message);
       const stored = localStorage.getItem('cartage_schedule');
-      if (stored) applyStoredSchedule(stored);
+      if (stored) {
+        showDebug('Using localStorage fallback');
+        applyStoredSchedule(stored);
+      }
     });
 }
 
 function checkForScheduledJobs() {
-  if (!scheduleData || Object.keys(scheduleData).length === 0) return;
+  if (!scheduleData || Object.keys(scheduleData).length === 0) {
+    showDebug('checkForScheduledJobs: no scheduleData');
+    return;
+  }
+  showDebug('checkForScheduledJobs: ' + Object.keys(scheduleData).length + ' trucks loaded');
 
   const today = new Date();
   const dd = String(today.getDate()).padStart(2,'0');
@@ -1598,10 +1624,11 @@ function checkForScheduledJobs() {
 
   const truckNo = document.getElementById('truckNo')?.value?.trim();
   const driverName = document.getElementById('driverName')?.value?.trim();
-  const banner = document.getElementById('loadJobsBanner');
+  showDebug('truckNo: "' + truckNo + '" driverName: "' + driverName + '"');
 
   const matchedTruck = (truckNo && scheduleData[truckNo]) ? truckNo :
     driverName ? findTruckByDriverName(driverName) : null;
+  showDebug('matchedTruck: ' + matchedTruck);
 
   if (matchedTruck && scheduleData[matchedTruck]?.loads?.length > 0) {
     banner.style.display = 'block';
