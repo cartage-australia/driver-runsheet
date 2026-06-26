@@ -620,37 +620,37 @@
   <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 </div>
 
-<!-- MAIN FORM -->
-<div id="mainForm">
-
-  <!-- DISPATCHER SECTION -->
-  <div id="dispatcherSection" style="display:none;">
-    <div class="section">
-      <div class="section-title">Dispatcher - Upload Today's Schedule</div>
-      <div class="card">
-        <p style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:14px;">
-          Upload today's QLD booking Excel file. Drivers will see their pre-allocated loads automatically on any device.
-        </p>
-        <div id="dispatchUploadError" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 13px; font-size:12px; color:#dc2626; margin-bottom:12px;"></div>
-        <div id="dispatchDropZone"
-          onclick="document.getElementById('scheduleFileInput').click()"
-          ondragover="event.preventDefault(); this.style.borderColor='var(--orange)'; this.style.background='#fffbeb';"
-          ondragleave="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';"
-          ondrop="event.preventDefault(); this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc'; processScheduleFile({files: event.dataTransfer.files});"
-          style="width:100%; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:10px; padding:24px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; box-sizing:border-box; transition: all 0.2s;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span style="font-size:14px; font-weight:700; color:var(--text);">Upload Booking Sheet</span>
-          <span style="font-size:12px; color:var(--muted);">Click to select or drag and drop the QLD Excel file here</span>
-        </div>
-        <input type="file" id="scheduleFileInput" accept=".xlsx,.xls" style="display:none;" onchange="processScheduleFile(this)">
-        <div id="dispatchProgress" style="display:none; text-align:center; padding:20px;">
-          <div style="width:28px; height:28px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 10px;"></div>
-          <span style="font-size:13px; color:var(--label);">Processing and saving schedule for all drivers...</span>
-        </div>
-        <div id="dispatchSuccess" style="display:none; margin-top:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px 14px; font-size:13px; color:#16a34a;"></div>
+<!-- DISPATCHER PAGE - only shown via ?dispatcher=true URL -->
+<div id="dispatcherWrapper" style="display:none; padding:20px; max-width:480px; margin:0 auto;">
+  <div class="section">
+    <div class="section-title">Upload Today's Schedule</div>
+    <div class="card">
+      <p style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:14px;">
+        Upload today's QLD booking Excel file. All drivers will see their pre-allocated loads automatically on their phones.
+      </p>
+      <div id="dispatchUploadError" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 13px; font-size:12px; color:#dc2626; margin-bottom:12px;"></div>
+      <div id="dispatchDropZone"
+        onclick="document.getElementById('scheduleFileInput').click()"
+        ondragover="event.preventDefault(); this.style.borderColor='var(--orange)'; this.style.background='#fffbeb';"
+        ondragleave="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';"
+        ondrop="event.preventDefault(); this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc'; processScheduleFile({files: event.dataTransfer.files});"
+        style="width:100%; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:10px; padding:32px; display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; box-sizing:border-box; transition: all 0.2s;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span style="font-size:15px; font-weight:700; color:var(--text);">Upload Booking Sheet</span>
+        <span style="font-size:12px; color:var(--muted);">Click to select or drag and drop the QLD Excel file here</span>
       </div>
+      <input type="file" id="scheduleFileInput" accept=".xlsx,.xls" style="display:none;" onchange="processScheduleFile(this)">
+      <div id="dispatchProgress" style="display:none; text-align:center; padding:24px;">
+        <div style="width:32px; height:32px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px;"></div>
+        <span style="font-size:13px; color:var(--label);">Processing and saving schedule for all drivers...</span>
+      </div>
+      <div id="dispatchSuccess" style="display:none; margin-top:14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:14px; font-size:13px; color:#16a34a; line-height:1.6;"></div>
     </div>
   </div>
+</div>
+
+<!-- MAIN FORM -->
+<div id="mainForm">
 
   <!-- 1. DRIVER DETAILS -->
   <div class="section">
@@ -1342,6 +1342,13 @@ function toggleDispatcher() {
   btn.style.color = visible ? 'white' : 'var(--orange)';
 }
 
+function enterDispatcherMode() {
+  // Hide everything except the dispatcher upload section
+  document.getElementById('mainForm').style.display = 'none';
+  const dispWrapper = document.getElementById('dispatcherWrapper');
+  if (dispWrapper) dispWrapper.style.display = 'block';
+}
+
 function processScheduleFile(input) {
   const file = input.files[0];
   if (!file) return;
@@ -1542,24 +1549,58 @@ function parseTimeToMinutes(timeStr) {
   return h * 60 + mins;
 }
 
-function checkForScheduledJobs() {
-  const stored = localStorage.getItem('cartage_schedule');
-  if (stored) {
-    applyStoredSchedule(stored);
-  } else {
-    // Try fetching from JSONbin (driver on a different device)
-    fetch(`${JSONBIN_BASE}/b/${JSONBIN_ID}/latest`, {
-      headers: {'X-Master-Key': JSONBIN_API_KEY}
+function fetchScheduleFromJsonbin() {
+  fetch(`${JSONBIN_BASE}/b/${JSONBIN_ID}/latest`, {
+    headers: {'X-Master-Key': JSONBIN_API_KEY}
+  })
+    .then(r => r.json())
+    .then(res => {
+      if (res.record && res.record.data && Object.keys(res.record.data).length > 0) {
+        const json = JSON.stringify(res.record);
+        localStorage.setItem('cartage_schedule', json);
+        scheduleData = res.record.data;
+        scheduleSheetDate = res.record.sheetDate || '';
+        checkForScheduledJobs();
+      }
     })
-      .then(r => r.json())
-      .then(res => {
-        if (res.record && res.record.data) {
-          const json = JSON.stringify(res.record);
-          localStorage.setItem('cartage_schedule', json);
-          applyStoredSchedule(json);
-        }
-      })
-      .catch(() => {});
+    .catch(() => {
+      // Fall back to localStorage if JSONbin unavailable
+      const stored = localStorage.getItem('cartage_schedule');
+      if (stored) applyStoredSchedule(stored);
+    });
+}
+
+function checkForScheduledJobs() {
+  if (!scheduleData || Object.keys(scheduleData).length === 0) return;
+
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2,'0');
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const yy = String(today.getFullYear()).slice(2);
+  const todayStr = `${dd}.${mm}.${yy}`;
+  const isToday = scheduleSheetDate === todayStr;
+
+  const truckNo = document.getElementById('truckNo')?.value?.trim();
+  const driverName = document.getElementById('driverName')?.value?.trim();
+  const banner = document.getElementById('loadJobsBanner');
+
+  const matchedTruck = (truckNo && scheduleData[truckNo]) ? truckNo :
+    driverName ? findTruckByDriverName(driverName) : null;
+
+  if (matchedTruck && scheduleData[matchedTruck]?.loads?.length > 0) {
+    banner.style.display = 'block';
+    const bannerMsg = banner.querySelector('div');
+    if (bannerMsg) {
+      if (isToday) {
+        bannerMsg.textContent = `Today's allocated loads available`;
+        bannerMsg.style.color = '#92400e';
+      } else {
+        bannerMsg.textContent = `Warning: schedule is from ${scheduleSheetDate}, not today. Check with dispatcher.`;
+        bannerMsg.style.color = '#dc2626';
+      }
+    }
+  } else {
+    banner.style.display = 'none';
   }
 }
 
@@ -1568,38 +1609,7 @@ function applyStoredSchedule(json) {
     const parsed = JSON.parse(json);
     scheduleData = parsed.data;
     scheduleSheetDate = parsed.sheetDate || '';
-
-    // Check if stored schedule matches today
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2,'0');
-    const mm = String(today.getMonth()+1).padStart(2,'0');
-    const yy = String(today.getFullYear()).slice(2);
-    const todayStr = `${dd}.${mm}.${yy}`;
-    const isToday = scheduleSheetDate === todayStr;
-
-    const truckNo = document.getElementById('truckNo')?.value?.trim();
-    const driverName = document.getElementById('driverName')?.value?.trim();
-    const banner = document.getElementById('loadJobsBanner');
-
-    // Check by truck number or by driver name
-    const matchedTruck = truckNo && scheduleData[truckNo] ? truckNo :
-      driverName ? findTruckByDriverName(driverName) : null;
-
-    if (matchedTruck && scheduleData[matchedTruck]?.loads?.length > 0) {
-      banner.style.display = 'block';
-      const bannerMsg = banner.querySelector('div');
-      if (bannerMsg) {
-        if (isToday) {
-          bannerMsg.textContent = `Today's allocated loads available (${parsed.sheet})`;
-          bannerMsg.style.color = '#92400e';
-        } else {
-          bannerMsg.textContent = `Warning: schedule is from ${parsed.sheet}, not today. Check with dispatcher.`;
-          bannerMsg.style.color = '#dc2626';
-        }
-      }
-    } else {
-      banner.style.display = 'none';
-    }
+    checkForScheduledJobs();
   } catch(e) {}
 }
 
@@ -2008,14 +2018,23 @@ let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
 // -- INIT -----------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-  setTodayDate();
-  addLoad();
-  initSignature();
-  updateProgress();
-  checkForScheduledJobs();
-  // Show dispatcher button only for dispatchers via secret URL
-  if (new URLSearchParams(window.location.search).get('dispatcher') === 'true') {
-    document.getElementById('dispatcherToggleBtn').style.display = 'block';
+  const isDispatcher = new URLSearchParams(window.location.search).get('dispatcher') === 'true';
+
+  if (isDispatcher) {
+    // Dispatcher mode - show only upload page, hide everything else
+    document.getElementById('mainForm').style.display = 'none';
+    document.getElementById('dispatcherWrapper').style.display = 'block';
+    document.querySelector('.progress-wrap').style.display = 'none';
+    // Hide dispatcher toggle button (not needed in full dispatcher mode)
+    document.getElementById('dispatcherToggleBtn').style.display = 'none';
+  } else {
+    // Driver mode - show normal form, hide dispatcher button
+    setTodayDate();
+    addLoad();
+    initSignature();
+    updateProgress();
+    // Always fetch latest schedule from JSONbin on load
+    fetchScheduleFromJsonbin();
   }
 });
 
