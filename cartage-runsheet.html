@@ -1368,7 +1368,7 @@ function processScheduleFile(input) {
 
       scheduleData = parseScheduleRows(rows);
       const truckCount = Object.keys(scheduleData).length;
-      const loadCount = Object.values(scheduleData).reduce((s,v) => s+v.length, 0);
+      const loadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
 
       document.getElementById('dispatchProgress').style.display = 'none';
       const successEl = document.getElementById('dispatchSuccess');
@@ -1396,94 +1396,87 @@ function processScheduleFile(input) {
 }
 
 function parseScheduleRows(rows) {
-  const COL_Q = 16;
-  const COL_R = 17;
-  const COL_U_START = 20;
+  // Read LEFT section: columns A-O (indices 0-14), rows 0-70
+  // 4 driver blocks side by side, each 4 cols wide:
+  // [Load label] [Truck+Depot / Job description] [Rate] [Spacer]
+  const BLOCK_COLS = [0, 4, 8, 12];
+  const MAX_ROW = Math.min(rows.length, 70);
 
-  const IGNORE_Q = new Set(['allocations legend','customer (demand)','customer (plant)',
-                             'quarry/product','','nan']);
-  // Values that mean a row genuinely has no useful product info
-  const SKIP_R = new Set(['quarry/product','','nan']);
+  const allDrivers = {}; // truck -> {depot, driver, loads[]}
 
-  // Get time map from row 0
-  const timeRow = rows[0] || [];
-  const timeMap = {};
-  for (let c = COL_U_START; c < timeRow.length; c++) {
-    const v = String(timeRow[c] || '').trim();
-    if (v && (v.includes('am') || v.includes('pm'))) timeMap[c] = v;
-  }
+  let i = 0;
+  while (i < MAX_ROW) {
+    const row = rows[i] || [];
 
-  let currentDeliverTo = null;
-  const loads = [];
+    // Detect Description rows (marks start of a driver block set)
+    const isDescRow = BLOCK_COLS.some(bc => String(row[bc] || '').trim() === 'Description');
+    if (!isDescRow) { i++; continue; }
 
-  for (let r = 1; r < rows.length; r++) {
-    const row = rows[r];
-    const qVal = String(row[COL_Q] || '').trim();
-    const rVal = String(row[COL_R] || '').trim();
+    // Row above has driver names
+    const nameRow = i > 0 ? (rows[i-1] || []) : [];
 
-    if (qVal.toLowerCase().includes('legend')) continue;
+    for (const bc of BLOCK_COLS) {
+      if (String(row[bc] || '').trim() !== 'Description') continue;
 
-    // Skip contact/phone rows for deliver-to update only
-    const isContact = /\d{4}\s?\d{3}\s?\d{3}/.test(qVal);
-    if (qVal && !IGNORE_Q.has(qVal.toLowerCase()) && !isContact) {
-      currentDeliverTo = qVal;
-    }
+      // Parse truck cell: "419 Bromelton" or "8068 Mt Cotton"
+      const truckCell = String(row[bc+1] || '').trim();
+      const truckMatch = truckCell.match(/^(\d{3,4})\s+(.+)$/);
+      if (!truckMatch) continue;
 
-    // Collect truck numbers first - if none, skip the row
-    const truckTimes = [];
-    for (let c = COL_U_START; c < row.length; c++) {
-      const v = String(row[c] || '').trim();
-      if (/^\d{3,4}$/.test(v)) {
-        const timeStr = timeMap[c] || '';
-        const timeSort = parseTimeToMinutes(timeStr);
-        truckTimes.push({truck: v, timeSort, timeStr});
+      const truckNo = truckMatch[1];
+      const depot = truckMatch[2].trim();
+
+      // Get driver name from row above, strip agency suffix e.g. "(QUINN)"
+      let driverName = String(nameRow[bc] || '').trim();
+      if (driverName === 'nan') driverName = '';
+      driverName = driverName.replace(/\s*\([^)]+\)/g, '').trim();
+
+      // Read load rows below until Total Rate or next Description
+      const loads = [];
+      let j = i + 1;
+      while (j < MAX_ROW) {
+        const loadRow = rows[j] || [];
+        const descCol = String(loadRow[bc] || '').trim();
+        const jobCol = String(loadRow[bc+1] || '').trim();
+
+        if (descCol === 'Description') break;
+        if (descCol.includes('Total Rate')) break;
+
+        // Preload or Load 1-7 with a real job value
+        if (/^(Preload|Load \d+)$/i.test(descCol) && jobCol && jobCol !== '0' && jobCol !== 'nan') {
+          const {pickup: rawPickup, deliverTo} = splitJobString(jobCol);
+          const {pickup, product} = splitQuarryMaterial(rawPickup);
+          loads.push({
+            label: descCol,
+            pickup: pickup || rawPickup,
+            product: product || '',
+            deliverTo
+          });
+        }
+        j++;
       }
+
+      allDrivers[truckNo] = {depot, driver: driverName, loads};
     }
 
-    // No trucks on this row - skip it entirely
-    if (truckTimes.length === 0) continue;
-
-    // Work out pickup and product from R value
-    let pickup = '';
-    let product = '';
-
-    if (rVal && !SKIP_R.has(rVal.toLowerCase()) &&
-        !/^[\d.,e\-\+]+$/.test(rVal) && !/^\d{4}-\d{2}/.test(rVal)) {
-      const split = splitQuarryMaterial(rVal);
-      pickup = split.pickup;
-      product = split.product;
-    }
-    // If rVal is empty/skipped, pickup and product stay blank (will go to Other in UI)
-
-    loads.push({
-      deliverTo: currentDeliverTo || '',
-      pickup,
-      product,
-      truckTimes
-    });
+    // Advance past this block set
+    i++;
   }
 
-  // Build per-truck list sorted by time
-  const truckLoads = {};
-  for (const load of loads) {
-    for (const {truck, timeSort, timeStr} of load.truckTimes) {
-      if (!truckLoads[truck]) truckLoads[truck] = [];
-      truckLoads[truck].push({
-        deliverTo: load.deliverTo,
-        pickup: load.pickup,
-        product: load.product,
-        timeSort,
-        timeStr
-      });
-    }
-  }
+  return allDrivers;
+}
 
-  // Sort each truck's loads by time
-  for (const truck in truckLoads) {
-    truckLoads[truck].sort((a,b) => a.timeSort - b.timeSort);
+function splitJobString(job) {
+  // Split on unicode arrow or ASCII arrow
+  if (job.includes('\u2192')) {
+    const parts = job.split('\u2192');
+    return {pickup: parts[0].trim(), deliverTo: parts[1].trim()};
   }
-
-  return truckLoads;
+  if (job.includes('->')) {
+    const parts = job.split('->');
+    return {pickup: parts[0].trim(), deliverTo: parts[1].trim()};
+  }
+  return {pickup: job.trim(), deliverTo: ''};
 }
 
 function splitQuarryMaterial(rVal) {
@@ -1533,7 +1526,7 @@ function checkForScheduledJobs() {
     scheduleData = data;
     const truckNo = document.getElementById('truckNo')?.value?.trim();
     const banner = document.getElementById('loadJobsBanner');
-    if (truckNo && scheduleData[truckNo] && scheduleData[truckNo].length > 0) {
+    if (truckNo && scheduleData[truckNo] && scheduleData[truckNo].loads && scheduleData[truckNo].loads.length > 0) {
       banner.style.display = 'block';
     } else {
       banner.style.display = 'none';
@@ -1544,7 +1537,31 @@ function checkForScheduledJobs() {
 function loadJobsFromSchedule() {
   const truckNo = document.getElementById('truckNo')?.value?.trim();
   if (!truckNo || !scheduleData[truckNo]) return;
-  const jobs = scheduleData[truckNo];
+  const truckData = scheduleData[truckNo];
+  const jobs = truckData.loads || [];
+
+  // Auto-fill depot if not already set
+  if (truckData.depot) {
+    const depotSel = document.getElementById('depot');
+    if (depotSel && !depotSel.value) {
+      const depotMatch = matchList(truckData.depot, ['Devon','Truganina','Queensland','South Australia'], 0.5);
+      if (depotMatch) depotSel.value = depotMatch;
+    }
+  }
+
+  // Auto-verify driver name if present and not already set
+  if (truckData.driver && !verifiedDriverName) {
+    const match = matchNameFuzzy(truckData.driver.toLowerCase());
+    if (match) {
+      driverLookupInProgress = true;
+      document.getElementById('driverName').value = match.properName;
+      document.getElementById('driverID').value = match.id;
+      driverLookupInProgress = false;
+      verifiedDriverName = match.properName;
+      document.getElementById('driverIdOk').style.display = 'block';
+      document.getElementById('driverIdWarning').style.display = 'none';
+    }
+  }
 
   // Clear existing loads and rebuild from schedule
   document.getElementById('loadsContainer').innerHTML = '';
@@ -1624,7 +1641,7 @@ function loadJobsFromSchedule() {
 
   document.getElementById('loadJobsBanner').style.display = 'none';
   updateProgress();
-  showToast(`${jobs.length} loads loaded from today's schedule`, 'success');
+  showToast(`${jobs.length} loads loaded from today\'s schedule`, 'success');
 }
 
 // -- DOCKET PHOTO OCR -----------------------------------------
