@@ -1363,37 +1363,57 @@ function processScheduleFile(input) {
       const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
       const workbook = XLSX.read(data, {type: 'array'});
 
-      // Find today's sheet
-      const today = new Date();
-      const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-      const dd = String(today.getDate()).padStart(2,'0');
-      const mm = String(today.getMonth()+1).padStart(2,'0');
-      const yy = String(today.getFullYear()).slice(2);
-      const targetDate = `${dd}.${mm}.${yy}`;
+      // Find all date sheets from the last 5 days
+      const dateSheets = workbook.SheetNames.filter(s => /^(MON|TUE|WED|THU|FRI|SAT|SUN)\s/.test(s));
+      if (dateSheets.length === 0) throw new Error('No date sheets found in this file');
 
-      let sheetName = workbook.SheetNames.find(s => s.includes(targetDate));
-      if (!sheetName) {
-        // Today's sheet not found - show what's available
-        const dateSheets = workbook.SheetNames.filter(s => /^(MON|TUE|WED|THU|FRI|SAT|SUN)\s/.test(s));
-        if (dateSheets.length === 0) throw new Error('No date sheets found in this file');
-        throw new Error(`Today's sheet (${targetDate}) not found. Available sheets: ${dateSheets.slice(-3).join(', ')}. Has today's tab been added yet?`);
+      // Get today and last 4 days as date strings DD.MM.YY
+      const today = new Date();
+      const recentDates = [];
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yy = String(d.getFullYear()).slice(2);
+        recentDates.push(`${dd}.${mm}.${yy}`);
       }
 
-      const ws = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
+      // Find matching sheets for recent dates
+      const sheetsToLoad = dateSheets.filter(s => recentDates.some(d => s.includes(d)));
+      if (sheetsToLoad.length === 0) {
+        throw new Error(`No sheets found for the last 5 days. Available: ${dateSheets.slice(-3).join(', ')}`);
+      }
 
-      scheduleData = parseScheduleRows(rows);
-      // Extract date from sheet name e.g. "THU 25.06.26" -> "25.06.26"
-      const sheetDateMatch = sheetName.match(/(\d{2}\.\d{2}\.\d{2})/);
-      scheduleSheetDate = sheetDateMatch ? sheetDateMatch[1] : '';
+      // Parse each matching sheet and combine into allDaysData keyed by date
+      const allDaysData = {};
+      let todaySheetName = '';
+      let todayDate = recentDates[0]; // today's date string
+
+      for (const sName of sheetsToLoad) {
+        const ws = workbook.Sheets[sName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
+        const parsed = parseScheduleRows(rows);
+        const dateMatch = sName.match(/(\d{2}\.\d{2}\.\d{2})/);
+        const dateStr = dateMatch ? dateMatch[1] : '';
+        allDaysData[dateStr] = parsed;
+        if (dateStr === todayDate) todaySheetName = sName;
+      }
+
+      // Use today's data as the primary schedule
+      scheduleData = allDaysData[todayDate] || Object.values(allDaysData)[0];
+      scheduleSheetDate = todayDate;
+      const sheetName = todaySheetName || sheetsToLoad[sheetsToLoad.length - 1];
+
       const truckCount = Object.keys(scheduleData).length;
       const loadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
 
       const schedulePayload = {
-        date: targetDate,
+        date: todayDate,
         sheet: sheetName,
-        sheetDate: scheduleSheetDate,
-        data: scheduleData
+        sheetDate: todayDate,
+        data: scheduleData,
+        allDays: allDaysData
       };
 
       // Save to localStorage as immediate local backup
@@ -1411,11 +1431,9 @@ function processScheduleFile(input) {
       document.getElementById('dispatchProgress').style.display = 'none';
       const successEl = document.getElementById('dispatchSuccess');
       successEl.style.display = 'block';
-      successEl.textContent = `Loaded ${sheetName}: ${truckCount} trucks, ${loadCount} total loads. Drivers can now tap "Load Today\'s Jobs".`;
+      successEl.textContent = `Loaded ${sheetsToLoad.length} day(s): ${sheetsToLoad.join(', ')}. ${truckCount} trucks in today's schedule. All drivers can now load their jobs.`;
 
-      // Check if current truck has jobs
       checkForScheduledJobs();
-      toggleDispatcher();
     } catch(err) {
       document.getElementById('dispatchProgress').style.display = 'none';
       const errEl = document.getElementById('dispatchUploadError');
@@ -1558,9 +1576,7 @@ function fetchScheduleFromJsonbin() {
       if (res.record && res.record.data && Object.keys(res.record.data).length > 0) {
         const json = JSON.stringify(res.record);
         localStorage.setItem('cartage_schedule', json);
-        scheduleData = res.record.data;
-        scheduleSheetDate = res.record.sheetDate || '';
-        checkForScheduledJobs();
+        applyStoredSchedule(json);
       }
     })
     .catch(() => {
@@ -1609,6 +1625,10 @@ function applyStoredSchedule(json) {
     const parsed = JSON.parse(json);
     scheduleData = parsed.data;
     scheduleSheetDate = parsed.sheetDate || '';
+    // allDays allows looking up previous days' data if needed
+    if (parsed.allDays) {
+      window.allDaysSchedule = parsed.allDays;
+    }
     checkForScheduledJobs();
   } catch(e) {}
 }
@@ -2024,7 +2044,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dispatcher mode - show only upload page, hide everything else
     document.getElementById('mainForm').style.display = 'none';
     document.getElementById('dispatcherWrapper').style.display = 'block';
-    document.querySelector('.progress-wrap').style.display = 'none';
+    const progressWrap = document.querySelector('.progress-wrap');
+    if (progressWrap) progressWrap.style.display = 'none';
     // Hide dispatcher toggle button (not needed in full dispatcher mode)
     document.getElementById('dispatcherToggleBtn').style.display = 'none';
   } else {
