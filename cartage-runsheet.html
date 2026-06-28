@@ -1424,7 +1424,7 @@ function processScheduleFile(input) {
 
       // Save to GitHub for cross-device access
       try {
-        // Get current file SHA (needed for update)
+        // Get current file SHA (needed for update, 404 is fine for first save)
         let sha = null;
         const getRes = await fetch(GITHUB_API, {
           headers: {'Authorization': 'token ' + GITHUB_TOKEN, 'Accept': 'application/vnd.github.v3+json'}
@@ -1433,15 +1433,22 @@ function processScheduleFile(input) {
           const getJson = await getRes.json();
           sha = getJson.sha;
         }
-        // Save file
-        const fileContent = btoa(unescape(encodeURIComponent(JSON.stringify(todayPayload))));
+        // Encode content safely handling Unicode
+        const jsonStr = JSON.stringify(todayPayload);
+        const fileContent = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1)));
         const body = {message: 'Update schedule ' + todayDate, content: fileContent};
         if (sha) body.sha = sha;
-        await fetch(GITHUB_API, {
+        const putRes = await fetch(GITHUB_API, {
           method: 'PUT',
           headers: {'Authorization': 'token ' + GITHUB_TOKEN, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json'},
           body: JSON.stringify(body)
         });
+        if (!putRes.ok) {
+          const errJson = await putRes.json();
+          showDebug('GitHub save error: ' + JSON.stringify(errJson).slice(0,100));
+        } else {
+          showDebug('GitHub save: OK');
+        }
       } catch(e) { showDebug('GitHub save error: ' + e.message); }
 
       document.getElementById('dispatchProgress').style.display = 'none';
@@ -1605,10 +1612,6 @@ function fetchScheduleFromJsonbin() {
         const json = JSON.stringify(res);
         localStorage.setItem('cartage_schedule', json);
         applyStoredSchedule(json);
-      } else if (res && typeof res === 'object' && !res.data) {
-        // Might be direct data without wrapper
-        showDebug('No data key - checking direct: ' + JSON.stringify(Object.keys(res)).slice(0,50));
-        showDebug('No valid data in response');
       } else {
         showDebug('No valid data in response');
       }
