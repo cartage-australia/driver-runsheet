@@ -1407,25 +1407,26 @@ function processScheduleFile(input) {
       const truckCount = Object.keys(scheduleData).length;
       const loadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
 
-      const schedulePayload = {
+      // Today's data only - for npoint.io (size limit)
+      const todayPayload = {
         date: todayDate,
         sheet: sheetName,
         sheetDate: todayDate,
-        data: scheduleData,
-        allDays: allDaysData
+        data: scheduleData
       };
 
-      // Save to localStorage as immediate local backup
-      localStorage.setItem('cartage_schedule', JSON.stringify(schedulePayload));
+      // Full data with all days - for localStorage only
+      const fullPayload = Object.assign({}, todayPayload, {allDays: allDaysData});
+      localStorage.setItem('cartage_schedule', JSON.stringify(fullPayload));
 
-      // Save to JSONbin for cross-device access
+      // Save today only to npoint.io for cross-device access
       try {
         await fetch(`${NPOINT_BASE}/${NPOINT_ID}`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(schedulePayload)
+          body: JSON.stringify(todayPayload)
         });
-      } catch(e) { /* JSONbin save failed - localStorage still works locally */ }
+      } catch(e) { /* npoint save failed - localStorage still works locally */ }
 
       document.getElementById('dispatchProgress').style.display = 'none';
       const successEl = document.getElementById('dispatchSuccess');
