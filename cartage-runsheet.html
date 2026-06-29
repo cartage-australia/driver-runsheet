@@ -1382,8 +1382,23 @@ function processScheduleFile(input) {
         if (dateStr === todayDate) todaySheetName = sName;
       }
 
-      // Use today's data as the primary schedule
-      scheduleData = allDaysData[todayDate] || Object.values(allDaysData)[0];
+      // Use today's data, but fall back to most recent date with actual loads
+      scheduleData = allDaysData[todayDate] || {};
+      const todayLoadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+
+      if (todayLoadCount === 0) {
+        // Today has no loads - find most recent date that does
+        for (const dateStr of recentDates) {
+          if (dateStr === todayDate) continue;
+          if (!allDaysData[dateStr]) continue;
+          const count = Object.values(allDaysData[dateStr]).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+          if (count > 0) {
+            scheduleData = allDaysData[dateStr];
+            todaySheetName = dateStr;
+            break;
+          }
+        }
+      }
       scheduleSheetDate = todayDate;
       const sheetName = todaySheetName || sheetsToLoad[sheetsToLoad.length - 1];
 
