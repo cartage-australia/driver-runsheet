@@ -723,83 +723,7 @@
     </div>
   </div>
 
-  <!-- 2. SCAN RUN SHEET -->
-  <div class="section" id="scanSection">
-    <div class="section-title">Scan Run Sheet <span style="font-size:11px; font-weight:400; color:var(--muted); text-transform:none; letter-spacing:0;">(optional - requires internet)</span></div>
-    <div class="card">
-      <p style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:14px;">
-        Photograph your completed run sheet to auto-fill times, odometer, and load details below. Review all fields after scanning.
-      </p>
-      <div id="scanError" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 13px; font-size:12px; color:#dc2626; margin-bottom:12px;"></div>
-      <div id="scanIdleUI">
-        <button onclick="document.getElementById('scanFileInput').click()" style="width:100%; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:12px; padding:28px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <span style="font-size:14px; font-weight:700; color:var(--text);">Photograph Run Sheet</span>
-          <span style="font-size:12px; color:var(--muted);">Tap to open camera</span>
-        </button>
-        <input type="file" id="scanFileInput" accept="image/*" capture="environment" style="display:none;" onchange="handleScanPhoto(this)">
-      </div>
-      <div id="scanProgressUI" style="display:none; text-align:center; padding:24px 0;">
-        <div style="width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px;"></div>
-        <p style="font-size:13px; color:var(--muted); font-weight:500;">Reading run sheet...</p>
-      </div>
-      <div id="scanSuccessUI" style="display:none;">
-        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 13px; font-size:13px; color:#16a34a; margin-bottom:12px;" id="scanSuccessMsg"></div>
-        <button onclick="resetScan()" style="background:transparent; border:1px solid #cbd5e1; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer;">Scan Again</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 3. SHIFT TIMES -->
-  <div class="section">
-    <div class="section-title">Shift Times</div>
-    <div class="card">
-      <div class="row-2">
-        <div class="field">
-          <label>Start Time <span class="req">*</span></label>
-          <div class="time-picker-trigger" id="startTime_trigger" onclick="openTimePicker('startTime')">
-            <span id="startTime_display" class="time-picker-placeholder">Tap to set time</span>
-          </div>
-          <input type="hidden" id="startTime">
-          <div class="field-error" id="err-startTime">Required</div>
-        </div>
-        <div class="field">
-          <label>Finish Time <span class="req">*</span></label>
-          <div class="time-picker-trigger" id="finishTime_trigger" onclick="openTimePicker('finishTime')">
-            <span id="finishTime_display" class="time-picker-placeholder">Tap to set time</span>
-          </div>
-          <input type="hidden" id="finishTime">
-          <div class="field-error" id="err-finishTime">Required</div>
-        </div>
-      </div>
-      <div class="row-2">
-        <div class="field">
-          <label>Kms Start <span class="req">*</span></label>
-          <input type="number" id="odometerStart" placeholder="e.g. 327670" inputmode="numeric"
-                 oninput="validateField(this); calcTotalKms(); updateProgress()">
-          <div class="field-error" id="err-odometerStart">Required</div>
-        </div>
-        <div class="field">
-          <label>Kms Finish <span class="req">*</span></label>
-          <input type="number" id="odometerFinish" placeholder="e.g. 328038" inputmode="numeric"
-                 oninput="validateField(this); calcTotalKms(); updateProgress()">
-          <div class="field-error" id="err-odometerFinish">Required</div>
-        </div>
-      </div>
-      <div class="row-2">
-        <div class="field">
-          <label>Total Kms <span class="auto-tag">v Auto</span></label>
-          <input type="text" id="totalKms" readonly placeholder="Calculated automatically">
-        </div>
-        <div class="field">
-          <label>Total Hours <span class="auto-tag">v Auto</span></label>
-          <input type="text" id="totalHours" readonly placeholder="Calculated automatically">
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 3. LOADS -->
+  <!-- 2. LOADS -->
   <div class="section">
     <div class="section-title">Loads</div>
     <div id="loadJobsBanner" style="display:none; margin-bottom:12px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 14px;">
@@ -851,7 +775,56 @@
     </div>
   </div>
 
-  <!-- 6. DRIVER SIGNATURE -->
+  <!-- 6. SHIFT TIMES -->
+  <div class="section">
+    <div class="section-title">Shift Times</div>
+    <div class="card">
+      <div class="row-2">
+        <div class="field">
+          <label>Start Time <span class="req">*</span></label>
+          <div class="time-picker-trigger" id="startTime_trigger" onclick="openTimePicker('startTime')">
+            <span id="startTime_display" class="time-picker-placeholder">Tap to set time</span>
+          </div>
+          <input type="hidden" id="startTime">
+          <div class="field-error" id="err-startTime">Required</div>
+        </div>
+        <div class="field">
+          <label>Finish Time <span class="req">*</span></label>
+          <div class="time-picker-trigger" id="finishTime_trigger" onclick="openTimePicker('finishTime')">
+            <span id="finishTime_display" class="time-picker-placeholder">Tap to set time</span>
+          </div>
+          <input type="hidden" id="finishTime">
+          <div class="field-error" id="err-finishTime">Required</div>
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Kms Start <span class="req">*</span></label>
+          <input type="number" id="odometerStart" placeholder="e.g. 327670" inputmode="numeric"
+                 oninput="validateField(this); calcTotalKms(); updateProgress()">
+          <div class="field-error" id="err-odometerStart">Required</div>
+        </div>
+        <div class="field">
+          <label>Kms Finish <span class="req">*</span></label>
+          <input type="number" id="odometerFinish" placeholder="e.g. 328038" inputmode="numeric"
+                 oninput="validateField(this); calcTotalKms(); updateProgress()">
+          <div class="field-error" id="err-odometerFinish">Required</div>
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Total Kms <span class="auto-tag">v Auto</span></label>
+          <input type="text" id="totalKms" readonly placeholder="Calculated automatically">
+        </div>
+        <div class="field">
+          <label>Total Hours <span class="auto-tag">v Auto</span></label>
+          <input type="text" id="totalHours" readonly placeholder="Calculated automatically">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. DRIVER SIGNATURE -->
   <div class="section">
     <div class="section-title">Driver Signature</div>
     <div class="card">
@@ -1778,6 +1751,12 @@ function loadJobsFromSchedule() {
         if (prodOtherWrap) prodOtherWrap.style.display = 'block';
         if (prodOtherInput) prodOtherInput.value = '';
       }
+    }
+
+    // Add label to comments if it's a Preload or non-standard label
+    if (job.label && job.label.toLowerCase() !== 'load ' + idx) {
+      const commentsEl = document.getElementById('comments' + idx);
+      if (commentsEl) commentsEl.value = job.label;
     }
   });
 
