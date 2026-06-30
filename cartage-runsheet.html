@@ -665,7 +665,10 @@
         </div>
         <div class="field">
           <label>Date <span class="auto-tag">Auto</span></label>
-          <input type="date" id="jobDate" readonly onclick="this.removeAttribute('readonly'); this.showPicker && this.showPicker();" onchange="this.setAttribute('readonly','')">
+          <input type="date" id="jobDate" readonly
+            onclick="this.removeAttribute('readonly'); this.showPicker && this.showPicker();"
+            onchange="this.setAttribute('readonly',''); resetLoadsForNewDriver();"
+            style="border-color: var(--orange); background: #fffbeb; font-weight:600;">
         </div>
       </div>
       <div class="field">
@@ -687,7 +690,7 @@
         <div class="field">
           <label>Truck No. <span class="req">*</span></label>
           <input type="text" id="truckNo" placeholder="e.g. 305"
-                 oninput="lookupTruck(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
+                 oninput="lookupTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
           <div class="field-error" id="err-truckNo">Required</div>
         </div>
         <div class="field">
@@ -1372,8 +1375,7 @@ function processScheduleFile(input) {
             const row = rows[r] || [];
             dbg += 'R' + r + ': [' + row.slice(0,14).map(v => JSON.stringify(String(v).slice(0,15))).join(',') + ']\n';
           }
-          alert(dbg);
-        }
+          }
 
         const parsed = parseScheduleRows(rows);
         const dateMatch = sName.match(/(\d{2}\.\d{2}\.\d{2})/);
@@ -1478,14 +1480,28 @@ function parseScheduleRows(rows) {
     for (const bc of BLOCK_COLS) {
       if (String(row[bc] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '') !== 'Description') continue;
 
-      // Parse truck cell: "419 Bromelton" or "8068 Mt Cotton"
+      // Parse truck cell: "419 Bromelton", "8068 Mt Cotton", or "Subby 1"
       // Strip smart/curly quotes that Excel sometimes adds
       const truckCell = String(row[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
       const truckMatch = truckCell.match(/^(\d{3,4})\s+(.+)$/);
-      if (!truckMatch) continue;
+      const subbyMatch = truckCell.match(/^(Subby\s*\d+)$/i);
 
-      const truckNo = truckMatch[1];
-      const depot = truckMatch[2].trim();
+      let truckNo, depot;
+      if (truckMatch) {
+        truckNo = truckMatch[1];
+        depot = truckMatch[2].trim();
+      } else if (subbyMatch) {
+        // Use rego from name row as key for subbies
+        const regoCell = String(nameRow[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
+        if (regoCell && regoCell !== 'nan' && regoCell !== '0' && regoCell !== '') {
+          truckNo = regoCell;
+          depot = subbyMatch[1];
+        } else {
+          continue;
+        }
+      } else {
+        continue;
+      }
 
       // Get driver name from row above, strip agency suffix e.g. "(QUINN)"
       let driverName = String(nameRow[bc] || '').trim();
@@ -1528,7 +1544,7 @@ function parseScheduleRows(rows) {
 }
 
 function splitJobString(job) {
-  // Normalise arrow - handle no space before arrow e.g. "Sand-> Ipswich"
+  // Normalise arrows - handle no space e.g. "Sand->Ipswich" or "Sand->Ipswich"
   job = job.replace(/\s*\u2192\s*/g, ' \u2192 ').replace(/\s*->\s*/g, ' -> ');
   if (job.includes('\u2192')) {
     const parts = job.split('\u2192');
@@ -1537,6 +1553,11 @@ function splitJobString(job) {
   if (job.includes('->')) {
     const parts = job.split('->');
     return {pickup: parts[0].trim(), deliverTo: parts[1].trim()};
+  }
+  // Treat " - " as separator between pickup and delivery (e.g. "BRACALBA QUARRY - B2N PROJECT")
+  if (job.includes(' - ')) {
+    const parts = job.split(' - ');
+    return {pickup: parts[0].trim(), deliverTo: parts.slice(1).join(' - ').trim()};
   }
   return {pickup: job.trim(), deliverTo: ''};
 }
@@ -1581,6 +1602,15 @@ function parseTimeToMinutes(timeStr) {
   return h * 60 + mins;
 }
 
+
+function resetLoadsForNewDriver() {
+  // Clear all load cards and re-show banner if schedule available
+  document.getElementById('loadsContainer').innerHTML = '';
+  loadCount = 0;
+  addLoad();
+  checkForScheduledJobs();
+  updateProgress();
+}
 
 function fetchScheduleFromJsonbin() {
   // Always fetch fresh from GitHub, ignore any stale localStorage
@@ -1768,10 +1798,10 @@ function loadJobsFromSchedule() {
       }
     }
 
-    // Add label to comments if it's a Preload or non-standard label
-    if (job.label && job.label.toLowerCase() !== 'load ' + idx) {
+    // Only add to comments if it's a Preload (not Load 1, Load 2 etc.)
+    if (job.label && job.label.toLowerCase() === 'preload') {
       const commentsEl = document.getElementById('comments' + idx);
-      if (commentsEl) commentsEl.value = job.label;
+      if (commentsEl) commentsEl.value = 'Preload';
     }
   });
 
