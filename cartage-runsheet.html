@@ -39,7 +39,6 @@
     padding-bottom: 48px;
   }
 
-  /* HEADER */
   .header {
     background: var(--navy);
     border-bottom: 3px solid var(--orange);
@@ -63,7 +62,6 @@
   .header-text h1 { font-size: 15px; font-weight: 700; color: var(--white); }
   .header-text p  { font-size: 11px; color: var(--orange); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 1px; }
 
-  /* PROGRESS */
   .progress-wrap {
     background: var(--white);
     padding: 10px 20px 12px;
@@ -74,7 +72,6 @@
   .progress-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
   .progress-fill { height: 100%; background: linear-gradient(90deg, var(--orange), var(--yellow)); border-radius: 3px; transition: width 0.4s ease; width: 0%; }
 
-  /* SECTIONS */
   .section { margin: 16px 16px 0; }
   .section-title {
     font-size: 11px; font-weight: 700; color: var(--navy);
@@ -84,7 +81,6 @@
   }
   .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  /* CARD */
   .card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -94,7 +90,6 @@
     box-shadow: var(--shadow);
   }
 
-  /* FIELDS */
   .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
 
@@ -149,7 +144,6 @@
     margin-left: 5px; text-transform: uppercase; letter-spacing: 0.04em;
   }
 
-  /* LOAD ROWS */
   .load-card {
     background: var(--white);
     border: 1.5px solid var(--border);
@@ -197,7 +191,6 @@
   }
   .add-load-btn:active { background: #f8fafc; }
 
-  /* TIME INPUTS */
   .time-wrap { position: relative; }
   .time-wrap input { padding-right: 50px; }
   .ampm-toggle {
@@ -214,7 +207,6 @@
     letter-spacing: 0.04em;
   }
 
-  /* BREAK ROWS */
   .break-row {
     display: grid;
     grid-template-columns: 80px 1fr 1fr;
@@ -228,7 +220,6 @@
     padding-bottom: 11px;
   }
 
-  /* PHOTO */
   .photo-btn {
     width: 100%;
     background: #f8fafc;
@@ -290,10 +281,8 @@
   }
   .blur-alert.show { display: block; }
 
-  /* DIVIDER */
   .divider { height: 1px; background: var(--border); margin: 14px 0; }
 
-  /* TOTALS BOX */
   .totals-box {
     background: var(--navy);
     border-radius: var(--radius-sm);
@@ -309,7 +298,6 @@
   .totals-box .total-row.grand .total-label { color: var(--white); font-weight: 700; font-size: 13px; }
   .totals-box .total-row.grand .total-value { font-size: 18px; }
 
-  /* SUBMIT */
   .submit-wrap { margin: 24px 16px 0; }
   .submit-btn {
     width: 100%;
@@ -324,7 +312,6 @@
   .submit-btn:active { transform: scale(0.98); box-shadow: none; }
   .submit-note { text-align: center; font-size: 11px; color: var(--muted); margin-top: 10px; }
 
-  /* VALIDATION */
   .val-summary {
     background: #fef2f2; border: 1px solid #fecaca;
     border-radius: var(--radius-sm); padding: 12px 14px;
@@ -336,7 +323,6 @@
   .val-summary ul li { font-size: 12px; color: #dc2626; padding: 2px 0; }
   .val-summary ul li::before { content: '-> '; }
 
-  /* SUCCESS */
   .success-screen {
     display: none; flex-direction: column; align-items: center;
     justify-content: center; min-height: 80vh;
@@ -367,7 +353,6 @@
     text-transform: uppercase; letter-spacing: 0.06em;
   }
 
-  /* LOADING */
   .loading-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(241,245,249,0.93); z-index: 200;
@@ -382,7 +367,6 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-overlay p { font-size: 14px; color: var(--label); font-weight: 500; }
 
-  /* TOAST */
   .toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
@@ -397,7 +381,6 @@
   .toast.error { border-color: var(--red); color: var(--red); }
   .toast.warning { border-color: var(--yellow); color: var(--orange-dk); }
 
-  /* SIGNATURE */
   .sig-canvas-wrap {
     border: 1.5px solid var(--border);
     border-radius: var(--radius-sm);
@@ -419,7 +402,6 @@
   }
   .sig-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
 
-  /* TIME PICKER TRIGGER */
   .time-picker-trigger {
     width: 100%;
     background: #f8fafc;
@@ -446,7 +428,6 @@
   .time-picker-trigger.error { border-color: var(--red) !important; }
   .time-picker-placeholder { color: var(--muted); font-weight: 400; }
 
-  /* TIME PICKER MODAL */
   .time-picker-overlay {
     display: none;
     position: fixed;
@@ -592,16 +573,13 @@
 </head>
 <body>
 
-<!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <p id="loadingMsg">Submitting your run sheet...</p>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- HEADER -->
 <div class="header">
   <img src="https://cdn.prod.website-files.com/60d0143cfc485a21fd7a0e9c/60d01bc0000a6decc8e1ec32_cartage-logo-275-2.png"
        alt="Cartage Australia"
@@ -614,13 +592,11 @@
   <button onclick="toggleDispatcher()" id="dispatcherToggleBtn" style="display:none; margin-left:auto; background:transparent; border:1.5px solid rgba(255,255,255,0.3); color:white; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">Dispatcher</button>
 </div>
 
-<!-- PROGRESS -->
 <div class="progress-wrap">
   <div class="progress-label"><span>Form Completion</span><span id="progressPct">0%</span></div>
   <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 </div>
 
-<!-- DISPATCHER PAGE - only shown via ?dispatcher=true URL -->
 <div id="dispatcherWrapper" style="display:none; padding:20px; max-width:480px; margin:0 auto;">
   <div class="section">
     <div class="section-title">Upload Today's Schedule</div>
@@ -649,10 +625,8 @@
   </div>
 </div>
 
-<!-- MAIN FORM -->
 <div id="mainForm">
 
-  <!-- 1. DRIVER DETAILS -->
   <div class="section">
     <div class="section-title">Driver Details</div>
     <div class="card">
@@ -726,7 +700,6 @@
     </div>
   </div>
 
-  <!-- 2. LOADS -->
   <div class="section">
     <div class="section-title">Loads</div>
     <div id="loadJobsBanner" style="display:none; margin-bottom:12px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 14px;">
@@ -741,7 +714,6 @@
       Add Another Load
     </button>
 
-    <!-- TOTALS -->
     <div class="totals-box">
       <div class="total-row">
         <span class="total-label">Total Loads</span>
@@ -754,7 +726,6 @@
     </div>
   </div>
 
-  <!-- 5. RUN SHEET PHOTO -->
   <div class="section">
     <div class="section-title">Run Sheet Photo</div>
     <div class="card">
@@ -778,7 +749,6 @@
     </div>
   </div>
 
-  <!-- 6. SHIFT TIMES -->
   <div class="section">
     <div class="section-title">Shift Times</div>
     <div class="card">
@@ -827,7 +797,6 @@
     </div>
   </div>
 
-  <!-- 7. DRIVER SIGNATURE -->
   <div class="section">
     <div class="section-title">Driver Signature</div>
     <div class="card">
@@ -843,7 +812,6 @@
     </div>
   </div>
 
-  <!-- NOTES -->
   <div class="section">
     <div class="section-title">Additional Notes</div>
     <div class="card">
@@ -854,7 +822,6 @@
     </div>
   </div>
 
-  <!-- VALIDATION SUMMARY -->
   <div class="section">
     <div class="val-summary" id="valSummary">
       <p>Please fix the following before submitting:</p>
@@ -862,15 +829,13 @@
     </div>
   </div>
 
-  <!-- SUBMIT -->
   <div class="submit-wrap">
     <button class="submit-btn" onclick="submitForm()">Submit Run Sheet</button>
     <p class="submit-note">Sent directly to the Cartage Australia office</p>
   </div>
 
-</div><!-- /mainForm -->
+</div>
 
-<!-- SUCCESS -->
 <div class="success-screen" id="successScreen">
   <div class="success-icon">
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5">
@@ -886,7 +851,6 @@
   <button class="new-submission-btn" onclick="resetForm()">Submit Another Run Sheet</button>
 </div>
 
-<!-- TIME PICKER MODAL -->
 <div class="time-picker-overlay" id="timePickerOverlay" onclick="if(event.target===this) closeTimePicker()">
   <div class="time-picker-sheet">
     <div class="time-picker-header">
@@ -919,16 +883,12 @@
 </div>
 
 <script>
-// -- CONFIG --------------------------------------------------
 const SUBMIT_URL = 'YOUR_POWER_AUTOMATE_URL_HERE';
 
-// -- DRIVER LOOKUP TABLE -------------------------------------
-// Driver ID -> Full Name. Update this list when staff changes occur.
 const DRIVER_LOOKUP = {"501953":"David Batrouney","500007":"Paul Charalambous","500101":"Justin Dickison","500156":"Daniel Mcintosh","500308":"Daryl Lammas","500316":"James Boasman","500337":"Shibeshi Asqedom","500379":"Patrick Doyle","500380":"Richard Lineham","500393":"Mark Cauchi","500408":"Brett Austin","500574":"Damien Lowry","500624":"Michael Bland","500627":"Sheryl Champion","500636":"Andrew Fulham","500657":"Mesud Keskic","500667":"Mandeep Sekhon","500676":"Surat Singh","500690":"Pankajdeep Singh","500737":"Jaibaaz Singh","500741":"Joga Singh 500741","500750":"Emmanuel Bugeja","500767":"Radek Hermanek","500770":"Sukhpreet Singh Hari Ke","501883":"Mohit Gulati","500793":"Gurhimat Singh","500805":"Kent Wells","500806":"Deborah Thomas","500810":"Gurpreet Singh","500815":"Dean Emery","500822":"Hardeep Singh","500852":"Ervin Agalliu","500857":"Jason Thompson","500863":"Deane Kenneth","500881":"Mark Kinash","500886":"Brayden Pietrzykowski","500909":"Jason Mead","500930":"Maree Batrouney","500945":"Matthew Cox","500984":"Abdel Beitsayah","500988":"Farid Amouri","501019":"Tekotahitanga Beckham-Sionetali","501041":"Frank Bigoni","501054":"Arashdeep Singh Brar","501058":"Lachlan Grant","501062":"Harjit Bassi","501065":"Brendon Derwin","501074":"Andy Olivario","501075":"Craig Macgregor","501081":"Lindsay Jack","501095":"Parwinder Pal Singh","501103":"Ty Skinner","501126":"Gurpreet Singh Rana","501127":"Bayram Kaykisiz","501135":"Amandeep Sarao","501168":"Jagraj Singh","501170":"Parminder Singh","501172":"Paul James","501177":"Emily Rondinella","501188":"Nikola Vesic","501191":"Neville Palmer","501201":"Gurjot Singh 501201","501204":"Luke Shortis","501220":"Mafi Pese","501222":"Jaspreet Singh 501222","501227":"Ajaypal Sekhon","501232":"Thomas John","501239":"Robert Kovac","501244":"Manpreet Singh 501244","501249":"Jarrod Hauser","501250":"Navsangeet Singh","801266":"Matthew Lees","501270":"Varinder Singh","501274":"Manbir Sandhu","501275":"Rohan Taylor","501283":"Viraj Samaranayake","501285":"Michael Sawdon","501294":"Margaret Lorton","501302":"Malinderjeet Hira","501305":"Amrinder Singh 501305","501321":"Ravinesh Jattan","501325":"Vikasjeet Rana","501326":"Dapinder Jawanda","501341":"Wayne Collier","501352":"James Heyden","501354":"Sililo Elia","501356":"Harmanjit Sekhon","501361":"Pokoina Tiaiti","501381":"Nuufou Sauiluma","501386":"Dharani Sai Aluri","501397":"Scott Allen","501398":"Aleksandar Tan","501399":"Jaspreet Singh 501399","501402":"Brennan Pell","501403":"Jasvir Pannu","501405":"Manpreet Singh 501405","501409":"Taulagi Johnson","501413":"Tarsem Singh","501417":"Sanampreet Singh","501423":"Jatindeep Gujral","501425":"Jaswant Dhaliwal","501427":"Andrew Jopp","501432":"Leanne Micallef","501441":"Simon Haslett","501446":"Davood Zolfaghari","501447":"James (Jim) Spiers","801448":"Benjamin Bardzinski","501450":"Amandeep Singh 501450","501454":"Gavin Langton","501455":"Mussa Ali","501463":"Amandeep Singh 501463","501474":"Dwight Neville","501478":"Karandeep Singh","501482":"Rajinderpal Singh","501488":"Tarlok Singh","501498":"Kuldip Singh Maan","501515":"Zakaria Dor","501518":"Satinder Singh","501526":"Riely Holdsworth","501529":"Jasbir Singh","501533":"Harmandeep Singh","501538":"Andrew Mclean","501543":"Adrian Leishman","501548":"Fitugafulu Faafuata","501572":"Sam Sboto","501582":"Gurpreet Singh Sidhu","501585":"Utoikamanu Afemui","501589":"Amandip Singh","501593":"Palwinder Singh Aulakh","501597":"Rahul Gandhi","501598":"Lachlan Mcfarlane","501600":"Steve Siania","501602":"Rajat Mittal","501610":"Richard Adamson","501615":"Rodney Palmer","501625":"Jamie Wassell","501626":"Timbira Kago","501632":"Samuel Hastings","501636":"Tavita Mauigoa","501637":"Shamsher Singh","501639":"Sunil Bishnoi","501643":"Beljeek Ajang Agour Lual","501647":"Mohammad Nazif","501649":"Hassan Latif","501654":"Simranpreet Singh","501657":"Richard Clarke","501659":"Simranjeet Brar","501681":"Amrit Pal Singh","501691":"Harold Paskins","501693":"Amrinder Singh 501693","501697":"Danny Komorr","501699":"Ian Price","501701":"George Mamatis","501704":"Bhupinder Singh 501704","501712":"Julie Heke","501716":"Gurjeet Dhaliwal","501721":"Davinder Randhawa","501726":"Reece Carton","501728":"Gregg Aguado","501730":"Jatin Kataria","S50004":"Raymond Cauchi","S50006":"Ellice Vella","S50007":"Wayne Vella","500153":"Danial Cauchi","500189":"Jake Cauchi","500785":"Caleb Vella","500923":"Jed Vella","501146":"Lisa Thomas","501757":"Das Harpreet Singh","501758":"Sukhvir Singh","501731":"Ashish Bhandari","501734":"Vilmos Kovac","501743":"Dane Barlow","501747":"Yvonne Elkington","501748":"Dayle Pitcon","501756":"Rachel Tamanui","501439":"Dominic Ring","501759":"Emma Johnson","501943":"Ramanvir Singh Mann","501764":"Corey Bisognin","501033":"Mandeep Singh","501768":"Rohitendra Nand","501769":"Manpreet Singh 501769","501771":"Satnamsingh Saini","501619":"Paramjit Singh","501774":"Rafal Pendecki","501777":"Raminder Sandhu","501461":"Mandeep Singh 501461","501778":"Abraham Schultink","500977":"Connor Skillicorn","501787":"Jake White","501805":"John Marinas","501806":"Himanshu Joshi","501810":"John Mari Andan","501812":"Kieth Hansen","501814":"Paul Koolen","501827":"Rampreet Sidhu","501821":"Anthony George","501824":"Varinder Pal","501826":"Harjot Attri","501825":"Eh Doh Hso","401823":"Colin Ginn","501831":"Simon Stalman","501830":"Mohammed Ahsad","401839":"Andrew Coad","501841":"Sukhwinder Singh","801939":"Dishant Patel","501844":"Jaspreet Singh 501844","401845":"Jared Biggs","501849":"Pawan Kumar","401836":"Clint Armstrong","501854":"Melissa Wolfe","501852":"Shivam Gupta","501878":"Karan Behl","501853":"Harbhinder Singh","501862":"Blake Johns","501857":"Harpreet Singh","501860":"John Bardsley","501863":"Satnam Singh","401855":"Imitiaz Shah","401865":"Mark Boys","501864":"Michael Van Breda-Foxwell","501873":"Aseem Pal Utreja","401879":"Paul Edwards","501886":"Jasmin Hawksworth","501888":"Gagandeep Singh Aulakh","801889":"Jarrod Hicks","501895":"Harwinder Marar","801899":"Ruzzell Bondoc","501900":"Jordan Rihs","501901":"Amandeep Singh Sarao 501901","501903":"Maninderjeet Garcha","401898":"Allan Munsie","501905":"Gurwinder Singh","401910":"Marty Watson","401912":"Greg Brownsey","501915":"Michael Van Rijswijk","401917":"Ronald Deane","501918":"Ali Haider","501925":"Harinderjit Singh Mann","501916":"Sukhmandeep S Sidhu","501927":"Darren Morris","401929":"John O'Sullivan","401924":"Nathan Streeter","501932":"Abubakar Abdirahman","501937":"Thomas Atherton","501938":"Amarprit Singh","501940":"Rupinder Masson","501942":"Parvinder Singh Sandhu","501944":"Sourabh -","801945":"Gregory Collins","801948":"Gurpreet Singh 801948","801949":"Amrinder Singh Randhawa","501951":"Lisa Pollard","501952":"Tracy Borkowski","801947":"Rueben Mickan-Keipert"};
 
 let verifiedDriverName = null;
 
-// -- OCR / SCAN FUNCTIONS -------------------------------------
 const CLOUDFLARE_WORKER = 'https://square-dawn-734a.ring-dominic.workers.dev';
 
 const NAME_LOOKUP = {"david batrouney":{"id":"501953","properName":"David Batrouney"},"paul charalambous":{"id":"500007","properName":"Paul Charalambous"},"justin dickison":{"id":"500101","properName":"Justin Dickison"},"daniel mcintosh":{"id":"500156","properName":"Daniel Mcintosh"},"daryl lammas":{"id":"500308","properName":"Daryl Lammas"},"james boasman":{"id":"500316","properName":"James Boasman"},"shibeshi asqedom":{"id":"500337","properName":"Shibeshi Asqedom"},"patrick doyle":{"id":"500379","properName":"Patrick Doyle"},"richard lineham":{"id":"500380","properName":"Richard Lineham"},"mark cauchi":{"id":"500393","properName":"Mark Cauchi"},"brett austin":{"id":"500408","properName":"Brett Austin"},"damien lowry":{"id":"500574","properName":"Damien Lowry"},"michael bland":{"id":"500624","properName":"Michael Bland"},"sheryl champion":{"id":"500627","properName":"Sheryl Champion"},"andrew fulham":{"id":"500636","properName":"Andrew Fulham"},"mesud keskic":{"id":"500657","properName":"Mesud Keskic"},"mandeep sekhon":{"id":"500667","properName":"Mandeep Sekhon"},"surat singh":{"id":"500676","properName":"Surat Singh"},"pankajdeep singh":{"id":"500690","properName":"Pankajdeep Singh"},"jaibaaz singh":{"id":"500737","properName":"Jaibaaz Singh"},"joga singh 500741":{"id":"500741","properName":"Joga Singh 500741"},"emmanuel bugeja":{"id":"500750","properName":"Emmanuel Bugeja"},"radek hermanek":{"id":"500767","properName":"Radek Hermanek"},"sukhpreet singh hari ke":{"id":"500770","properName":"Sukhpreet Singh Hari Ke"},"mohit gulati":{"id":"501883","properName":"Mohit Gulati"},"gurhimat singh":{"id":"500793","properName":"Gurhimat Singh"},"kent wells":{"id":"500805","properName":"Kent Wells"},"deborah thomas":{"id":"500806","properName":"Deborah Thomas"},"gurpreet singh":{"id":"500810","properName":"Gurpreet Singh"},"dean emery":{"id":"500815","properName":"Dean Emery"},"hardeep singh":{"id":"500822","properName":"Hardeep Singh"},"ervin agalliu":{"id":"500852","properName":"Ervin Agalliu"},"jason thompson":{"id":"500857","properName":"Jason Thompson"},"deane kenneth":{"id":"500863","properName":"Deane Kenneth"},"mark kinash":{"id":"500881","properName":"Mark Kinash"},"brayden pietrzykowski":{"id":"500886","properName":"Brayden Pietrzykowski"},"jason mead":{"id":"500909","properName":"Jason Mead"},"maree batrouney":{"id":"500930","properName":"Maree Batrouney"},"matthew cox":{"id":"500945","properName":"Matthew Cox"},"abdel beitsayah":{"id":"500984","properName":"Abdel Beitsayah"},"farid amouri":{"id":"500988","properName":"Farid Amouri"},"tekotahitanga beckham-sionetali":{"id":"501019","properName":"Tekotahitanga Beckham-Sionetali"},"frank bigoni":{"id":"501041","properName":"Frank Bigoni"},"arashdeep singh brar":{"id":"501054","properName":"Arashdeep Singh Brar"},"lachlan grant":{"id":"501058","properName":"Lachlan Grant"},"harjit bassi":{"id":"501062","properName":"Harjit Bassi"},"brendon derwin":{"id":"501065","properName":"Brendon Derwin"},"andy olivario":{"id":"501074","properName":"Andy Olivario"},"craig macgregor":{"id":"501075","properName":"Craig Macgregor"},"lindsay jack":{"id":"501081","properName":"Lindsay Jack"},"parwinder pal singh":{"id":"501095","properName":"Parwinder Pal Singh"},"ty skinner":{"id":"501103","properName":"Ty Skinner"},"gurpreet singh rana":{"id":"501126","properName":"Gurpreet Singh Rana"},"bayram kaykisiz":{"id":"501127","properName":"Bayram Kaykisiz"},"amandeep sarao":{"id":"501135","properName":"Amandeep Sarao"},"jagraj singh":{"id":"501168","properName":"Jagraj Singh"},"parminder singh":{"id":"501170","properName":"Parminder Singh"},"paul james":{"id":"501172","properName":"Paul James"},"emily rondinella":{"id":"501177","properName":"Emily Rondinella"},"nikola vesic":{"id":"501188","properName":"Nikola Vesic"},"neville palmer":{"id":"501191","properName":"Neville Palmer"},"gurjot singh 501201":{"id":"501201","properName":"Gurjot Singh 501201"},"luke shortis":{"id":"501204","properName":"Luke Shortis"},"mafi pese":{"id":"501220","properName":"Mafi Pese"},"jaspreet singh 501222":{"id":"501222","properName":"Jaspreet Singh 501222"},"ajaypal sekhon":{"id":"501227","properName":"Ajaypal Sekhon"},"thomas john":{"id":"501232","properName":"Thomas John"},"robert kovac":{"id":"501239","properName":"Robert Kovac"},"manpreet singh 501244":{"id":"501244","properName":"Manpreet Singh 501244"},"jarrod hauser":{"id":"501249","properName":"Jarrod Hauser"},"navsangeet singh":{"id":"501250","properName":"Navsangeet Singh"},"matthew lees":{"id":"801266","properName":"Matthew Lees"},"varinder singh":{"id":"501270","properName":"Varinder Singh"},"manbir sandhu":{"id":"501274","properName":"Manbir Sandhu"},"rohan taylor":{"id":"501275","properName":"Rohan Taylor"},"viraj samaranayake":{"id":"501283","properName":"Viraj Samaranayake"},"michael sawdon":{"id":"501285","properName":"Michael Sawdon"},"margaret lorton":{"id":"501294","properName":"Margaret Lorton"},"malinderjeet hira":{"id":"501302","properName":"Malinderjeet Hira"},"amrinder singh 501305":{"id":"501305","properName":"Amrinder Singh 501305"},"ravinesh jattan":{"id":"501321","properName":"Ravinesh Jattan"},"vikasjeet rana":{"id":"501325","properName":"Vikasjeet Rana"},"dapinder jawanda":{"id":"501326","properName":"Dapinder Jawanda"},"wayne collier":{"id":"501341","properName":"Wayne Collier"},"james heyden":{"id":"501352","properName":"James Heyden"},"sililo elia":{"id":"501354","properName":"Sililo Elia"},"harmanjit sekhon":{"id":"501356","properName":"Harmanjit Sekhon"},"pokoina tiaiti":{"id":"501361","properName":"Pokoina Tiaiti"},"nuufou sauiluma":{"id":"501381","properName":"Nuufou Sauiluma"},"dharani sai aluri":{"id":"501386","properName":"Dharani Sai Aluri"},"scott allen":{"id":"501397","properName":"Scott Allen"},"aleksandar tan":{"id":"501398","properName":"Aleksandar Tan"},"jaspreet singh 501399":{"id":"501399","properName":"Jaspreet Singh 501399"},"brennan pell":{"id":"501402","properName":"Brennan Pell"},"jasvir pannu":{"id":"501403","properName":"Jasvir Pannu"},"manpreet singh 501405":{"id":"501405","properName":"Manpreet Singh 501405"},"taulagi johnson":{"id":"501409","properName":"Taulagi Johnson"},"tarsem singh":{"id":"501413","properName":"Tarsem Singh"},"sanampreet singh":{"id":"501417","properName":"Sanampreet Singh"},"jatindeep gujral":{"id":"501423","properName":"Jatindeep Gujral"},"jaswant dhaliwal":{"id":"501425","properName":"Jaswant Dhaliwal"},"andrew jopp":{"id":"501427","properName":"Andrew Jopp"},"leanne micallef":{"id":"501432","properName":"Leanne Micallef"},"simon haslett":{"id":"501441","properName":"Simon Haslett"},"davood zolfaghari":{"id":"501446","properName":"Davood Zolfaghari"},"james (jim) spiers":{"id":"501447","properName":"James (Jim) Spiers"},"benjamin bardzinski":{"id":"801448","properName":"Benjamin Bardzinski"},"amandeep singh 501450":{"id":"501450","properName":"Amandeep Singh 501450"},"gavin langton":{"id":"501454","properName":"Gavin Langton"},"mussa ali":{"id":"501455","properName":"Mussa Ali"},"amandeep singh 501463":{"id":"501463","properName":"Amandeep Singh 501463"},"dwight neville":{"id":"501474","properName":"Dwight Neville"},"karandeep singh":{"id":"501478","properName":"Karandeep Singh"},"rajinderpal singh":{"id":"501482","properName":"Rajinderpal Singh"},"tarlok singh":{"id":"501488","properName":"Tarlok Singh"},"kuldip singh maan":{"id":"501498","properName":"Kuldip Singh Maan"},"zakaria dor":{"id":"501515","properName":"Zakaria Dor"},"satinder singh":{"id":"501518","properName":"Satinder Singh"},"riely holdsworth":{"id":"501526","properName":"Riely Holdsworth"},"jasbir singh":{"id":"501529","properName":"Jasbir Singh"},"harmandeep singh":{"id":"501533","properName":"Harmandeep Singh"},"andrew mclean":{"id":"501538","properName":"Andrew Mclean"},"adrian leishman":{"id":"501543","properName":"Adrian Leishman"},"fitugafulu faafuata":{"id":"501548","properName":"Fitugafulu Faafuata"},"sam sboto":{"id":"501572","properName":"Sam Sboto"},"gurpreet singh sidhu":{"id":"501582","properName":"Gurpreet Singh Sidhu"},"utoikamanu afemui":{"id":"501585","properName":"Utoikamanu Afemui"},"amandip singh":{"id":"501589","properName":"Amandip Singh"},"palwinder singh aulakh":{"id":"501593","properName":"Palwinder Singh Aulakh"},"rahul gandhi":{"id":"501597","properName":"Rahul Gandhi"},"lachlan mcfarlane":{"id":"501598","properName":"Lachlan Mcfarlane"},"steve siania":{"id":"501600","properName":"Steve Siania"},"rajat mittal":{"id":"501602","properName":"Rajat Mittal"},"richard adamson":{"id":"501610","properName":"Richard Adamson"},"rodney palmer":{"id":"501615","properName":"Rodney Palmer"},"jamie wassell":{"id":"501625","properName":"Jamie Wassell"},"timbira kago":{"id":"501626","properName":"Timbira Kago"},"samuel hastings":{"id":"501632","properName":"Samuel Hastings"},"tavita mauigoa":{"id":"501636","properName":"Tavita Mauigoa"},"shamsher singh":{"id":"501637","properName":"Shamsher Singh"},"sunil bishnoi":{"id":"501639","properName":"Sunil Bishnoi"},"beljeek ajang agour lual":{"id":"501643","properName":"Beljeek Ajang Agour Lual"},"mohammad nazif":{"id":"501647","properName":"Mohammad Nazif"},"hassan latif":{"id":"501649","properName":"Hassan Latif"},"simranpreet singh":{"id":"501654","properName":"Simranpreet Singh"},"richard clarke":{"id":"501657","properName":"Richard Clarke"},"simranjeet brar":{"id":"501659","properName":"Simranjeet Brar"},"amrit pal singh":{"id":"501681","properName":"Amrit Pal Singh"},"harold paskins":{"id":"501691","properName":"Harold Paskins"},"amrinder singh 501693":{"id":"501693","properName":"Amrinder Singh 501693"},"danny komorr":{"id":"501697","properName":"Danny Komorr"},"ian price":{"id":"501699","properName":"Ian Price"},"george mamatis":{"id":"501701","properName":"George Mamatis"},"bhupinder singh 501704":{"id":"501704","properName":"Bhupinder Singh 501704"},"julie heke":{"id":"501712","properName":"Julie Heke"},"gurjeet dhaliwal":{"id":"501716","properName":"Gurjeet Dhaliwal"},"davinder randhawa":{"id":"501721","properName":"Davinder Randhawa"},"reece carton":{"id":"501726","properName":"Reece Carton"},"gregg aguado":{"id":"501728","properName":"Gregg Aguado"},"jatin kataria":{"id":"501730","properName":"Jatin Kataria"},"raymond cauchi":{"id":"S50004","properName":"Raymond Cauchi"},"ellice vella":{"id":"S50006","properName":"Ellice Vella"},"wayne vella":{"id":"S50007","properName":"Wayne Vella"},"danial cauchi":{"id":"500153","properName":"Danial Cauchi"},"jake cauchi":{"id":"500189","properName":"Jake Cauchi"},"caleb vella":{"id":"500785","properName":"Caleb Vella"},"jed vella":{"id":"500923","properName":"Jed Vella"},"lisa thomas":{"id":"501146","properName":"Lisa Thomas"},"das harpreet singh":{"id":"501757","properName":"Das Harpreet Singh"},"sukhvir singh":{"id":"501758","properName":"Sukhvir Singh"},"ashish bhandari":{"id":"501731","properName":"Ashish Bhandari"},"vilmos kovac":{"id":"501734","properName":"Vilmos Kovac"},"dane barlow":{"id":"501743","properName":"Dane Barlow"},"yvonne elkington":{"id":"501747","properName":"Yvonne Elkington"},"dayle pitcon":{"id":"501748","properName":"Dayle Pitcon"},"rachel tamanui":{"id":"501756","properName":"Rachel Tamanui"},"dominic ring":{"id":"501439","properName":"Dominic Ring"},"emma johnson":{"id":"501759","properName":"Emma Johnson"},"ramanvir singh mann":{"id":"501943","properName":"Ramanvir Singh Mann"},"corey bisognin":{"id":"501764","properName":"Corey Bisognin"},"mandeep singh":{"id":"501033","properName":"Mandeep Singh"},"rohitendra nand":{"id":"501768","properName":"Rohitendra Nand"},"manpreet singh 501769":{"id":"501769","properName":"Manpreet Singh 501769"},"satnamsingh saini":{"id":"501771","properName":"Satnamsingh Saini"},"paramjit singh":{"id":"501619","properName":"Paramjit Singh"},"rafal pendecki":{"id":"501774","properName":"Rafal Pendecki"},"raminder sandhu":{"id":"501777","properName":"Raminder Sandhu"},"mandeep singh 501461":{"id":"501461","properName":"Mandeep Singh 501461"},"abraham schultink":{"id":"501778","properName":"Abraham Schultink"},"connor skillicorn":{"id":"500977","properName":"Connor Skillicorn"},"jake white":{"id":"501787","properName":"Jake White"},"john marinas":{"id":"501805","properName":"John Marinas"},"himanshu joshi":{"id":"501806","properName":"Himanshu Joshi"},"john mari andan":{"id":"501810","properName":"John Mari Andan"},"kieth hansen":{"id":"501812","properName":"Kieth Hansen"},"paul koolen":{"id":"501814","properName":"Paul Koolen"},"rampreet sidhu":{"id":"501827","properName":"Rampreet Sidhu"},"anthony george":{"id":"501821","properName":"Anthony George"},"varinder pal":{"id":"501824","properName":"Varinder Pal"},"harjot attri":{"id":"501826","properName":"Harjot Attri"},"eh doh hso":{"id":"501825","properName":"Eh Doh Hso"},"colin ginn":{"id":"401823","properName":"Colin Ginn"},"simon stalman":{"id":"501831","properName":"Simon Stalman"},"mohammed ahsad":{"id":"501830","properName":"Mohammed Ahsad"},"andrew coad":{"id":"401839","properName":"Andrew Coad"},"sukhwinder singh":{"id":"501841","properName":"Sukhwinder Singh"},"dishant patel":{"id":"801939","properName":"Dishant Patel"},"jaspreet singh 501844":{"id":"501844","properName":"Jaspreet Singh 501844"},"jared biggs":{"id":"401845","properName":"Jared Biggs"},"pawan kumar":{"id":"501849","properName":"Pawan Kumar"},"clint armstrong":{"id":"401836","properName":"Clint Armstrong"},"melissa wolfe":{"id":"501854","properName":"Melissa Wolfe"},"shivam gupta":{"id":"501852","properName":"Shivam Gupta"},"karan behl":{"id":"501878","properName":"Karan Behl"},"harbhinder singh":{"id":"501853","properName":"Harbhinder Singh"},"blake johns":{"id":"501862","properName":"Blake Johns"},"harpreet singh":{"id":"501857","properName":"Harpreet Singh"},"john bardsley":{"id":"501860","properName":"John Bardsley"},"satnam singh":{"id":"501863","properName":"Satnam Singh"},"imitiaz shah":{"id":"401855","properName":"Imitiaz Shah"},"mark boys":{"id":"401865","properName":"Mark Boys"},"michael van breda-foxwell":{"id":"501864","properName":"Michael Van Breda-Foxwell"},"aseem pal utreja":{"id":"501873","properName":"Aseem Pal Utreja"},"paul edwards":{"id":"401879","properName":"Paul Edwards"},"jasmin hawksworth":{"id":"501886","properName":"Jasmin Hawksworth"},"gagandeep singh aulakh":{"id":"501888","properName":"Gagandeep Singh Aulakh"},"jarrod hicks":{"id":"801889","properName":"Jarrod Hicks"},"harwinder marar":{"id":"501895","properName":"Harwinder Marar"},"ruzzell bondoc":{"id":"801899","properName":"Ruzzell Bondoc"},"jordan rihs":{"id":"501900","properName":"Jordan Rihs"},"amandeep singh sarao 501901":{"id":"501901","properName":"Amandeep Singh Sarao 501901"},"maninderjeet garcha":{"id":"501903","properName":"Maninderjeet Garcha"},"allan munsie":{"id":"401898","properName":"Allan Munsie"},"gurwinder singh":{"id":"501905","properName":"Gurwinder Singh"},"marty watson":{"id":"401910","properName":"Marty Watson"},"greg brownsey":{"id":"401912","properName":"Greg Brownsey"},"michael van rijswijk":{"id":"501915","properName":"Michael Van Rijswijk"},"ronald deane":{"id":"401917","properName":"Ronald Deane"},"ali haider":{"id":"501918","properName":"Ali Haider"},"harinderjit singh mann":{"id":"501925","properName":"Harinderjit Singh Mann"},"sukhmandeep s sidhu":{"id":"501916","properName":"Sukhmandeep S Sidhu"},"darren morris":{"id":"501927","properName":"Darren Morris"},"john o'sullivan":{"id":"401929","properName":"John O'Sullivan"},"nathan streeter":{"id":"401924","properName":"Nathan Streeter"},"abubakar abdirahman":{"id":"501932","properName":"Abubakar Abdirahman"},"thomas atherton":{"id":"501937","properName":"Thomas Atherton"},"amarprit singh":{"id":"501938","properName":"Amarprit Singh"},"rupinder masson":{"id":"501940","properName":"Rupinder Masson"},"parvinder singh sandhu":{"id":"501942","properName":"Parvinder Singh Sandhu"},"sourabh -":{"id":"501944","properName":"Sourabh -"},"gregory collins":{"id":"801945","properName":"Gregory Collins"},"gurpreet singh 801948":{"id":"801948","properName":"Gurpreet Singh 801948"},"amrinder singh randhawa":{"id":"801949","properName":"Amrinder Singh Randhawa"},"lisa pollard":{"id":"501951","properName":"Lisa Pollard"},"tracy borkowski":{"id":"501952","properName":"Tracy Borkowski"},"rueben mickan-keipert":{"id":"801947","properName":"Rueben Mickan-Keipert"}};
@@ -957,7 +917,6 @@ function simScore(a, b) {
 
 function matchList(readValue, list, threshold) {
   if (!readValue || !readValue.trim()) return null;
-  // Normalise dashes and extra spaces before matching
   const cleaned = readValue.toLowerCase().trim().replace(/\s*-\s*/g, ' ').replace(/\s+/g, ' ');
   let bestMatch = null, bestScore = 0;
   const readWords = cleaned.split(/\s+/).filter(w => w.length > 2);
@@ -965,12 +924,9 @@ function matchList(readValue, list, threshold) {
     const itemLower = item.toLowerCase().replace(/\s*-\s*/g, ' ').replace(/\s+/g, ' ');
     const itemWords = itemLower.split(/\s+/).filter(w => w.length > 2);
     let score = simScore(cleaned, itemLower);
-    // Prefix match boost
     if (itemLower.startsWith(cleaned) || cleaned.startsWith(itemLower)) {
       score = Math.max(score, 0.85);
     }
-    // Word-level matching: check each read word against each item word
-    // This catches e.g. "Sparswood" matching "Spotswood" within "Visy Spotswood"
     let wordScore = 0;
     let wordMatches = 0;
     readWords.forEach(rw => {
@@ -1089,10 +1045,8 @@ function applyScanResults(ex) {
   const h = ex.header || {};
   let fieldsApplied = 0;
 
-  // Rego: only auto-fill if it exactly matches a truck in the fleet list
   if (h.rego && h.rego.value && h.rego.confidence !== 'low') {
     const scannedRego = h.rego.value.toUpperCase().trim();
-    // Reverse lookup: find truck number from rego
     let matchedTruckNo = null;
     for (const [truckNo, rego] of Object.entries(TRUCK_LOOKUP)) {
       if (rego.toUpperCase() === scannedRego) {
@@ -1116,13 +1070,10 @@ function applyScanResults(ex) {
         fieldsApplied++;
       }
     }
-    // If no match found, leave both fields blank - do not populate unvalidated data
   }
 
   if (h.startTime && h.startTime.value) { setTimeFromScan('startTime', h.startTime.value); fieldsApplied++; }
   if (h.finishTime && h.finishTime.value) {
-    // Only set finish time if it actually differs from start time
-    // and if start time was also provided (prevents orphaned finish times)
     const startVal = h.startTime && h.startTime.value ? h.startTime.value : '';
     if (h.finishTime.value !== startVal) {
       setTimeFromScan('finishTime', h.finishTime.value);
@@ -1303,9 +1254,8 @@ function resetScan() {
   document.getElementById('scanError').style.display = 'none';
 }
 
-// -- DISPATCHER ------------------------------------------------
-let scheduleData = {}; // truck -> {depot, driver, loads[]}
-let scheduleSheetDate = ''; // date string from sheet name e.g. "25.06.26"
+let scheduleData = {};
+let scheduleSheetDate = '';
 
 function toggleDispatcher() {
   const section = document.getElementById('dispatcherSection');
@@ -1318,7 +1268,6 @@ function toggleDispatcher() {
 }
 
 function enterDispatcherMode() {
-  // Hide everything except the dispatcher upload section
   document.getElementById('mainForm').style.display = 'none';
   const dispWrapper = document.getElementById('dispatcherWrapper');
   if (dispWrapper) dispWrapper.style.display = 'block';
@@ -1338,62 +1287,49 @@ function processScheduleFile(input) {
       const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
       const workbook = XLSX.read(data, {type: 'array'});
 
-      // Find all date sheets from the last 5 days
       const dateSheets = workbook.SheetNames.filter(s => /^(MON|TUE|WED|THU|FRI|SAT|SUN)\s/.test(s));
       if (dateSheets.length === 0) throw new Error('No date sheets found in this file');
 
-      // Get today and last 4 days as date strings DD.MM.YY
+      // Load EVERY date sheet in the workbook, regardless of when the file
+      // was uploaded - from the earliest sheet through to the last date present.
+      const sheetsToLoad = dateSheets.slice();
+
+      // Helper: turn a "dd.mm.yy" key into a sortable number (yyyymmdd).
+      const dateKeyToNum = k => {
+        const [d,m,y] = k.split('.').map(Number);
+        return (2000 + y) * 10000 + m * 100 + d;
+      };
+
+      // Today's date string - used only to decide which day to show by default.
       const today = new Date();
-      const recentDates = [];
-      for (let i = 0; i < 10; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        const dd = String(d.getDate()).padStart(2,'0');
-        const mm = String(d.getMonth()+1).padStart(2,'0');
-        const yy = String(d.getFullYear()).slice(2);
-        recentDates.push(`${dd}.${mm}.${yy}`);
-      }
+      const todayDate = String(today.getDate()).padStart(2,'0') + '.' +
+                        String(today.getMonth()+1).padStart(2,'0') + '.' +
+                        String(today.getFullYear()).slice(2);
 
-      // Find matching sheets for recent dates
-      const sheetsToLoad = dateSheets.filter(s => recentDates.some(d => s.includes(d)));
-      if (sheetsToLoad.length === 0) {
-        throw new Error(`No sheets found for the last 5 days. Available: ${dateSheets.slice(-3).join(', ')}`);
-      }
-
-      // Parse each matching sheet and combine into allDaysData keyed by date
       const allDaysData = {};
       let todaySheetName = '';
-      let todayDate = recentDates[0]; // today's date string
 
       for (const sName of sheetsToLoad) {
         const ws = workbook.Sheets[sName];
         const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
-
-        // DEBUG: show first 20 rows of first sheet
-        if (sName === sheetsToLoad[0]) {
-          let dbg = 'Sheet: ' + sName + '\n';
-          for (let r = 0; r < 20; r++) {
-            const row = rows[r] || [];
-            dbg += 'R' + r + ': [' + row.slice(0,14).map(v => JSON.stringify(String(v).slice(0,15))).join(',') + ']\n';
-          }
-          }
-
         const parsed = parseScheduleRows(rows);
         const dateMatch = sName.match(/(\d{2}\.\d{2}\.\d{2})/);
-        const dateStr = dateMatch ? dateMatch[1] : '';
+        const dateStr = dateMatch ? dateMatch[1] : sName;
         allDaysData[dateStr] = parsed;
         if (dateStr === todayDate) todaySheetName = sName;
       }
 
-      // Use today's data, but fall back to most recent date with actual loads
+      // Default the visible schedule to today's sheet if present, otherwise
+      // fall back to the most recent (latest-dated) sheet that has loads.
       scheduleData = allDaysData[todayDate] || {};
       const todayLoadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
 
       if (todayLoadCount === 0) {
-        // Today has no loads - find most recent date that does
-        for (const dateStr of recentDates) {
+        const sortedDates = Object.keys(allDaysData)
+          .filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k))
+          .sort((a,b) => dateKeyToNum(b) - dateKeyToNum(a));
+        for (const dateStr of sortedDates) {
           if (dateStr === todayDate) continue;
-          if (!allDaysData[dateStr]) continue;
           const count = Object.values(allDaysData[dateStr]).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
           if (count > 0) {
             scheduleData = allDaysData[dateStr];
@@ -1408,7 +1344,6 @@ function processScheduleFile(input) {
       const truckCount = Object.keys(scheduleData).length;
       const loadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
 
-      // Today's data only
       const todayPayload = {
         date: todayDate,
         sheet: sheetName,
@@ -1416,12 +1351,9 @@ function processScheduleFile(input) {
         data: scheduleData
       };
 
-      // Full data with all days - for localStorage only
       const fullPayload = Object.assign({}, todayPayload, {allDays: allDaysData});
       localStorage.setItem('cartage_schedule', JSON.stringify(fullPayload));
 
-
-      // Save directly to Cloudflare Worker - no manual upload needed
       document.getElementById('dispatchProgress').style.display = 'block';
       try {
         const saveRes = await fetch(CLOUDFLARE_WORKER, {
@@ -1434,7 +1366,10 @@ function processScheduleFile(input) {
         const successEl = document.getElementById('dispatchSuccess');
         successEl.style.display = 'block';
         if (saveJson.ok) {
-          successEl.textContent = 'Done. Loaded ' + sheetsToLoad.join(', ') + ' - ' + truckCount + ' trucks. All drivers can now load their jobs.';
+          const loadedKeys = Object.keys(allDaysData).filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k)).sort((a,b) => dateKeyToNum(a) - dateKeyToNum(b));
+          const dayCount = loadedKeys.length;
+          const rangeText = dayCount > 0 ? (loadedKeys[0] + ' to ' + loadedKeys[dayCount - 1]) : sheetName;
+          successEl.textContent = 'Done. Loaded ' + dayCount + ' day' + (dayCount === 1 ? '' : 's') + ' (' + rangeText + ') - ' + truckCount + ' trucks on the latest day. All drivers can now load their jobs.';
         } else {
           successEl.textContent = 'Error saving schedule. Please try again.';
           successEl.style.color = '#dc2626';
@@ -1459,30 +1394,23 @@ function processScheduleFile(input) {
 }
 
 function parseScheduleRows(rows) {
-  // Read LEFT section: columns A-O (indices 0-14), rows 0-70
-  // 4 driver blocks side by side, each 4 cols wide:
-  // [Load label] [Truck+Depot / Job description] [Rate] [Spacer]
   const BLOCK_COLS = [0, 4, 8, 12];
   const MAX_ROW = Math.min(rows.length, 70);
 
-  const allDrivers = {}; // truck -> {depot, driver, loads[]}
+  const allDrivers = {};
 
   let i = 0;
   while (i < MAX_ROW) {
     const row = rows[i] || [];
 
-    // Detect Description rows (marks start of a driver block set)
     const isDescRow = BLOCK_COLS.some(bc => String(row[bc] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '') === 'Description');
     if (!isDescRow) { i++; continue; }
 
-    // Row above has driver names
     const nameRow = i > 0 ? (rows[i-1] || []) : [];
 
     for (const bc of BLOCK_COLS) {
       if (String(row[bc] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '') !== 'Description') continue;
 
-      // Parse truck cell: "419 Bromelton", "8068 Mt Cotton", or "Subby 1"
-      // Strip smart/curly quotes that Excel sometimes adds
       const truckCell = String(row[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
       const truckMatch = truckCell.match(/^(\d{3,4})\s+(.+)$/);
       const subbyMatch = truckCell.match(/^(Subby\s*\d+)$/i);
@@ -1492,7 +1420,6 @@ function parseScheduleRows(rows) {
         truckNo = truckMatch[1];
         depot = truckMatch[2].trim();
       } else if (subbyMatch) {
-        // Use rego from name row as key for subbies
         const regoCell = String(nameRow[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
         if (regoCell && regoCell !== 'nan' && regoCell !== '0' && regoCell !== '') {
           truckNo = regoCell;
@@ -1504,12 +1431,10 @@ function parseScheduleRows(rows) {
         continue;
       }
 
-      // Get driver name from row above, strip agency suffix e.g. "(QUINN)"
       let driverName = String(nameRow[bc] || '').trim();
       if (driverName === 'nan') driverName = '';
       driverName = driverName.replace(/\s*\([^)]+\)/g, '').trim();
 
-      // Read load rows below until Total Rate or next Description
       const loads = [];
       let j = i + 1;
       while (j < MAX_ROW) {
@@ -1520,7 +1445,6 @@ function parseScheduleRows(rows) {
         if (descCol === 'Description') break;
         if (descCol.includes('Total Rate')) break;
 
-        // Preload or Load 1-7 with a real job value
         if (/^(Preload|Load \d+)$/i.test(descCol) && jobCol && jobCol !== '0' && jobCol !== 'nan') {
           const {pickup: rawPickup, deliverTo} = splitJobString(jobCol);
           const {pickup, product} = splitQuarryMaterial(rawPickup);
@@ -1537,7 +1461,6 @@ function parseScheduleRows(rows) {
       allDrivers[truckNo] = {depot, driver: driverName, loads};
     }
 
-    // Advance past this block set
     i++;
   }
 
@@ -1545,7 +1468,6 @@ function parseScheduleRows(rows) {
 }
 
 function splitJobString(job) {
-  // Normalise arrows - handle no space e.g. "Sand->Ipswich" or "Sand->Ipswich"
   job = job.replace(/\s*\u2192\s*/g, ' \u2192 ').replace(/\s*->\s*/g, ' -> ');
   if (job.includes('\u2192')) {
     const parts = job.split('\u2192');
@@ -1555,7 +1477,6 @@ function splitJobString(job) {
     const parts = job.split('->');
     return {pickup: parts[0].trim(), deliverTo: parts[1].trim()};
   }
-  // Treat " - " as separator between pickup and delivery (e.g. "BRACALBA QUARRY - B2N PROJECT")
   if (job.includes(' - ')) {
     const parts = job.split(' - ');
     return {pickup: parts[0].trim(), deliverTo: parts.slice(1).join(' - ').trim()};
@@ -1575,11 +1496,9 @@ function splitQuarryMaterial(rVal) {
     [/^(Fraser Coast)\s+(.+)$/i, 'Fraser Coast'],
     [/^(Fraser)\s+(.+)$/i, 'Fraser'],
     [/^(Holcim\s+\w+)$/i, null],
-    // Coastal Sands with optional material e.g. "Coastal  Fine Sand" -> quarry: Coastal Sands, product: Fine Sand
     [/^(Coastal)\s+(.+)$/i, 'Coastal Sands'],
     [/^(Coastal Sands)$/i, null],
     [/^(Lantrak)$/i, null],
-    // Do NOT split "Ipswich Transfer" - it's a single concept, not pickup+product
     [/^(Ipswich Transfer)$/i, null],
   ];
   for (const [pat, quarryOverride] of patterns) {
@@ -1618,7 +1537,6 @@ function resetDriverForNewTruck() {
 }
 
 function resetLoadsForNewDriver() {
-  // Clear all load cards and re-show banner if schedule available
   document.getElementById('loadsContainer').innerHTML = '';
   loadCount = 0;
   addLoad();
@@ -1627,7 +1545,6 @@ function resetLoadsForNewDriver() {
 }
 
 function fetchScheduleFromJsonbin() {
-  // Always fetch fresh from GitHub, ignore any stale localStorage
   localStorage.removeItem('cartage_schedule');
   fetch(CLOUDFLARE_WORKER + '?t=' + Date.now())
     .then(r => {
@@ -1653,7 +1570,6 @@ function fetchScheduleFromJsonbin() {
 }
 
 function applyScheduleForSelectedDate() {
-  // Use the date the driver has selected, or today
   const dateEl = document.getElementById('jobDate');
   const selectedDate = dateEl ? dateEl.value : '';
   let dateStr = '';
@@ -1673,7 +1589,6 @@ function applyScheduleForSelectedDate() {
     scheduleData = allDays[dateStr];
     scheduleSheetDate = dateStr;
   } else {
-    // Fall back to most recent date with loads
     const sortedDates = Object.keys(allDays).sort().reverse();
     for (const d of sortedDates) {
       const count = Object.values(allDays[d]).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
@@ -1738,7 +1653,6 @@ function findTruckByDriverName(name) {
 }
 
 function setSelectSafely(selectEl, value) {
-  // Only assign if the value actually exists as an option - prevents silent blank selects
   const exists = Array.from(selectEl.options).some(o => o.value === value || o.textContent === value);
   if (exists) {
     selectEl.value = value;
@@ -1751,7 +1665,6 @@ function loadJobsFromSchedule() {
   const truckNo = document.getElementById('truckNo')?.value?.trim();
   const driverName = document.getElementById('driverName')?.value?.trim();
 
-  // Find matching truck - by truck number first, then by driver name
   let matchedTruck = null;
   if (truckNo && scheduleData[truckNo]) {
     matchedTruck = truckNo;
@@ -1767,7 +1680,6 @@ function loadJobsFromSchedule() {
   const truckData = scheduleData[matchedTruck];
   const jobs = truckData.loads || [];
 
-  // Auto-fill depot if not already set
   if (truckData.depot) {
     const depotSel = document.getElementById('depot');
     if (depotSel && !depotSel.value) {
@@ -1776,7 +1688,6 @@ function loadJobsFromSchedule() {
     }
   }
 
-  // Auto-verify driver name if present and not already set
   if (truckData.driver && !verifiedDriverName) {
     const match = matchNameFuzzy(truckData.driver.toLowerCase());
     if (match) {
@@ -1790,7 +1701,6 @@ function loadJobsFromSchedule() {
     }
   }
 
-  // Clear existing loads and rebuild from schedule
   document.getElementById('loadsContainer').innerHTML = '';
   loadCount = 0;
 
@@ -1798,7 +1708,6 @@ function loadJobsFromSchedule() {
     addLoad();
     const idx = i + 1;
 
-    // Set Pickup Location
     const pfSel = document.getElementById('pullFrom' + idx);
     const pfOtherWrap = document.getElementById('otherPullFromWrap' + idx);
     const pfOtherInput = document.getElementById('otherPullFrom' + idx);
@@ -1813,14 +1722,12 @@ function loadJobsFromSchedule() {
           if (pfOtherInput) pfOtherInput.value = job.pickup;
         }
       } else {
-        // No pickup info - show Other with blank text for driver to fill in
         pfSel.value = 'Other';
         if (pfOtherWrap) pfOtherWrap.style.display = 'block';
         if (pfOtherInput) pfOtherInput.value = '';
       }
     }
 
-    // Set Deliver To
     const dtSel = document.getElementById('deliverTo' + idx);
     const dtOtherWrap = document.getElementById('otherDeliverToWrap' + idx);
     const dtOtherInput = document.getElementById('otherDeliverTo' + idx);
@@ -1841,7 +1748,6 @@ function loadJobsFromSchedule() {
       }
     }
 
-    // Set Product
     const prodSel = document.getElementById('product' + idx);
     const prodOtherWrap = document.getElementById('otherProductWrap' + idx);
     const prodOtherInput = document.getElementById('otherProduct' + idx);
@@ -1862,7 +1768,6 @@ function loadJobsFromSchedule() {
       }
     }
 
-    // Only add to comments if it's a Preload (not Load 1, Load 2 etc.)
     if (job.label && job.label.toLowerCase() === 'preload') {
       const commentsEl = document.getElementById('comments' + idx);
       if (commentsEl) commentsEl.value = 'Preload';
@@ -1874,7 +1779,6 @@ function loadJobsFromSchedule() {
   showToast(`${jobs.length} loads loaded from today\'s schedule`, 'success');
 }
 
-// -- DOCKET PHOTO OCR -----------------------------------------
 const docketPhotos = {};
 
 function triggerDocketPhoto(idx) {
@@ -1897,6 +1801,44 @@ function handleDocketPhoto(idx, input) {
   reader.readAsDataURL(file);
 }
 
+function parseDocketDateStr(str) {
+  if (!str) return null;
+  const s = str.trim();
+  const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+
+  let m = s.match(/(\d{1,2})[\s-]([A-Za-z]{3,})[\s-](\d{4})/);
+  if (m) {
+    const mon = MONTHS[m[2].slice(0,3).toLowerCase()];
+    if (mon) return { y: parseInt(m[3]), m: mon, d: parseInt(m[1]) };
+  }
+
+  m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) return { y: parseInt(m[3]), m: parseInt(m[2]), d: parseInt(m[1]) };
+
+  m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})\b/);
+  if (m) return { y: 2000 + parseInt(m[3]), m: parseInt(m[2]), d: parseInt(m[1]) };
+
+  return null;
+}
+
+function getRunSheetDate() {
+  const val = document.getElementById('jobDate')?.value;
+  if (!val) return null;
+  const [y,m,d] = val.split('-').map(Number);
+  return { y, m, d };
+}
+
+function datesEqual(a, b) {
+  return a && b && a.y === b.y && a.m === b.m && a.d === b.d;
+}
+
+function formatDateObj(d) {
+  if (!d) return '';
+  const dd = String(d.d).padStart(2,'0');
+  const mm = String(d.m).padStart(2,'0');
+  return `${dd}/${mm}/${d.y}`;
+}
+
 async function scanDocket(idx) {
   const photo = docketPhotos[idx];
   if (!photo) return;
@@ -1905,6 +1847,9 @@ async function scanDocket(idx) {
   document.getElementById('docketScanResult' + idx).style.display = 'none';
   document.getElementById('docketScanError' + idx).style.display = 'none';
   document.getElementById('scanDocketBtn' + idx).style.display = 'none';
+
+  const loadCard = document.getElementById('loadCard' + idx);
+  if (loadCard) loadCard.dataset.dateMismatch = 'false';
 
   try {
     const base64Data = photo.split(',')[1];
@@ -1915,19 +1860,38 @@ async function scanDocket(idx) {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 500,
+        max_tokens: 700,
         messages: [{
           role: 'user',
           content: [
             {type: 'image', source: {type: 'base64', media_type: mediaType, data: base64Data}},
-            {type: 'text', text: `Read this weighbridge docket and extract ONLY the tonnage weights and docket number. Return strict JSON only, no markdown:
+            {type: 'text', text: `Read this weighbridge docket. Extract the docket number, the docket date, and the three tonnage weights (Gross, Tare, Net). Return strict JSON only, no markdown fences, no preamble.
+
+CRITICAL ACCURACY RULE - applies to every field below:
+Only return a value if you are fully confident it is correct. If you are not certain - including cases where a number is handwritten, faded, smudged, cropped, or ambiguous - you MUST return an empty string "" for that field. Never return your best guess. A wrong value is worse than a blank one.
+
+PRINTED vs HANDWRITTEN (applies to date and weights):
+Weighbridge dockets normally have the Date and the Gross/Tare/Net weights machine-printed by the weighbridge's own printer (typed, dot-matrix or thermal-printer characters, perfectly uniform). Some dockets instead have some of these fields written by hand in pen or pencil.
+You must only return a value for Date, Gross, Tare or Net if it is machine-printed. If any of these is handwritten, return "" for that field's value and set confidence to "handwritten" - do NOT read, guess, or estimate it, even if you think you can make it out.
+The docket number may be printed, stamped, or handwritten - it can be read either way, just set confidence accordingly, and still return "" instead of a guess if you are not fully confident.
+
+Confidence values (use exactly one of these strings for every field):
+- "high": machine-printed (or clearly legible for docket number), unambiguous - you are certain
+- "low": partially unclear, faded, smudged, or you have any doubt at all
+- "handwritten": the value is handwritten (date/weights only) - value must be ""
+- "not_visible": field is blank or not present on this docket - value must be ""
+
+Weights are in tonnes, typically 2 digits before the decimal and 2 after (e.g. 28.56).
+Date: read whatever date is printed on the docket (the docket's own date, not today's date) and return it exactly as written, e.g. "18-Dec-2025" or "19/12/25".
+
+Return exactly this JSON shape:
 {
-  "docketNumber": "",
-  "gross": "",
-  "tare": "",
-  "net": ""
-}
-Gross, Tare and Net are weights in tonnes (e.g. 28.56). Docket number is alphanumeric. If a field is not clearly visible return empty string.`}
+  "docketNumber": {"value": "", "confidence": ""},
+  "docketDate": {"value": "", "confidence": ""},
+  "gross": {"value": "", "confidence": ""},
+  "tare": {"value": "", "confidence": ""},
+  "net": {"value": "", "confidence": ""}
+}`}
           ]
         }]
       })
@@ -1941,23 +1905,68 @@ Gross, Tare and Net are weights in tonnes (e.g. 28.56). Docket number is alphanu
     let cleaned = textBlock.text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'');
     const parsed = JSON.parse(cleaned);
 
-    // Apply to load fields
-    if (parsed.docketNumber) {
-      const el = document.getElementById('ticketNo' + idx);
-      if (el && !el.value) {
-        el.value = parsed.docketNumber;
-        el.setAttribute('data-needs-confirm','true');
-        el.classList.add('error');
-        const errEl = document.getElementById('err-ticketNo' + idx);
-        if (errEl) { errEl.textContent = 'AI read this - please verify'; errEl.classList.add('show'); }
+    const notes = [];
+    let hasMismatch = false;
+
+    function applyField(elId, info, label) {
+      const el = document.getElementById(elId);
+      if (info && info.value && info.confidence === 'high') {
+        if (el && !el.value) {
+          el.value = info.value;
+          el.classList.add('valid');
+          el.classList.remove('error');
+        }
+        return `${label} ${info.value}`;
+      } else if (info && info.confidence === 'handwritten') {
+        return `${label} - handwritten, enter manually`;
+      } else if (info && info.confidence === 'low') {
+        return `${label} - not clear, enter manually`;
+      } else {
+        return `${label} -`;
       }
     }
-    if (parsed.gross) { const el = document.getElementById('gross' + idx); if (el && !el.value) { el.value = parsed.gross; calcNet(idx); } }
-    if (parsed.tare) { const el = document.getElementById('tare' + idx); if (el && !el.value) { el.value = parsed.tare; calcNet(idx); } }
+
+    notes.push(applyField('ticketNo' + idx, parsed.docketNumber, 'Docket'));
+    notes.push(applyField('gross' + idx, parsed.gross, 'Gross'));
+    notes.push(applyField('tare' + idx, parsed.tare, 'Tare'));
+    calcNet(idx);
+
+    const dateInfo = parsed.docketDate || {};
+    const runSheetDate = getRunSheetDate();
+    if (dateInfo.value && dateInfo.confidence === 'high') {
+      const docketDate = parseDocketDateStr(dateInfo.value);
+      if (docketDate && runSheetDate) {
+        if (datesEqual(docketDate, runSheetDate)) {
+          notes.push(`Date ${formatDateObj(docketDate)} \u2713 matches run sheet`);
+        } else {
+          notes.push(`\u26A0 Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
+          hasMismatch = true;
+        }
+      } else {
+        notes.push(`Date ${dateInfo.value} - could not compare to run sheet date, please check manually`);
+      }
+    } else if (dateInfo.confidence === 'handwritten') {
+      notes.push('Date - handwritten, please check it matches the run sheet date manually');
+    } else {
+      notes.push('Date - not read, please check it matches the run sheet date manually');
+    }
+
+    if (loadCard) loadCard.dataset.dateMismatch = hasMismatch ? 'true' : 'false';
 
     const resultEl = document.getElementById('docketScanResult' + idx);
     resultEl.style.display = 'block';
-    resultEl.textContent = `Read: Gross ${parsed.gross||'?'} / Tare ${parsed.tare||'?'} / Net ${parsed.net||'?'} / Docket ${parsed.docketNumber||'?'}`;
+    resultEl.textContent = 'Read: ' + notes.join(' / ');
+    if (hasMismatch) {
+      resultEl.style.background = '#fef2f2';
+      resultEl.style.borderColor = '#fecaca';
+      resultEl.style.color = '#dc2626';
+      resultEl.style.fontWeight = '700';
+    } else {
+      resultEl.style.background = '#f0fdf4';
+      resultEl.style.borderColor = '#bbf7d0';
+      resultEl.style.color = '#16a34a';
+      resultEl.style.fontWeight = '400';
+    }
 
     document.getElementById('docketScanProgress' + idx).style.display = 'none';
     updateProgress();
@@ -1971,7 +1980,6 @@ Gross, Tare and Net are weights in tonnes (e.g. 28.56). Docket number is alphanu
   }
 }
 
-// -- RUN SHEET PHOTO ------------------------------------------
 let runSheetPhotoData = null;
 
 function handleRunSheetPhoto(input) {
@@ -2012,7 +2020,6 @@ function lookupDriver() {
     return;
   }
 
-  // Must be exactly 6 digits, cannot start with a letter
   const validFormat = /^\d{6}$/.test(id);
   if (!validFormat) {
     driverLookupInProgress = true;
@@ -2083,8 +2090,6 @@ function lookupDriverByName() {
   }
 }
 
-// -- TRUCK LOOKUP TABLE --------------------------------------
-// Truck No -> Rego. Update this list when fleet changes occur.
 const TRUCK_LOOKUP = {"305":"XW61HK","307":"XW63HK","312":"XW70HK","315":"XW72HK","317":"XW71HK","319":"XW76HX","318":"XW77HX","323":"XW96HX","325":"XW92IF","331":"XW90IF","326":"XW13IG","328":"XW14IG","330":"XW51ZM","336":"XW36IG","338":"XW28IS","342":"XW60IS","343":"XW30ZQ","332":"XW36IS","334":"XW29IS","341":"XW64IS","344":"XW65IS","356":"XW94JQ","351":"XW70IS","352":"XW74IS","345":"XW66IS","346":"XW67IS","347":"XW68IS","349":"XW72IS","353":"XW75IS","348":"XW71IS","355":"XW46YD","354":"XW73IS","357":"XW40KL","362":"XW46NB","359":"XW21NE","361":"XW37NE","365":"XW22NE","369":"XW45NB","366":"XW91RG","364":"XW44NB","363":"XW47NB","367":"XW52NB","371":"XW20NE","370":"XW49NB","368":"XW48NB","377":"XW59NB","372":"XW42NE","375":"XW57NB","373":"XW51NB","376":"XW34NE","360":"XW28NE","374":"XW38NE","378":"XW23NE","382":"XW43NE","379":"XW25NE","381":"XW52NE","380":"XW56ZM","383":"XW36NE","385":"XW55NB","384":"XW29NE","386":"XW47NE","388":"XW49NE","387":"XW48NE","391":"XW58NB","390":"XW33NE","389":"XW44NE","392":"XW27RB","402":"XW35RB","393":"XW46NE","394":"XW53NB","395":"XW27NE","396":"XW35NE","397":"XW45NE","398":"XW56NB","399":"XW40NE","401":"XW53NE","408":"XW18SO","407":"XW30NE","406":"XW31NE","405":"XW26NE","404":"XW39NE","403":"XW51NE","409":"XW21UN","410":"XW22UN","411":"XW23UN","412":"XW24UN","417":"XW57UN","413":"XW53UN","416":"XW56UN","418":"XW58UN","414":"XW54UN","415":"XW55UN","400":"XW59UN","419":"XW28VW","420":"XW29VW","421":"XW30VW","422":"XW31VW","423":"XW32VW","424":"XW33VW","425":"XW82VW","426":"XW80VW","427":"XW81VW","428":"XW19XD","429":"XW20XD","430":"XW21XD","431":"XW02ZP","432":"XW00ZP","433":"XW01ZP","436":"XW63ZV","435":"XW61ZV","437":"XW62ZV","434":"XX58AZ","438":"XW02ZW","439":"XW03ZW","441":"XW05ZW","442":"XW06ZW","443":"XW07ZW","444":"XW08ZW","449":"XW13ZW","440":"XW04ZW","450":"XW14ZW","448":"XW12ZW","446":"XW10ZW"};
 
 let userEditedRego = false;
@@ -2122,33 +2127,25 @@ function lookupTruck() {
   checkForScheduledJobs();
 }
 
-// -- STATE ----------------------------------------------------
 let loadCount = 0;
 const MAX_LOADS = 6;
 const NUM_DOCKETS = 6;
-const photoData = { dockets: Array(NUM_DOCKETS).fill(null) };
-const blurStatus = { dockets: Array(NUM_DOCKETS).fill(null) };
 let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
-// -- INIT -----------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   const isDispatcher = new URLSearchParams(window.location.search).get('dispatcher') === 'true';
 
   if (isDispatcher) {
-    // Dispatcher mode - show only upload page, hide everything else
     document.getElementById('mainForm').style.display = 'none';
     document.getElementById('dispatcherWrapper').style.display = 'block';
     const progressWrap = document.querySelector('.progress-wrap');
     if (progressWrap) progressWrap.style.display = 'none';
-    // Hide dispatcher toggle button (not needed in full dispatcher mode)
     document.getElementById('dispatcherToggleBtn').style.display = 'none';
   } else {
-    // Driver mode - show normal form, hide dispatcher button
     setTodayDate();
     addLoad();
     initSignature();
     updateProgress();
-    // Always fetch latest schedule from JSONbin on load
     fetchScheduleFromJsonbin();
   }
 });
@@ -2161,7 +2158,6 @@ function setTodayDate() {
   document.getElementById('jobDate').value = `${yyyy}-${mm}-${dd}`;
 }
 
-// -- LOADS -----------------------------------------------------
 function addLoad() {
   if (loadCount >= MAX_LOADS) { showToast('Maximum 6 loads reached','warning'); return; }
   loadCount++;
@@ -2444,7 +2440,6 @@ function addLoad() {
             <option value="Other">Other (type below)</option>
           </select>
           <div class="field-error" id="err-product${idx}">Required</div>
-          <!-- Auto-match suggestion banner -->
           <div id="productSuggest${idx}" style="display:none; margin-top:6px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:10px 12px; font-size:12px; color:#92400e; line-height:1.5;">
             <strong>Auto-matched:</strong> <span id="productSuggestText${idx}"></span><br>
             <span style="color:#78350f;">Is this correct?</span>
@@ -2453,7 +2448,6 @@ function addLoad() {
               <button onclick="confirmProduct(${idx}, false)" style="flex:1; background:transparent; border:1.5px solid #d97706; color:#92400e; border-radius:6px; padding:7px; font-size:12px; font-weight:700; cursor:pointer;">x No, Change</button>
             </div>
           </div>
-          <!-- Other product text input -->
           <div id="otherProductWrap${idx}" style="display:none; margin-top:8px;">
             <input type="text" id="otherProduct${idx}" placeholder="Type product name here..."
                    oninput="updateProgress()" autocomplete="off"
@@ -2485,7 +2479,6 @@ function addLoad() {
                   oninput="updateProgress()" rows="2"></textarea>
       </div>
 
-      <!-- DOCKET PHOTO + OCR -->
       <div style="margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
         <label style="font-size:11px; font-weight:700; color:var(--label); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:10px;">
           Weighbridge Docket Photo <span class="req">*</span>
@@ -2566,7 +2559,6 @@ function calcTotals() {
   document.getElementById('totalTonnesDisplay').textContent = totalT.toFixed(2) + ' t';
 }
 
-// -- TIME / HOURS -------------------------------------------
 function calcTotalHours() {
   const s = document.getElementById('startTime').value;
   const f = document.getElementById('finishTime').value;
@@ -2593,7 +2585,6 @@ function calcTotalKms() {
   }
 }
 
-// -- SIGNATURE ---------------------------------------------
 function initSignature() {
   sigCanvas = document.getElementById('sigCanvas');
   sigCtx = sigCanvas.getContext('2d');
@@ -2625,11 +2616,10 @@ function getSignatureDataUrl() {
   return hasSig ? sigCanvas.toDataURL('image/png') : null;
 }
 
-// -- WHEEL TIME PICKER ---------------------------------------
 const ITEM_H = 44;
 let activeTimeFieldId = null;
-let pickerHour = 7;     // 1-12
-let pickerMinute = 0;   // 0-59
+let pickerHour = 7;
+let pickerMinute = 0;
 let pickerAmPm = 'AM';
 let hourScrollTimer, minuteScrollTimer;
 
@@ -2789,32 +2779,6 @@ function confirmTimePicker() {
   updateProgress();
 }
 
-// -- DOCKET GRID -------------------------------------------
-
-// -- BLUR DETECTION ----------------------------------------
-function checkBlur(dataUrl, callback) {
-  const img = new Image();
-  img.onload = () => {
-    const S = 200, canvas = document.createElement('canvas');
-    canvas.width = S; canvas.height = S;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, S, S);
-    const pixels = ctx.getImageData(0,0,S,S).data;
-    const gray = new Float32Array(S*S);
-    for (let i=0;i<S*S;i++) gray[i]=0.299*pixels[i*4]+0.587*pixels[i*4+1]+0.114*pixels[i*4+2];
-    let sum=0, sumSq=0, count=0, bright=0;
-    for (let y=1;y<S-1;y++) for (let x=1;x<S-1;x++) {
-      const lap = -gray[(y-1)*S+x]-gray[(y+1)*S+x]-gray[y*S+(x-1)]-gray[y*S+(x+1)]+4*gray[y*S+x];
-      sum+=lap; sumSq+=lap*lap; count++;
-    }
-    for (let i=0;i<gray.length;i++) bright+=gray[i];
-    const variance=(sumSq/count)-Math.pow(sum/count,2);
-    callback(variance<80 || (bright/gray.length)<40);
-  };
-  img.src = dataUrl;
-}
-
-// -- FIELD VALIDATION --------------------------------------
 function resolveLocationValue(idx, type) {
   const select = document.getElementById(`${type}${idx}`);
   if (!select) return '';
@@ -2834,13 +2798,11 @@ function validateField(el) {
   errEl.classList.toggle('show', empty);
 }
 
-// -- PROGRESS ----------------------------------------------
 function updateProgress() {
   const baseFields = ['driverID','truckNo','truckRego','depot','startTime','finishTime','odometerStart','odometerFinish'];
   let filled = 0, total = baseFields.length + 4;
   baseFields.forEach(id => { const el=document.getElementById(id); if(el&&el.value.trim()!=='') filled++; });
   if (Object.keys(docketPhotos).length > 0) filled++;
-  // Check load 1
   const t1 = document.getElementById('ticketNo1');
   const g1 = document.getElementById('gross1');
   const tr1 = document.getElementById('tare1');
@@ -2852,7 +2814,6 @@ function updateProgress() {
   document.getElementById('progressPct').textContent = Math.min(pct,100)+'%';
 }
 
-// -- SUBMIT ------------------------------------------------
 function submitForm() {
   const errors = [];
 
@@ -2881,16 +2842,20 @@ function submitForm() {
       errors.push(f.label);
     }
   });
-  // Validate load 1
   ['ticketNo1','gross1','tare1'].forEach((id,i) => {
     const el = document.getElementById(id);
     if (!el||!el.value.trim()) { el&&el.classList.add('error'); document.getElementById(`err-${id}`)?.classList.add('show'); errors.push(['Docket Number (Load 1)','Gross (Load 1)','Tare (Load 1)'][i]); }
   });
-  // Check all docket numbers that were AI-scanned but not yet confirmed by driver
   for (let i = 1; i <= MAX_LOADS; i++) {
     const el = document.getElementById('ticketNo' + i);
     if (el && el.getAttribute('data-needs-confirm') === 'true') {
       errors.push(`Docket Number (Load ${i}) was read by AI - please verify and tap the field to confirm it is correct`);
+    }
+  }
+  for (let i = 1; i <= MAX_LOADS; i++) {
+    const card = document.getElementById('loadCard' + i);
+    if (card && card.dataset.dateMismatch === 'true') {
+      errors.push(`Docket date does not match the run sheet date (Load ${i}) - check you have attached the correct docket before submitting`);
     }
   }
   if (!resolveLocationValue(1,'pullFrom').trim()) {
@@ -2916,7 +2881,6 @@ function submitForm() {
   }
   document.getElementById('valSummary').classList.remove('show');
 
-  // Build loads data
   const loads = [];
   for (let i=1;i<=MAX_LOADS;i++) {
     const el=document.getElementById(`ticketNo${i}`);
@@ -3001,26 +2965,21 @@ function resetForm() {
   userEditedRego = false;
   document.getElementById('truckNoWarning').style.display='none';
   document.getElementById('regoAutoTag').style.display='none';
-  // Reset all time picker triggers
   ['startTime','finishTime'].forEach(id => {
     const display = document.getElementById(`${id}_display`);
     const trigger = document.getElementById(`${id}_trigger`);
-    if (display) { display.textContent = id.includes('break') ? 'Set time' : 'Tap to set time'; display.classList.add('time-picker-placeholder'); }
+    if (display) { display.textContent = 'Tap to set time'; display.classList.add('time-picker-placeholder'); }
     if (trigger) trigger.classList.remove('filled','error');
   });
   setTodayDate();
-  // Clear per-load docket photos
   Object.keys(docketPhotos).forEach(k => delete docketPhotos[k]);
-  // Clear run sheet photo
   runSheetPhotoData = null;
   document.getElementById('runSheetPhotoPreview').style.display = 'none';
   document.getElementById('runSheetPhotoBtnLabel').textContent = 'Photograph Run Sheet';
-  resetScan();
   clearSignature(); updateProgress(); updateAddLoadBtn();
   window.scrollTo(0,0);
 }
 
-// -- PRODUCT AUTO-MATCH --------------------------------------
 const LOCATION_PRODUCT_MAP = [
   { keywords: ['point wilson'], products: ['MVQ Point Wilson 14mm','MVQ Point Wilson 20mm','Point Wilson 20mm','Point Wilson 14mm'] },
   { keywords: ['lysterfield'], products: ['Boral Lysterfield 14mm','Boral Lysterfield 20mm','Hanson Lysterfield 14mm','Hanson Lysterfield 20mm'] },
