@@ -2925,20 +2925,37 @@ function submitForm() {
 
   showLoading('Submitting your run sheet...');
 
-  if (SUBMIT_URL==='YOUR_POWER_AUTOMATE_URL_HERE') {
-    setTimeout(() => { hideLoading(); showSuccess(payload); }, 2000);
-    return;
-  }
+if (SUBMIT_URL==='YOUR_POWER_AUTOMATE_URL_HERE') {
+  hideLoading();
+  showToast('Submit URL is not set. Data was NOT sent.', 'error');
+  return;
+}
 
   fetch(SUBMIT_URL, {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    fetch(SUBMIT_URL, {
+  method: 'POST',
+  body: JSON.stringify(payload)
+})
+.then(r => r.json())
+.then(data => { 
+  hideLoading(); 
+  data.ok === true 
+    ? showSuccess(payload, data.submissionId) 
+    : showToast('Submission failed: ' + (data.error || 'Please try again.'), 'error'); 
+})
+.catch(() => { 
+  hideLoading(); 
+  showToast('Network error. Check signal and retry.', 'error'); 
+});
     body: JSON.stringify(payload)
   })
   .then(r=>r.json())
-  .then(data => { 
+.then(data => { 
   hideLoading(); 
-  data.ok === true ? showSuccess(payload, data.submissionId) : showToast('Submission failed: ' + (data.error || 'Please try again.'),'error'); 
+  data.ok === true 
+    ? showSuccess(payload, data.submissionId) 
+    : showToast('Submission failed: ' + (data.error || 'Please try again.'), 'error'); 
 })
   .catch(() => { hideLoading(); showToast('Network error. Check signal and retry.','error'); });
 }
