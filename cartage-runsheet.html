@@ -2936,7 +2936,10 @@ function submitForm() {
     body: JSON.stringify(payload)
   })
   .then(r=>r.json())
-  .then(data => { hideLoading(); data.status==='ok' ? showSuccess(payload,data.ref) : showToast('Submission failed. Please try again.','error'); })
+  .then(data => { 
+  hideLoading(); 
+  data.ok === true ? showSuccess(payload, data.submissionId) : showToast('Submission failed: ' + (data.error || 'Please try again.'),'error'); 
+})
   .catch(() => { hideLoading(); showToast('Network error. Check signal and retry.','error'); });
 }
 
