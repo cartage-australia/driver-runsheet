@@ -691,11 +691,6 @@
           </select>
           <div class="field-error" id="err-depot">Required</div>
         </div>
-        <div class="field">
-          <label>Fuel</label>
-          <input type="number" id="fuel" placeholder="Litres" inputmode="decimal" step="0.1"
-                 oninput="updateProgress()">
-        </div>
       </div>
     </div>
   </div>
@@ -745,54 +740,6 @@
       <div id="runSheetPhotoPreview" style="display:none; margin-top:10px;">
         <img id="runSheetPhotoImg" src="" alt="Run sheet" style="width:100%; border-radius:8px; max-height:180px; object-fit:cover;">
         <button onclick="document.getElementById('runSheetPhotoInput').click()" style="margin-top:8px; width:100%; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake Photo</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Shift Times</div>
-    <div class="card">
-      <div class="row-2">
-        <div class="field">
-          <label>Start Time <span class="req">*</span></label>
-          <div class="time-picker-trigger" id="startTime_trigger" onclick="openTimePicker('startTime')">
-            <span id="startTime_display" class="time-picker-placeholder">Tap to set time</span>
-          </div>
-          <input type="hidden" id="startTime">
-          <div class="field-error" id="err-startTime">Required</div>
-        </div>
-        <div class="field">
-          <label>Finish Time <span class="req">*</span></label>
-          <div class="time-picker-trigger" id="finishTime_trigger" onclick="openTimePicker('finishTime')">
-            <span id="finishTime_display" class="time-picker-placeholder">Tap to set time</span>
-          </div>
-          <input type="hidden" id="finishTime">
-          <div class="field-error" id="err-finishTime">Required</div>
-        </div>
-      </div>
-      <div class="row-2">
-        <div class="field">
-          <label>Kms Start <span class="req">*</span></label>
-          <input type="number" id="odometerStart" placeholder="e.g. 327670" inputmode="numeric"
-                 oninput="validateField(this); calcTotalKms(); updateProgress()">
-          <div class="field-error" id="err-odometerStart">Required</div>
-        </div>
-        <div class="field">
-          <label>Kms Finish <span class="req">*</span></label>
-          <input type="number" id="odometerFinish" placeholder="e.g. 328038" inputmode="numeric"
-                 oninput="validateField(this); calcTotalKms(); updateProgress()">
-          <div class="field-error" id="err-odometerFinish">Required</div>
-        </div>
-      </div>
-      <div class="row-2">
-        <div class="field">
-          <label>Total Kms <span class="auto-tag">v Auto</span></label>
-          <input type="text" id="totalKms" readonly placeholder="Calculated automatically">
-        </div>
-        <div class="field">
-          <label>Total Hours <span class="auto-tag">v Auto</span></label>
-          <input type="text" id="totalHours" readonly placeholder="Calculated automatically">
-        </div>
       </div>
     </div>
   </div>
@@ -1287,8 +1234,20 @@ function processScheduleFile(input) {
       const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
       const workbook = XLSX.read(data, {type: 'array'});
 
-      const dateSheets = workbook.SheetNames.filter(s => /^(MON|TUE|WED|THU|FRI|SAT|SUN)\s/.test(s));
-      if (dateSheets.length === 0) throw new Error('No date sheets found in this file');
+      function getScheduleDateFromSheetName(name) {
+        const text = String(name || '').trim();
+        const currentYear = String(new Date().getFullYear()).slice(2);
+
+        // Accepts examples like:
+        // Mon 03.07, Monday 03.07, 03.07, Mon 03.07.26, QLD 03.07.26
+        const match = text.match(/(?:^|\D)(\d{2}\.\d{2})(?:\.(\d{2}))?(?:\D|$)/);
+        if (!match) return null;
+
+        return match[1] + '.' + (match[2] || currentYear);
+      }
+
+      const dateSheets = workbook.SheetNames.filter(s => getScheduleDateFromSheetName(s));
+      if (dateSheets.length === 0) throw new Error('No date sheets found in this file. Sheet tabs must include a date like 03.07 or 03.07.26.');
 
       // Load EVERY date sheet in the workbook, regardless of when the file
       // was uploaded - from the earliest sheet through to the last date present.
@@ -1313,8 +1272,7 @@ function processScheduleFile(input) {
         const ws = workbook.Sheets[sName];
         const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
         const parsed = parseScheduleRows(rows);
-        const dateMatch = sName.match(/(\d{2}\.\d{2}\.\d{2})/);
-        const dateStr = dateMatch ? dateMatch[1] : sName;
+        const dateStr = getScheduleDateFromSheetName(sName) || sName;
         allDaysData[dateStr] = parsed;
         if (dateStr === todayDate) todaySheetName = sName;
       }
@@ -1785,21 +1743,55 @@ function triggerDocketPhoto(idx) {
   document.getElementById('docketInput' + idx)?.click();
 }
 
-function handleDocketPhoto(idx, input) {
+async function handleDocketPhoto(idx, input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    docketPhotos[idx] = e.target.result;
+
+  try {
+    const compressed = await compressImage(file, 1800, 0.75);
+    docketPhotos[idx] = compressed;
+
     const img = document.getElementById('docketImg' + idx);
-    if (img) img.src = e.target.result;
+    if (img) img.src = compressed;
+
     document.getElementById('docketPreview' + idx).style.display = 'block';
     document.getElementById('docketScanResult' + idx).style.display = 'none';
     document.getElementById('docketScanError' + idx).style.display = 'none';
     updateProgress();
-  };
-  reader.readAsDataURL(file);
+  } catch (err) {
+    showToast('Could not compress photo. Please retake photo.', 'error');
+  }
 }
+
+function compressImage(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const img = new Image();
+
+      img.onload = function() {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 
 function parseDocketDateStr(str) {
   if (!str) return null;
@@ -1982,18 +1974,20 @@ Return exactly this JSON shape:
 
 let runSheetPhotoData = null;
 
-function handleRunSheetPhoto(input) {
+async function handleRunSheetPhoto(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    runSheetPhotoData = e.target.result;
-    document.getElementById('runSheetPhotoImg').src = e.target.result;
+
+  try {
+    const compressed = await compressImage(file, 1800, 0.75);
+    runSheetPhotoData = compressed;
+    document.getElementById('runSheetPhotoImg').src = compressed;
     document.getElementById('runSheetPhotoPreview').style.display = 'block';
     document.getElementById('runSheetPhotoBtnLabel').textContent = 'Run Sheet Captured';
     updateProgress();
-  };
-  reader.readAsDataURL(file);
+  } catch (err) {
+    showToast('Could not compress run sheet photo. Please retake photo.', 'error');
+  }
 }
 
 let driverLookupInProgress = false;
@@ -2799,7 +2793,7 @@ function validateField(el) {
 }
 
 function updateProgress() {
-  const baseFields = ['driverID','truckNo','truckRego','depot','startTime','finishTime','odometerStart','odometerFinish'];
+  const baseFields = ['driverID','truckNo','truckRego','depot'];
   let filled = 0, total = baseFields.length + 4;
   baseFields.forEach(id => { const el=document.getElementById(id); if(el&&el.value.trim()!=='') filled++; });
   if (Object.keys(docketPhotos).length > 0) filled++;
@@ -2827,10 +2821,6 @@ function submitForm() {
     {id:'truckNo',label:'Truck Number'},
     {id:'truckRego',label:'Truck Rego'},
     {id:'depot',label:'Depot'},
-    {id:'startTime',label:'Start Time'},
-    {id:'finishTime',label:'Finish Time'},
-    {id:'odometerStart',label:'Kms Start'},
-    {id:'odometerFinish',label:'Kms Finish'},
   ];
   required.forEach(f => {
     const el = document.getElementById(f.id);
@@ -2906,13 +2896,13 @@ function submitForm() {
     truckRego: document.getElementById('truckRego').value,
     depot: document.getElementById('depot').value,
     jobDate: document.getElementById('jobDate').value,
-    startTime: document.getElementById('startTime').value,
-    finishTime: document.getElementById('finishTime').value,
-    totalHours: document.getElementById('totalHours').value,
-    odometerStart: document.getElementById('odometerStart').value,
-    odometerFinish: document.getElementById('odometerFinish').value,
-    totalKms: document.getElementById('totalKms').value,
-    fuel: document.getElementById('fuel').value,
+    startTime: '',
+    finishTime: '',
+    totalHours: '',
+    odometerStart: '',
+    odometerFinish: '',
+    totalKms: '',
+    fuel: '',
     loads: loads,
     totalLoads: loads.length,
     totalTonnes: document.getElementById('totalTonnesDisplay').textContent,
@@ -2926,24 +2916,112 @@ function submitForm() {
   showLoading('Submitting your run sheet...');
 
   if (SUBMIT_URL==='YOUR_POWER_AUTOMATE_URL_HERE') {
-    setTimeout(() => { hideLoading(); showSuccess(payload); }, 2000);
+    hideLoading();
+    showToast('Submit URL is not set. Data was NOT sent.', 'error');
     return;
   }
 
-fetch(SUBMIT_URL, {
-  method: 'POST',
-  mode: 'no-cors',
-  body: JSON.stringify(payload)
-})
-.then(() => {
-  hideLoading();
-  showSuccess(payload);
-})
-.catch(() => {
-  hideLoading();
-  showToast('Submission failed. Please check and retry.', 'error');
-});
+  if (!navigator.onLine) {
+    saveOfflineSubmission(payload).then(() => {
+      hideLoading();
+      showSuccess(payload, 'SAVED-OFFLINE');
+    }).catch(() => {
+      hideLoading();
+      showToast('Could not save offline. Please try again.', 'error');
+    });
+    return;
+  }
+
+  fetch(SUBMIT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    hideLoading();
+    showSuccess(payload);
+    processOfflineSubmissions();
+  })
+  .catch(() => {
+    saveOfflineSubmission(payload).then(() => {
+      hideLoading();
+      showSuccess(payload, 'SAVED-OFFLINE');
+    }).catch(() => {
+      hideLoading();
+      showToast('Network error and could not save offline. Please retry.', 'error');
+    });
+  });
 }
+
+const OFFLINE_DB_NAME = 'cartage_run_sheets_offline';
+const OFFLINE_STORE = 'submissions';
+
+function openOfflineDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(OFFLINE_DB_NAME, 1);
+    req.onupgradeneeded = function(event) {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(OFFLINE_STORE)) {
+        db.createObjectStore(OFFLINE_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveOfflineSubmission(payload) {
+  const db = await openOfflineDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_STORE, 'readwrite');
+    const store = tx.objectStore(OFFLINE_STORE);
+    const id = payload.submissionId || ('offline-' + Date.now());
+    store.put({ id, payload, savedAt: new Date().toISOString() });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getOfflineSubmissions() {
+  const db = await openOfflineDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_STORE, 'readonly');
+    const req = tx.objectStore(OFFLINE_STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteOfflineSubmission(id) {
+  const db = await openOfflineDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_STORE, 'readwrite');
+    tx.objectStore(OFFLINE_STORE).delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function processOfflineSubmissions() {
+  if (!navigator.onLine || SUBMIT_URL === 'YOUR_POWER_AUTOMATE_URL_HERE') return;
+
+  try {
+    const items = await getOfflineSubmissions();
+    for (const item of items) {
+      await fetch(SUBMIT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify(item.payload)
+      });
+      await deleteOfflineSubmission(item.id);
+    }
+    if (items.length > 0) showToast(items.length + ' offline run sheet(s) sent.', 'success');
+  } catch (err) {
+    // Leave offline submissions saved and try again next time.
+  }
+}
+
+window.addEventListener('online', processOfflineSubmissions);
 
 function showSuccess(payload, ref) {
   const d = payload.jobDate.replace(/-/g,'');
@@ -2960,7 +3038,7 @@ function resetForm() {
   document.getElementById('loadsContainer').innerHTML = '';
   loadCount = 0;
   addLoad();
-  ['driverID','driverName','truckNo','truckRego','depot','startTime','finishTime','totalHours','odometerStart','odometerFinish','totalKms','fuel','notes'].forEach(id => {
+  ['driverID','driverName','truckNo','truckRego','depot','notes'].forEach(id => {
     const el=document.getElementById(id); if(el){el.value='';el.classList.remove('error','valid');}
   });
   verifiedDriverName = null;
@@ -2970,12 +3048,6 @@ function resetForm() {
   userEditedRego = false;
   document.getElementById('truckNoWarning').style.display='none';
   document.getElementById('regoAutoTag').style.display='none';
-  ['startTime','finishTime'].forEach(id => {
-    const display = document.getElementById(`${id}_display`);
-    const trigger = document.getElementById(`${id}_trigger`);
-    if (display) { display.textContent = 'Tap to set time'; display.classList.add('time-picker-placeholder'); }
-    if (trigger) trigger.classList.remove('filled','error');
-  });
   setTodayDate();
   Object.keys(docketPhotos).forEach(k => delete docketPhotos[k]);
   runSheetPhotoData = null;
