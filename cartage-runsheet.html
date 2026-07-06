@@ -2166,6 +2166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dispatcherToggleBtn').style.display = 'none';
   } else {
     setTodayDate();
+    loadEmployeesFromGoogleSheet();
     addLoad();
     initSignature();
     updateProgress();
