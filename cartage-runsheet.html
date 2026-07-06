@@ -1992,7 +1992,35 @@ async function handleRunSheetPhoto(input) {
 }
 
 let driverLookupInProgress = false;
+function loadEmployeesFromGoogleSheet() {
+  fetch(EMPLOYEE_LOOKUP_URL + '?t=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok || !data.employees) return;
 
+      Object.keys(DRIVER_LOOKUP).forEach(k => delete DRIVER_LOOKUP[k]);
+      Object.keys(NAME_LOOKUP).forEach(k => delete NAME_LOOKUP[k]);
+
+      Object.entries(data.employees).forEach(([driverId, driverName]) => {
+        driverId = String(driverId || '').trim();
+        driverName = String(driverName || '').trim();
+
+        if (!driverId || !driverName) return;
+
+        DRIVER_LOOKUP[driverId] = driverName;
+
+        NAME_LOOKUP[driverName.toLowerCase()] = {
+          id: driverId,
+          properName: driverName
+        };
+      });
+
+      console.log('Employee list loaded from Google Sheet');
+    })
+    .catch(() => {
+      console.log('Could not load employees from Google Sheet. Using built-in list.');
+    });
+}
 function lookupDriver() {
   if (driverLookupInProgress) return;
   const idInput = document.getElementById('driverID');
