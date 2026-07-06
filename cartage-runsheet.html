@@ -2865,8 +2865,11 @@ function updateProgress() {
   if (g1&&g1.value.trim()&&tr1&&tr1.value.trim()) filled++;
   if (hasSig) filled++;
   const pct = Math.round((filled/total)*100);
-  document.getElementById('progressFill').style.width = Math.min(pct,100)+'%';
-  document.getElementById('progressPct').textContent = Math.min(pct,100)+'%';
+const progressFill = document.getElementById('progressFill');
+const progressPct = document.getElementById('progressPct');
+
+if (progressFill) progressFill.style.width = percent + '%';
+if (progressPct) progressPct.textContent = percent + '%';
 }
 
 function submitForm() {
