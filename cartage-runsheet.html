@@ -659,7 +659,7 @@
         <div class="field">
           <label>Truck No. <span class="req">*</span></label>
           <input type="text" id="truckNo" placeholder="e.g. 305"
-                 oninput="lookupTruck(); resetDriverForNewTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
+                 oninput="lookupTruck(); oninput="lookupTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
           <div class="field-error" id="err-truckNo">Required</div>
         </div>
         <div class="field">
