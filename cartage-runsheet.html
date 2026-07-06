@@ -1919,32 +1919,67 @@ Return exactly this JSON shape:
       }
     }
 
-    notes.push(applyField('ticketNo' + idx, parsed.docketNumber, 'Docket'));
-    notes.push(applyField('gross' + idx, parsed.gross, 'Gross'));
-    notes.push(applyField('tare' + idx, parsed.tare, 'Tare'));
-    calcNet(idx);
+const dateInfo = parsed.docketDate || {};
+const runSheetDate = getRunSheetDate();
 
-    const dateInfo = parsed.docketDate || {};
-    const runSheetDate = getRunSheetDate();
-    if (dateInfo.value && dateInfo.confidence === 'high') {
-      const docketDate = parseDocketDateStr(dateInfo.value);
-      if (docketDate && runSheetDate) {
-        if (datesEqual(docketDate, runSheetDate)) {
-          notes.push(`Date ${formatDateObj(docketDate)} \u2713 matches run sheet`);
-        } else {
-          notes.push(`\u26A0 Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
-          hasMismatch = true;
-        }
-      } else {
-        notes.push(`Date ${dateInfo.value} - could not compare to run sheet date, please check manually`);
-      }
-    } else if (dateInfo.confidence === 'handwritten') {
-      notes.push('Date - handwritten, please check it matches the run sheet date manually');
-    } else {
-      notes.push('Date - not read, please check it matches the run sheet date manually');
+let dateOk = false;
+
+if (dateInfo.value && dateInfo.confidence === 'high') {
+  const docketDate = parseDocketDateStr(dateInfo.value);
+
+  if (docketDate && runSheetDate && datesEqual(docketDate, runSheetDate)) {
+    dateOk = true;
+    notes.push(`Date ${formatDateObj(docketDate)} ✓ matches run sheet`);
+  } else if (docketDate && runSheetDate) {
+    hasMismatch = true;
+    notes.push(`⚠ Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
+  } else {
+    hasMismatch = true;
+    notes.push('Date could not be checked. Enter docket details manually.');
+  }
+} else {
+  hasMismatch = true;
+  notes.push('Date not read. Enter docket details manually.');
+}
+
+function clearScannedFields() {
+  ['ticketNo', 'gross', 'tare', 'tonnes'].forEach(prefix => {
+    const el = document.getElementById(prefix + idx);
+    if (el) {
+      el.value = '';
+      el.classList.remove('valid');
+      el.classList.add('error');
     }
+  });
+}
 
-    if (loadCard) loadCard.dataset.dateMismatch = hasMismatch ? 'true' : 'false';
+function applyFieldForce(elId, info, label) {
+  const el = document.getElementById(elId);
+
+  if (info && info.value && info.confidence === 'high') {
+    if (el) {
+      el.value = info.value;
+      el.classList.add('valid');
+      el.classList.remove('error');
+    }
+    return `${label} ${info.value}`;
+  }
+
+  if (info && info.confidence === 'handwritten') return `${label} - handwritten, enter manually`;
+  if (info && info.confidence === 'low') return `${label} - not clear, enter manually`;
+  return `${label} -`;
+}
+
+if (dateOk) {
+  notes.push(applyFieldForce('ticketNo' + idx, parsed.docketNumber, 'Docket'));
+  notes.push(applyFieldForce('gross' + idx, parsed.gross, 'Gross'));
+  notes.push(applyFieldForce('tare' + idx, parsed.tare, 'Tare'));
+  calcNet(idx);
+} else {
+  clearScannedFields();
+}
+
+if (loadCard) loadCard.dataset.dateMismatch = hasMismatch ? 'true' : 'false';
 
     const resultEl = document.getElementById('docketScanResult' + idx);
     resultEl.style.display = 'block';
