@@ -1755,6 +1755,7 @@ async function handleDocketPhoto(idx, input) {
     if (img) img.src = compressed;
 
     document.getElementById('docketPreview' + idx).style.display = 'block';
+    document.getElementById('docketPhotoBtn' + idx).style.display = 'none';
     document.getElementById('docketScanResult' + idx).style.display = 'none';
     document.getElementById('docketScanError' + idx).style.display = 'none';
     updateProgress();
