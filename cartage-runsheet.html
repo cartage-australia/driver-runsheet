@@ -1758,6 +1758,7 @@ async function handleDocketPhoto(idx, input) {
     document.getElementById('docketScanResult' + idx).style.display = 'none';
     document.getElementById('docketScanError' + idx).style.display = 'none';
     updateProgress();
+    setTimeout(() => scanDocket(idx), 300);
   } catch (err) {
     showToast('Could not compress photo. Please retake photo.', 'error');
   }
