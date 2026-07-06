@@ -2489,7 +2489,7 @@ function addLoad() {
         <input type="file" id="docketInput${idx}" accept="image/*" capture="environment"
                onchange="handleDocketPhoto(${idx}, this)" style="display:none;">
         <div id="docketPreview${idx}" style="display:none; margin-top:10px;">
-          <img id="docketImg${idx}" src="" alt="Docket" style="width:100%; border-radius:8px; max-height:200px; object-fit:cover;">
+          <img id="docketImg${idx}" src="" alt="Docket" style="width:100%; border-radius:8px; max-height:110px; object-fit:cover;">
           <div style="display:flex; gap:8px; margin-top:8px;">
             <button onclick="triggerDocketPhoto(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake</button>
             <button onclick="scanDocket(${idx})" id="scanDocketBtn${idx}" style="flex:2; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Read Docket Weights</button>
