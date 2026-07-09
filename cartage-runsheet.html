@@ -610,29 +610,7 @@
         <span style="font-size:15px; font-weight:700; color:var(--text);">Upload Booking Sheet</span>
         <span style="font-size:12px; color:var(--muted);">Click to select or drag and drop the QLD Excel file here</span>
       </div>
-<input 
-  type="file" 
-  id="scheduleFileInput" 
-  accept=".xlsx,.xls,.xlsm" 
-  onchange="
-    try {
-      alert('File selected: ' + this.files[0].name);
-      document.getElementById('dispatchProgress').style.display = 'block';
-      document.getElementById('dispatchSuccess').style.display = 'none';
-      document.getElementById('dispatchUploadError').style.display = 'none';
-
-      if (typeof processScheduleFile !== 'function') {
-        alert('ERROR: processScheduleFile is not available. This means the main app JavaScript has broken before the dispatch upload function loaded.');
-      } else {
-        processScheduleFile(this);
-      }
-    } catch (err) {
-      alert('UPLOAD ERROR: ' + err.message);
-    }
-  " 
-  style="display:block; width:100%; margin-top:14px; padding:12px; border:1px solid #ccc; border-radius:8px; background:white;"
->
->
+      <input type="file" id="scheduleFileInput" accept=".xlsx,.xls" style="display:none;" onchange="processScheduleFile(this)">
       <div id="dispatchProgress" style="display:none; text-align:center; padding:24px;">
         <div style="width:32px; height:32px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px;"></div>
         <span style="font-size:13px; color:var(--label);">Processing and saving schedule for all drivers...</span>
@@ -1948,38 +1926,41 @@ if (dateInfo.value && dateInfo.confidence === 'high') {
 const commentsVal = document.getElementById('comments' + idx)?.value?.toLowerCase() || '';
 const isPreload = commentsVal.includes('preload');
 
-function daysBetweenDates(a, b) {
-  const dateA = new Date(a.y, a.m - 1, a.d);
-  const dateB = new Date(b.y, b.m - 1, b.d);
-  const diffMs = dateB - dateA;
-  return Math.round(diffMs / (1000 * 60 * 60 * 24));
-}
+const previousDay = new Date(runSheetDate.y, runSheetDate.m - 1, runSheetDate.d);
+previousDay.setDate(previousDay.getDate() - 1);
 
-const daysBeforeRunSheet = docketDate && runSheetDate
-  ? daysBetweenDates(docketDate, runSheetDate)
-  : null;
+const previousRunSheetDate = {
+  y: previousDay.getFullYear(),
+  m: previousDay.getMonth() + 1,
+  d: previousDay.getDate()
+};
 
 if (
   docketDate &&
   runSheetDate &&
   (
     datesEqual(docketDate, runSheetDate) ||
-    (isPreload && daysBeforeRunSheet >= 1 && daysBeforeRunSheet <= 4)
+    (isPreload && datesEqual(docketDate, previousRunSheetDate))
   )
 ) {
 dateOk = true;
 
-if (isPreload && daysBeforeRunSheet >= 1 && daysBeforeRunSheet <= 4) {
-  notes.push(`Date ${formatDateObj(docketDate)} ✓ accepted as preload`);
+if (isPreload && datesEqual(docketDate, previousRunSheetDate)) {
+  notes.push(`Date ${formatDateObj(docketDate)} ✓ accepted as preload from previous day`);
 } else {
   notes.push(`Date ${formatDateObj(docketDate)} ✓ matches run sheet`);
-}  } else if (docketDate && runSheetDate) {
+}
+  } else if (docketDate && runSheetDate) {
     hasMismatch = true;
     notes.push(`⚠ Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
   } else {
     hasMismatch = true;
     notes.push('Date could not be checked. Enter docket details manually.');
   }
+} else {
+  hasMismatch = true;
+  notes.push('Date not read. Enter docket details manually.');
+}
 
 function clearScannedFields() {
   ['ticketNo', 'gross', 'tare', 'tonnes'].forEach(prefix => {
@@ -2230,31 +2211,22 @@ const NUM_DOCKETS = 6;
 let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const isDispatcher = urlParams.get('dispatcher') === 'true' || window.location.href.includes('dispatcher=true');
+  const isDispatcher = new URLSearchParams(window.location.search).get('dispatcher') === 'true';
 
   if (isDispatcher) {
-    const mainForm = document.getElementById('mainForm');
-    if (mainForm) mainForm.style.display = 'none';
-
-    const dispatcherWrapper = document.getElementById('dispatcherWrapper');
-    if (dispatcherWrapper) dispatcherWrapper.style.display = 'block';
-
+    document.getElementById('mainForm').style.display = 'none';
+    document.getElementById('dispatcherWrapper').style.display = 'block';
     const progressWrap = document.querySelector('.progress-wrap');
     if (progressWrap) progressWrap.style.display = 'none';
-
-    const dispatcherBtn = document.getElementById('dispatcherToggleBtn');
-    if (dispatcherBtn) dispatcherBtn.style.display = 'none';
-
-    return;
+    document.getElementById('dispatcherToggleBtn').style.display = 'none';
+  } else {
+    setTodayDate();
+    loadEmployeesFromGoogleSheet();
+    addLoad();
+    initSignature();
+    updateProgress();
+    fetchScheduleFromJsonbin();
   }
-
-  setTodayDate();
-  loadEmployeesFromGoogleSheet();
-  addLoad();
-  initSignature();
-  updateProgress();
-  fetchScheduleFromJsonbin();
 });
 
 function setTodayDate() {
@@ -3286,40 +3258,5 @@ function showToast(msg, type='') {
   toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 </script>
-
-<script>
-(function () {
-  const href = window.location.href.toLowerCase();
-
-  if (href.includes('dispatcher=true')) {
-    const mainForm = document.getElementById('mainForm');
-    const dispatcherWrapper = document.getElementById('dispatcherWrapper');
-    const progressWrap = document.querySelector('.progress-wrap');
-    const dispatcherBtn = document.getElementById('dispatcherToggleBtn');
-
-    if (mainForm) mainForm.style.display = 'none';
-    if (dispatcherWrapper) dispatcherWrapper.style.display = 'block';
-    if (progressWrap) progressWrap.style.display = 'none';
-    if (dispatcherBtn) dispatcherBtn.style.display = 'none';
-  }
-
-  const input = document.getElementById('scheduleFileInput');
-  const dropZone = document.getElementById('dispatchDropZone');
-
-  if (dropZone && input) {
-    dropZone.onclick = function () {
-      input.value = '';
-      input.click();
-    };
-
-    input.onchange = function () {
-      if (input.files && input.files.length > 0) {
-        processScheduleFile(input);
-      }
-    };
-  }
-})();
-</script>
-
 </body>
 </html>
