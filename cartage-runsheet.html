@@ -3264,5 +3264,22 @@ function showToast(msg, type='') {
   toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 </script>
+  <script>
+(function () {
+  const href = window.location.href.toLowerCase();
+
+  if (href.includes('dispatcher=true')) {
+    const mainForm = document.getElementById('mainForm');
+    const dispatcherWrapper = document.getElementById('dispatcherWrapper');
+    const progressWrap = document.querySelector('.progress-wrap');
+    const dispatcherBtn = document.getElementById('dispatcherToggleBtn');
+
+    if (mainForm) mainForm.style.display = 'none';
+    if (dispatcherWrapper) dispatcherWrapper.style.display = 'block';
+    if (progressWrap) progressWrap.style.display = 'none';
+    if (dispatcherBtn) dispatcherBtn.style.display = 'none';
+  }
+})();
+</script>
 </body>
 </html>
