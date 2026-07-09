@@ -2208,22 +2208,31 @@ const NUM_DOCKETS = 6;
 let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-  const isDispatcher = new URLSearchParams(window.location.search).get('dispatcher') === 'true';
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDispatcher = urlParams.get('dispatcher') === 'true' || window.location.href.includes('dispatcher=true');
 
   if (isDispatcher) {
-    document.getElementById('mainForm').style.display = 'none';
-    document.getElementById('dispatcherWrapper').style.display = 'block';
+    const mainForm = document.getElementById('mainForm');
+    if (mainForm) mainForm.style.display = 'none';
+
+    const dispatcherWrapper = document.getElementById('dispatcherWrapper');
+    if (dispatcherWrapper) dispatcherWrapper.style.display = 'block';
+
     const progressWrap = document.querySelector('.progress-wrap');
     if (progressWrap) progressWrap.style.display = 'none';
-    document.getElementById('dispatcherToggleBtn').style.display = 'none';
-  } else {
-    setTodayDate();
-    loadEmployeesFromGoogleSheet();
-    addLoad();
-    initSignature();
-    updateProgress();
-    fetchScheduleFromJsonbin();
+
+    const dispatcherBtn = document.getElementById('dispatcherToggleBtn');
+    if (dispatcherBtn) dispatcherBtn.style.display = 'none';
+
+    return;
   }
+
+  setTodayDate();
+  loadEmployeesFromGoogleSheet();
+  addLoad();
+  initSignature();
+  updateProgress();
+  fetchScheduleFromJsonbin();
 });
 
 function setTodayDate() {
