@@ -615,11 +615,20 @@
   id="scheduleFileInput" 
   accept=".xlsx,.xls,.xlsm" 
   onchange="
-    alert('File selected: ' + this.files[0].name);
-    document.getElementById('dispatchProgress').style.display = 'block';
-    document.getElementById('dispatchSuccess').style.display = 'none';
-    document.getElementById('dispatchUploadError').style.display = 'none';
-    processScheduleFile(this);
+    try {
+      alert('File selected: ' + this.files[0].name);
+      document.getElementById('dispatchProgress').style.display = 'block';
+      document.getElementById('dispatchSuccess').style.display = 'none';
+      document.getElementById('dispatchUploadError').style.display = 'none';
+
+      if (typeof processScheduleFile !== 'function') {
+        alert('ERROR: processScheduleFile is not available. This means the main app JavaScript has broken before the dispatch upload function loaded.');
+      } else {
+        processScheduleFile(this);
+      }
+    } catch (err) {
+      alert('UPLOAD ERROR: ' + err.message);
+    }
   " 
   style="display:block; width:100%; margin-top:14px; padding:12px; border:1px solid #ccc; border-radius:8px; background:white;"
 >
