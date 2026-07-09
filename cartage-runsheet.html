@@ -1923,9 +1923,33 @@ let dateOk = false;
 if (dateInfo.value && dateInfo.confidence === 'high') {
   const docketDate = parseDocketDateStr(dateInfo.value);
 
-  if (docketDate && runSheetDate && datesEqual(docketDate, runSheetDate)) {
-    dateOk = true;
-    notes.push(`Date ${formatDateObj(docketDate)} ✓ matches run sheet`);
+const commentsVal = document.getElementById('comments' + idx)?.value?.toLowerCase() || '';
+const isPreload = commentsVal.includes('preload');
+
+const previousDay = new Date(runSheetDate.y, runSheetDate.m - 1, runSheetDate.d);
+previousDay.setDate(previousDay.getDate() - 1);
+
+const previousRunSheetDate = {
+  y: previousDay.getFullYear(),
+  m: previousDay.getMonth() + 1,
+  d: previousDay.getDate()
+};
+
+if (
+  docketDate &&
+  runSheetDate &&
+  (
+    datesEqual(docketDate, runSheetDate) ||
+    (isPreload && datesEqual(docketDate, previousRunSheetDate))
+  )
+) {
+dateOk = true;
+
+if (isPreload && datesEqual(docketDate, previousRunSheetDate)) {
+  notes.push(`Date ${formatDateObj(docketDate)} ✓ accepted as preload from previous day`);
+} else {
+  notes.push(`Date ${formatDateObj(docketDate)} ✓ matches run sheet`);
+}
   } else if (docketDate && runSheetDate) {
     hasMismatch = true;
     notes.push(`⚠ Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
