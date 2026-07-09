@@ -1926,41 +1926,38 @@ if (dateInfo.value && dateInfo.confidence === 'high') {
 const commentsVal = document.getElementById('comments' + idx)?.value?.toLowerCase() || '';
 const isPreload = commentsVal.includes('preload');
 
-const previousDay = new Date(runSheetDate.y, runSheetDate.m - 1, runSheetDate.d);
-previousDay.setDate(previousDay.getDate() - 1);
+function daysBetweenDates(a, b) {
+  const dateA = new Date(a.y, a.m - 1, a.d);
+  const dateB = new Date(b.y, b.m - 1, b.d);
+  const diffMs = dateB - dateA;
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+}
 
-const previousRunSheetDate = {
-  y: previousDay.getFullYear(),
-  m: previousDay.getMonth() + 1,
-  d: previousDay.getDate()
-};
+const daysBeforeRunSheet = docketDate && runSheetDate
+  ? daysBetweenDates(docketDate, runSheetDate)
+  : null;
 
 if (
   docketDate &&
   runSheetDate &&
   (
     datesEqual(docketDate, runSheetDate) ||
-    (isPreload && datesEqual(docketDate, previousRunSheetDate))
+    (isPreload && daysBeforeRunSheet >= 1 && daysBeforeRunSheet <= 4)
   )
 ) {
 dateOk = true;
 
-if (isPreload && datesEqual(docketDate, previousRunSheetDate)) {
-  notes.push(`Date ${formatDateObj(docketDate)} ✓ accepted as preload from previous day`);
+if (isPreload && daysBeforeRunSheet >= 1 && daysBeforeRunSheet <= 4) {
+  notes.push(`Date ${formatDateObj(docketDate)} ✓ accepted as preload`);
 } else {
   notes.push(`Date ${formatDateObj(docketDate)} ✓ matches run sheet`);
-}
-  } else if (docketDate && runSheetDate) {
+}  } else if (docketDate && runSheetDate) {
     hasMismatch = true;
     notes.push(`⚠ Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
   } else {
     hasMismatch = true;
     notes.push('Date could not be checked. Enter docket details manually.');
   }
-} else {
-  hasMismatch = true;
-  notes.push('Date not read. Enter docket details manually.');
-}
 
 function clearScannedFields() {
   ['ticketNo', 'gross', 'tare', 'tonnes'].forEach(prefix => {
