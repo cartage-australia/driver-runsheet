@@ -614,8 +614,15 @@
   type="file" 
   id="scheduleFileInput" 
   accept=".xlsx,.xls,.xlsm" 
-  onchange="alert('File selected: ' + this.files[0].name); processScheduleFile(this);" 
+  onchange="
+    alert('File selected: ' + this.files[0].name);
+    document.getElementById('dispatchProgress').style.display = 'block';
+    document.getElementById('dispatchSuccess').style.display = 'none';
+    document.getElementById('dispatchUploadError').style.display = 'none';
+    processScheduleFile(this);
+  " 
   style="display:block; width:100%; margin-top:14px; padding:12px; border:1px solid #ccc; border-radius:8px; background:white;"
+>
 >
       <div id="dispatchProgress" style="display:none; text-align:center; padding:24px;">
         <div style="width:32px; height:32px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px;"></div>
