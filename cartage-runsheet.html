@@ -610,7 +610,7 @@
         <span style="font-size:15px; font-weight:700; color:var(--text);">Upload Booking Sheet</span>
         <span style="font-size:12px; color:var(--muted);">Click to select or drag and drop the QLD Excel file here</span>
       </div>
-      <input type="file" id="scheduleFileInput" accept=".xlsx,.xls" style="display:none;" onchange="processScheduleFile(this)">
+      <input type="file" id="scheduleFileInput" accept=".xlsx,.xls" style="display:none;">
       <div id="dispatchProgress" style="display:none; text-align:center; padding:24px;">
         <div style="width:32px; height:32px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px;"></div>
         <span style="font-size:13px; color:var(--label);">Processing and saving schedule for all drivers...</span>
@@ -3264,7 +3264,8 @@ function showToast(msg, type='') {
   toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 </script>
-  <script>
+
+<script>
 (function () {
   const href = window.location.href.toLowerCase();
 
@@ -3279,7 +3280,24 @@ function showToast(msg, type='') {
     if (progressWrap) progressWrap.style.display = 'none';
     if (dispatcherBtn) dispatcherBtn.style.display = 'none';
   }
+
+  const input = document.getElementById('scheduleFileInput');
+  const dropZone = document.getElementById('dispatchDropZone');
+
+  if (dropZone && input) {
+    dropZone.onclick = function () {
+      input.value = '';
+      input.click();
+    };
+
+    input.onchange = function () {
+      if (input.files && input.files.length > 0) {
+        processScheduleFile(input);
+      }
+    };
+  }
 })();
 </script>
+
 </body>
 </html>
