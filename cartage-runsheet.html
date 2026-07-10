@@ -2211,17 +2211,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if (isDispatcher) {
     document.getElementById('mainForm').style.display = 'none';
     document.getElementById('dispatcherWrapper').style.display = 'block';
+
     const progressWrap = document.querySelector('.progress-wrap');
     if (progressWrap) progressWrap.style.display = 'none';
-    document.getElementById('dispatcherToggleBtn').style.display = 'none';
-  } else {
-    setTodayDate();
-    loadEmployeesFromGoogleSheet();
-    addLoad();
-    initSignature();
-    updateProgress();
-    fetchScheduleFromJsonbin();
+
+    const dispatcherToggleBtn = document.getElementById('dispatcherToggleBtn');
+    if (dispatcherToggleBtn) dispatcherToggleBtn.style.display = 'none';
+
+    return;
   }
+
+  setTodayDate();
+  loadEmployeesFromGoogleSheet();
+  addLoad();
+  initSignature();
+  updateProgress();
+  fetchScheduleFromJsonbin();
 });
 
 function setTodayDate() {
