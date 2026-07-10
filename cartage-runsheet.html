@@ -659,7 +659,7 @@
         <div class="field">
           <label>Truck No. <span class="req">*</span></label>
           <input type="text" id="truckNo" placeholder="e.g. 305"
-                 oninput="lookupTruck(); oninput="lookupTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
+                 oninput="lookupTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
           <div class="field-error" id="err-truckNo">Required</div>
         </div>
         <div class="field">
@@ -1896,105 +1896,95 @@ Return exactly this JSON shape:
 
     const notes = [];
     let hasMismatch = false;
+    let dateOk = false;
 
-    function applyField(elId, info, label) {
+    const dateInfo = parsed.docketDate || {};
+    const runSheetDate = getRunSheetDate();
+
+    function clearScannedFields() {
+      ['ticketNo', 'gross', 'tare', 'tonnes'].forEach(prefix => {
+        const el = document.getElementById(prefix + idx);
+        if (el) {
+          el.value = '';
+          el.classList.remove('valid');
+          if (prefix !== 'tonnes') el.classList.add('error');
+        }
+      });
+    }
+
+    function applyFieldForce(elId, info, label) {
       const el = document.getElementById(elId);
+
       if (info && info.value && info.confidence === 'high') {
-        if (el && !el.value) {
+        if (el) {
           el.value = info.value;
           el.classList.add('valid');
           el.classList.remove('error');
         }
         return `${label} ${info.value}`;
-      } else if (info && info.confidence === 'handwritten') {
-        return `${label} - handwritten, enter manually`;
-      } else if (info && info.confidence === 'low') {
-        return `${label} - not clear, enter manually`;
-      } else {
-        return `${label} -`;
       }
+
+      if (info && info.confidence === 'handwritten') return `${label} - handwritten, enter manually`;
+      if (info && info.confidence === 'low') return `${label} - not clear, enter manually`;
+      return `${label} -`;
     }
 
-const dateInfo = parsed.docketDate || {};
-const runSheetDate = getRunSheetDate();
+    function daysBetweenDates(a, b) {
+      const dateA = new Date(a.y, a.m - 1, a.d);
+      const dateB = new Date(b.y, b.m - 1, b.d);
+      const diffMs = dateB - dateA;
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    }
 
-let dateOk = false;
+    if (dateInfo.value && dateInfo.confidence === 'high') {
+      const docketDate = parseDocketDateStr(dateInfo.value);
 
-if (dateInfo.value && dateInfo.confidence === 'high') {
-  const docketDate = parseDocketDateStr(dateInfo.value);
+      const commentsVal = document.getElementById('comments' + idx)?.value?.toLowerCase() || '';
+      const isPreload = commentsVal.includes('preload');
 
-  const commentsVal = document.getElementById('comments' + idx)?.value?.toLowerCase() || '';
-  const isPreload = commentsVal.includes('preload');
+      const daysBeforeRunSheet = docketDate && runSheetDate
+        ? daysBetweenDates(docketDate, runSheetDate)
+        : null;
 
-  function daysBetweenDates(a, b) {
-    const dateA = new Date(a.y, a.m - 1, a.d);
-    const dateB = new Date(b.y, b.m - 1, b.d);
-    const diffMs = dateB - dateA;
-    return Math.round(diffMs / (1000 * 60 * 60 * 24));
-  }
+      if (
+        docketDate &&
+        runSheetDate &&
+        (
+          datesEqual(docketDate, runSheetDate) ||
+          (isPreload && daysBeforeRunSheet >= 1 && daysBeforeRunSheet <= 4)
+        )
+      ) {
+        dateOk = true;
 
-  const daysBeforeRunSheet = docketDate && runSheetDate
-    ? daysBetweenDates(docketDate, runSheetDate)
-    : null;
+        if (isPreload && daysBeforeRunSheet >= 1 && daysBeforeRunSheet <= 4) {
+          notes.push(`Date ${formatDateObj(docketDate)} ✓ accepted as preload`);
+        } else {
+          notes.push(`Date ${formatDateObj(docketDate)} ✓ matches run sheet`);
+        }
 
-  if (
-    docketDate &&
-    runSheetDate &&
-    (
-      datesEqual(docketDate, runSheetDate) ||
-      (isPreload && daysBeforeRunSheet >= 1 && daysBeforeRunSheet <= 4)
-    )
-  ) {
-    dateOk = true;
+      } else if (docketDate && runSheetDate) {
+        hasMismatch = true;
+        notes.push(`⚠ Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
+      } else {
+        hasMismatch = true;
+        notes.push('Date could not be checked. Enter docket details manually.');
+      }
 
-    if (isPreload && daysBeforeRunSheet >= 1 && daysBeforeRunSheet <= 4) {
-      notes.push(`Date ${formatDateObj(docketDate)} ✓ accepted as preload`);
     } else {
-      notes.push(`Date ${formatDateObj(docketDate)} ✓ matches run sheet`);
+      hasMismatch = true;
+      notes.push('Date not read. Enter docket details manually.');
     }
 
-  } else if (docketDate && runSheetDate) {
-    hasMismatch = true;
-    notes.push(`⚠ Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
-
-  } else {
-    hasMismatch = true;
-    notes.push('Date could not be checked. Enter docket details manually.');
-  }
-
-} else {
-  hasMismatch = true;
-  notes.push('Date not read. Enter docket details manually.');
-}
-}
-
-function applyFieldForce(elId, info, label) {
-  const el = document.getElementById(elId);
-
-  if (info && info.value && info.confidence === 'high') {
-    if (el) {
-      el.value = info.value;
-      el.classList.add('valid');
-      el.classList.remove('error');
+    if (dateOk) {
+      notes.push(applyFieldForce('ticketNo' + idx, parsed.docketNumber, 'Docket'));
+      notes.push(applyFieldForce('gross' + idx, parsed.gross, 'Gross'));
+      notes.push(applyFieldForce('tare' + idx, parsed.tare, 'Tare'));
+      calcNet(idx);
+    } else {
+      clearScannedFields();
     }
-    return `${label} ${info.value}`;
-  }
 
-  if (info && info.confidence === 'handwritten') return `${label} - handwritten, enter manually`;
-  if (info && info.confidence === 'low') return `${label} - not clear, enter manually`;
-  return `${label} -`;
-}
-
-if (dateOk) {
-  notes.push(applyFieldForce('ticketNo' + idx, parsed.docketNumber, 'Docket'));
-  notes.push(applyFieldForce('gross' + idx, parsed.gross, 'Gross'));
-  notes.push(applyFieldForce('tare' + idx, parsed.tare, 'Tare'));
-  calcNet(idx);
-} else {
-  clearScannedFields();
-}
-
-if (loadCard) loadCard.dataset.dateMismatch = hasMismatch ? 'true' : 'false';
+    if (loadCard) loadCard.dataset.dateMismatch = hasMismatch ? 'true' : 'false';
 
     const resultEl = document.getElementById('docketScanResult' + idx);
     resultEl.style.display = 'block';
@@ -2892,8 +2882,8 @@ function updateProgress() {
 const progressFill = document.getElementById('progressFill');
 const progressPct = document.getElementById('progressPct');
 
-if (progressFill) progressFill.style.width = percent + '%';
-if (progressPct) progressPct.textContent = percent + '%';
+if (progressFill) progressFill.style.width = pct + '%';
+if (progressPct) progressPct.textContent = pct + '%';
 }
 
 function submitForm() {
