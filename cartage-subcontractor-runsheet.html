@@ -1340,14 +1340,21 @@ function extractRegoFromCells() {
     if (!text || text.toLowerCase() === 'nan' || text === '0') continue;
 
     const compact = normalizeRego(text);
-    if (/^[A-Z0-9]{3,10}$/.test(compact) && !/^SUBBY\d*$/i.test(compact)) {
+
+    // Ignore headers/labels that can appear in the same cells.
+    if (/^(SUBBY\d*|DESCRIPTION|LOAD\d*|PRELOAD|TOTALRATE|RATE)$/i.test(compact)) continue;
+
+    // Rego may be written as ABC123, ABC 123, ABC-123, XW13IG, etc.
+    if (/^[A-Z0-9]{3,10}$/.test(compact)) {
       return compact;
     }
 
-    const match = text.toUpperCase().match(/[A-Z]{1,3}\s*-?\s*[0-9]{1,4}\s*-?\s*[A-Z]{0,3}|[A-Z0-9]{3,10}/);
-    if (match) {
-      const found = normalizeRego(match[0]);
-      if (found && !/^SUBBY\d*$/i.test(found) && found !== 'DESCRIPTION') return found;
+    const matches = text.toUpperCase().match(/\b[A-Z]{1,3}\s*-?\s*[0-9]{1,4}\s*-?\s*[A-Z]{0,3}\b|\b[A-Z0-9]{3,10}\b/g) || [];
+    for (const candidate of matches) {
+      const found = normalizeRego(candidate);
+      if (found && !/^(SUBBY\d*|DESCRIPTION|LOAD\d*|PRELOAD|TOTALRATE|RATE)$/i.test(found)) {
+        return found;
+      }
     }
   }
   return '';
@@ -1355,7 +1362,7 @@ function extractRegoFromCells() {
 
 function parseScheduleRows(rows) {
   const BLOCK_COLS = [0, 4, 8, 12];
-  const MAX_ROW = Math.min(rows.length, 70);
+  const MAX_ROW = Math.min(rows.length, 120);
 
   const allDrivers = {};
 
