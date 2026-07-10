@@ -1323,6 +1323,36 @@ function processScheduleFile(input) {
   reader.readAsArrayBuffer(file);
 }
 
+function normalizeRego(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function findScheduleKeyForRego(rego) {
+  const wanted = normalizeRego(rego);
+  if (!wanted || !scheduleData) return null;
+  if (scheduleData[wanted]) return wanted;
+  return Object.keys(scheduleData).find(key => normalizeRego(key) === wanted) || null;
+}
+
+function extractRegoFromCells() {
+  for (const cell of arguments) {
+    const text = String(cell || '').trim();
+    if (!text || text.toLowerCase() === 'nan' || text === '0') continue;
+
+    const compact = normalizeRego(text);
+    if (/^[A-Z0-9]{3,10}$/.test(compact) && !/^SUBBY\d*$/i.test(compact)) {
+      return compact;
+    }
+
+    const match = text.toUpperCase().match(/[A-Z]{1,3}\s*-?\s*[0-9]{1,4}\s*-?\s*[A-Z]{0,3}|[A-Z0-9]{3,10}/);
+    if (match) {
+      const found = normalizeRego(match[0]);
+      if (found && !/^SUBBY\d*$/i.test(found) && found !== 'DESCRIPTION') return found;
+    }
+  }
+  return '';
+}
+
 function parseScheduleRows(rows) {
   const BLOCK_COLS = [0, 4, 8, 12];
   const MAX_ROW = Math.min(rows.length, 70);
@@ -1342,15 +1372,17 @@ function parseScheduleRows(rows) {
       if (String(row[bc] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '') !== 'Description') continue;
 
       const truckCell = String(row[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
+      const regoCell = String(nameRow[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
 
       // Subcontractor sheets use the truck registration number as the key.
-      // Accept either a plain rego (ABC123) or a rego followed by depot/company text.
-      const regoMatch = truckCell.match(/^([A-Z0-9]{3,10})(?:\s+(.+))?$/i);
+      // Some sheets put the rego in the Description header row; others keep
+      // "Subby 1" in that row and put the rego in the row above.
+      const regoKey = extractRegoFromCells(truckCell, regoCell);
 
       let truckNo, depot;
-      if (regoMatch && truckCell.toLowerCase() !== 'nan' && truckCell !== '0') {
-        truckNo = regoMatch[1].toUpperCase();
-        depot = regoMatch[2] ? regoMatch[2].trim() : 'Subcontractor';
+      if (regoKey) {
+        truckNo = regoKey;
+        depot = 'Subcontractor';
       } else {
         continue;
       }
@@ -1382,7 +1414,7 @@ function parseScheduleRows(rows) {
         j++;
       }
 
-      allDrivers[truckNo] = {depot, driver: driverName, loads};
+      allDrivers[normalizeRego(truckNo)] = {depot, driver: driverName, loads};
     }
 
     i++;
@@ -1532,9 +1564,9 @@ function checkForScheduledJobs() {
   const banner = document.getElementById('loadJobsBanner');
   if (!banner) return;
 
-  const rego = document.getElementById('truckRego')?.value?.trim().toUpperCase();
+  const rego = document.getElementById('truckRego')?.value?.trim();
 
-  const matchedTruck = (rego && scheduleData[rego]) ? rego : null;
+  const matchedTruck = findScheduleKeyForRego(rego);
 
   if (matchedTruck && scheduleData[matchedTruck]?.loads?.length > 0) {
     banner.style.display = 'block';
@@ -1584,12 +1616,9 @@ function setSelectSafely(selectEl, value) {
 }
 
 function loadJobsFromSchedule() {
-  const rego = document.getElementById('truckRego')?.value?.trim().toUpperCase();
+  const rego = document.getElementById('truckRego')?.value?.trim();
 
-  let matchedTruck = null;
-  if (rego && scheduleData[rego]) {
-    matchedTruck = rego;
-  }
+  let matchedTruck = findScheduleKeyForRego(rego);
 
   if (!matchedTruck || !scheduleData[matchedTruck]) {
     showToast('No loads found for this rego in today\'s schedule', 'warning');
