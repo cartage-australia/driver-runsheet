@@ -1039,37 +1039,21 @@ function applyScanResults(ex) {
 
     const rawPullFrom = (load.pullFrom && load.pullFrom.value) || '';
     const pullFromMatch = matchList(rawPullFrom, KNOWN_LOCATIONS, 0.8);
-    const pfSel = document.getElementById('pullFrom' + idx);
-    const pfOtherWrap = document.getElementById('otherPullFromWrap' + idx);
-    const pfOtherInput = document.getElementById('otherPullFrom' + idx);
-    if (pfSel) {
-      if (pullFromMatch) {
-        pfSel.value = pullFromMatch;
-        if (pfOtherWrap) pfOtherWrap.style.display = 'none';
-        fieldsApplied++;
-        autoMatchProduct(idx);
-      } else if (rawPullFrom) {
-        pfSel.value = 'Other';
-        if (pfOtherWrap) pfOtherWrap.style.display = 'block';
-        if (pfOtherInput) pfOtherInput.value = '';
-      }
+    const pfInput = document.getElementById('pullFrom' + idx);
+    if (pfInput && rawPullFrom) {
+      pfInput.value = pullFromMatch || rawPullFrom;
+      pfInput.classList.add('valid');
+      fieldsApplied++;
+      autoMatchProduct(idx);
     }
 
     const rawDeliverTo = (load.deliverTo && load.deliverTo.value) || '';
     const deliverMatch = matchList(rawDeliverTo, KNOWN_LOCATIONS, 0.8);
-    const dtSel = document.getElementById('deliverTo' + idx);
-    const dtOtherWrap = document.getElementById('otherDeliverToWrap' + idx);
-    const dtOtherInput = document.getElementById('otherDeliverTo' + idx);
-    if (dtSel) {
-      if (deliverMatch) {
-        dtSel.value = deliverMatch;
-        if (dtOtherWrap) dtOtherWrap.style.display = 'none';
-        fieldsApplied++;
-      } else if (rawDeliverTo) {
-        dtSel.value = 'Other';
-        if (dtOtherWrap) dtOtherWrap.style.display = 'block';
-        if (dtOtherInput) dtOtherInput.value = '';
-      }
+    const dtInput = document.getElementById('deliverTo' + idx);
+    if (dtInput && rawDeliverTo) {
+      dtInput.value = deliverMatch || rawDeliverTo;
+      dtInput.classList.add('valid');
+      fieldsApplied++;
     }
 
     const rawProduct = (load.product && load.product.value) || '';
@@ -1669,22 +1653,16 @@ function loadJobsFromSchedule() {
     addLoad();
     const idx = i + 1;
 
-    const pfSel = document.getElementById('pullFrom' + idx);
-    const pfOtherWrap = document.getElementById('otherPullFromWrap' + idx);
-    const pfOtherInput = document.getElementById('otherPullFrom' + idx);
-    if (pfSel) {
-      pfSel.value = 'Other';
-      if (pfOtherWrap) pfOtherWrap.style.display = 'block';
-      if (pfOtherInput) pfOtherInput.value = job.pickup || '';
+    const pfInput = document.getElementById('pullFrom' + idx);
+    if (pfInput) {
+      pfInput.value = job.pickup || '';
+      pfInput.classList.toggle('valid', !!pfInput.value.trim());
     }
 
-    const dtSel = document.getElementById('deliverTo' + idx);
-    const dtOtherWrap = document.getElementById('otherDeliverToWrap' + idx);
-    const dtOtherInput = document.getElementById('otherDeliverTo' + idx);
-    if (dtSel) {
-      dtSel.value = 'Other';
-      if (dtOtherWrap) dtOtherWrap.style.display = 'block';
-      if (dtOtherInput) dtOtherInput.value = job.deliverTo || '';
+    const dtInput = document.getElementById('deliverTo' + idx);
+    if (dtInput) {
+      dtInput.value = job.deliverTo || '';
+      dtInput.classList.toggle('valid', !!dtInput.value.trim());
     }
 
     const prodSel = document.getElementById('product' + idx);
@@ -2234,24 +2212,14 @@ function addLoad() {
       </div>
       <div class="field">
         <label>Pickup Location <span class="req">*</span></label>
-        <select id="pullFrom${idx}" onchange="handleLocationChange(${idx},'pullFrom'); validateField(this); updateProgress()">
-          <option value="Other" selected>Other (type below)</option>
-        </select>
-        <div id="otherPullFromWrap${idx}" style="display:block; margin-top:8px;">
-          <input type="text" id="otherPullFrom${idx}" placeholder="Type pickup location here..."
-                 oninput="updateProgress()" autocomplete="off" style="border-color: var(--orange);">
-        </div>
+        <input type="text" id="pullFrom${idx}" placeholder="Pickup location"
+               oninput="validateField(this); updateProgress()" autocomplete="off">
         <div class="field-error" id="err-pullFrom${idx}">Required</div>
       </div>
       <div class="field">
         <label>Deliver To <span class="req">*</span></label>
-        <select id="deliverTo${idx}" onchange="handleLocationChange(${idx},'deliverTo'); validateField(this); updateProgress()">
-          <option value="Other" selected>Other (type below)</option>
-        </select>
-        <div id="otherDeliverToWrap${idx}" style="display:block; margin-top:8px;">
-          <input type="text" id="otherDeliverTo${idx}" placeholder="Type delivery location here..."
-                 oninput="updateProgress()" autocomplete="off" style="border-color: var(--orange);">
-        </div>
+        <input type="text" id="deliverTo${idx}" placeholder="Delivery location"
+               oninput="validateField(this); updateProgress()" autocomplete="off">
         <div class="field-error" id="err-deliverTo${idx}">Required</div>
       </div>
       <div class="row-2">
@@ -2691,13 +2659,7 @@ function confirmTimePicker() {
 }
 
 function resolveLocationValue(idx, type) {
-  const select = document.getElementById(`${type}${idx}`);
-  if (!select) return '';
-  if (select.value === 'Other') {
-    const otherId = type === 'pullFrom' ? `otherPullFrom${idx}` : `otherDeliverTo${idx}`;
-    return document.getElementById(otherId)?.value || '';
-  }
-  return select.value;
+  return document.getElementById(`${type}${idx}`)?.value || '';
 }
 
 function validateField(el) {
@@ -3005,17 +2967,7 @@ const LOCATION_PRODUCT_MAP = [
 let pendingSuggestion = {};
 
 function handleLocationChange(idx, type) {
-  const select = document.getElementById(`${type}${idx}`);
-  const otherWrap = document.getElementById(`other${type === 'pullFrom' ? 'PullFrom' : 'DeliverTo'}Wrap${idx}`);
-  if (select.value === 'Other') {
-    otherWrap.style.display = 'block';
-    document.getElementById(`other${type === 'pullFrom' ? 'PullFrom' : 'DeliverTo'}${idx}`)?.focus();
-  } else {
-    otherWrap.style.display = 'none';
-  }
-  if (type === 'pullFrom') {
-    autoMatchProduct(idx);
-  }
+  if (type === 'pullFrom') autoMatchProduct(idx);
 }
 
 function autoMatchProduct(idx) {
