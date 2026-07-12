@@ -1426,13 +1426,13 @@ function parseScheduleRows(rows) {
         if (/^Total\b/i.test(descCol)) break;
 
         if (/^(Preload|Load\s*\d+)$/i.test(descCol) && jobCol && jobCol !== '0' && jobCol.toLowerCase() !== 'nan') {
-          const {pickup: rawPickup} = splitJobString(jobCol);
-          const {product} = splitQuarryMaterial(rawPickup);
+          const {pickup: rawPickup, deliverTo} = splitJobString(jobCol);
+          const {pickup, product} = splitQuarryMaterial(rawPickup);
           loads.push({
             label: descCol,
-            pickup: '',
+            pickup: pickup || rawPickup || '',
             product: product || '',
-            deliverTo: ''
+            deliverTo: deliverTo || ''
           });
         }
       }
@@ -1675,7 +1675,7 @@ function loadJobsFromSchedule() {
     if (pfSel) {
       pfSel.value = 'Other';
       if (pfOtherWrap) pfOtherWrap.style.display = 'block';
-      if (pfOtherInput) pfOtherInput.value = '';
+      if (pfOtherInput) pfOtherInput.value = job.pickup || '';
     }
 
     const dtSel = document.getElementById('deliverTo' + idx);
@@ -1684,7 +1684,7 @@ function loadJobsFromSchedule() {
     if (dtSel) {
       dtSel.value = 'Other';
       if (dtOtherWrap) dtOtherWrap.style.display = 'block';
-      if (dtOtherInput) dtOtherInput.value = '';
+      if (dtOtherInput) dtOtherInput.value = job.deliverTo || '';
     }
 
     const prodSel = document.getElementById('product' + idx);
@@ -2177,7 +2177,7 @@ function lookupTruck() {
 }
 
 let loadCount = 0;
-const MAX_LOADS = 6;
+const MAX_LOADS = 20;
 const NUM_DOCKETS = 6;
 let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
@@ -2213,7 +2213,7 @@ function setTodayDate() {
 }
 
 function addLoad() {
-  if (loadCount >= MAX_LOADS) { showToast('Maximum 6 loads reached','warning'); return; }
+  if (loadCount >= MAX_LOADS) { showToast('Maximum 20 loads reached','warning'); return; }
   loadCount++;
   const idx = loadCount;
   const container = document.getElementById('loadsContainer');
