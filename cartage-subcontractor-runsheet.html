@@ -1299,7 +1299,8 @@ function processScheduleFile(input) {
           const loadedKeys = Object.keys(allDaysData).filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k)).sort((a,b) => dateKeyToNum(a) - dateKeyToNum(b));
           const dayCount = loadedKeys.length;
           const rangeText = dayCount > 0 ? (loadedKeys[0] + ' to ' + loadedKeys[dayCount - 1]) : sheetName;
-          successEl.textContent = 'Done. Loaded ' + dayCount + ' day' + (dayCount === 1 ? '' : 's') + ' (' + rangeText + ') - ' + truckCount + ' trucks on the latest day. All drivers can now load their jobs.';
+          const regoSample = Object.keys(scheduleData).slice(0, 12).join(', ');
+          successEl.textContent = 'Done. Loaded ' + dayCount + ' day' + (dayCount === 1 ? '' : 's') + ' (' + rangeText + ') - ' + truckCount + ' regos on the latest day. Regos found: ' + (regoSample || 'none') + '. Subcontractors can now load their jobs.';
         } else {
           successEl.textContent = 'Error saving schedule. Please try again.';
           successEl.style.color = '#dc2626';
@@ -1335,82 +1336,98 @@ function findScheduleKeyForRego(rego) {
 }
 
 function extractRegoFromCells() {
+  const badWords = /^(SUBBY|SUBCONTRACTOR|DESCRIPTION|LOAD|PRELOAD|TOTAL|RATE|DRIVER|NAME|DEPOT|QLD|QUEENSLAND|VIC|VICTORIA|SA)$/i;
+
   for (const cell of arguments) {
-    const text = String(cell || '').trim();
-    if (!text || text.toLowerCase() === 'nan' || text === '0') continue;
+    const text = String(cell || '').toUpperCase().trim();
+    if (!text || text === 'NAN' || text === '0') continue;
 
-    const compact = normalizeRego(text);
+    // Split into useful tokens first so "ABC123 QLD" becomes ABC123, not ABC123QLD.
+    const tokens = text
+      .replace(/[()\[\],;:]/g, ' ')
+      .split(/\s+/)
+      .map(t => normalizeRego(t))
+      .filter(Boolean);
 
-    // Ignore headers/labels that can appear in the same cells.
-    if (/^(SUBBY\d*|DESCRIPTION|LOAD\d*|PRELOAD|TOTALRATE|RATE)$/i.test(compact)) continue;
-
-    // Rego may be written as ABC123, ABC 123, ABC-123, XW13IG, etc.
-    if (/^[A-Z0-9]{3,10}$/.test(compact)) {
-      return compact;
+    for (const token of tokens) {
+      if (badWords.test(token)) continue;
+      // Common Australian-style regos used here are generally 5-7 chars,
+      // but allow 3-10 to cover subcontractor plates.
+      if (/^[A-Z0-9]{3,10}$/.test(token) && /[A-Z]/.test(token) && /[0-9]/.test(token)) return token;
     }
 
-    const matches = text.toUpperCase().match(/\b[A-Z]{1,3}\s*-?\s*[0-9]{1,4}\s*-?\s*[A-Z]{0,3}\b|\b[A-Z0-9]{3,10}\b/g) || [];
+    // Also catch plates written with spaces/hyphens, e.g. ABC 123 or ABC-123.
+    const matches = text.match(/\b[A-Z]{1,3}\s*-?\s*[0-9]{1,4}\s*-?\s*[A-Z]{0,3}\b/g) || [];
     for (const candidate of matches) {
       const found = normalizeRego(candidate);
-      if (found && !/^(SUBBY\d*|DESCRIPTION|LOAD\d*|PRELOAD|TOTALRATE|RATE)$/i.test(found)) {
-        return found;
-      }
+      if (found && !badWords.test(found) && /[A-Z]/.test(found) && /[0-9]/.test(found)) return found;
+    }
+
+    const compact = normalizeRego(text);
+    if (/^[A-Z0-9]{3,10}$/.test(compact) && /[A-Z]/.test(compact) && /[0-9]/.test(compact) && !badWords.test(compact)) {
+      return compact;
     }
   }
   return '';
 }
 
 function parseScheduleRows(rows) {
-  const BLOCK_COLS = [0, 4, 8, 12];
-  const MAX_ROW = Math.min(rows.length, 120);
-
+  // Subcontractor sheets can run much lower than company-truck sheets.
+  // Read the whole used worksheet, not just the first 70 rows.
+  const MAX_ROW = rows.length;
   const allDrivers = {};
 
-  let i = 0;
-  while (i < MAX_ROW) {
+  function cleanCell(value) {
+    return String(value || '')
+      .trim()
+      .replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
+  }
+
+  for (let i = 0; i < MAX_ROW; i++) {
     const row = rows[i] || [];
 
-    const isDescRow = BLOCK_COLS.some(bc => String(row[bc] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '') === 'Description');
-    if (!isDescRow) { i++; continue; }
+    // Instead of assuming blocks only start in columns A/E/I/M,
+    // find every cell that says Description anywhere across the row.
+    const descCols = [];
+    for (let c = 0; c < row.length; c++) {
+      if (cleanCell(row[c]) === 'Description') descCols.push(c);
+    }
+    if (descCols.length === 0) continue;
 
-    const nameRow = i > 0 ? (rows[i-1] || []) : [];
+    for (const bc of descCols) {
+      const regoCandidates = [];
 
-    for (const bc of BLOCK_COLS) {
-      if (String(row[bc] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '') !== 'Description') continue;
+      // Normal layout: the cell to the right of Description is the truck/rego header.
+      regoCandidates.push(cleanCell(row[bc + 1]));
 
-      const truckCell = String(row[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
-      const regoCell = String(nameRow[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
-
-      // Subcontractor sheets use the truck registration number as the key.
-      // Some sheets put the rego in the Description header row; others keep
-      // "Subby 1" in that row and put the rego in the row above.
-      const regoKey = extractRegoFromCells(truckCell, regoCell);
-
-      let truckNo, depot;
-      if (regoKey) {
-        truckNo = regoKey;
-        depot = 'Subcontractor';
-      } else {
-        continue;
+      // Subby layouts often put the rego on the row above or nearby.
+      for (let r = Math.max(0, i - 5); r <= Math.min(MAX_ROW - 1, i + 2); r++) {
+        const nearRow = rows[r] || [];
+        regoCandidates.push(cleanCell(nearRow[bc + 1]));
+        regoCandidates.push(cleanCell(nearRow[bc]));
       }
 
-      let driverName = String(nameRow[bc] || '').trim();
-      if (driverName === 'nan') driverName = '';
+      const regoKey = extractRegoFromCells.apply(null, regoCandidates);
+      if (!regoKey) continue;
+
+      const nameRow = i > 0 ? (rows[i - 1] || []) : [];
+      let driverName = cleanCell(nameRow[bc]);
+      if (driverName.toLowerCase() === 'nan') driverName = '';
       driverName = driverName.replace(/\s*\([^)]+\)/g, '').trim();
 
       const loads = [];
-      let j = i + 1;
-      while (j < MAX_ROW) {
+      for (let j = i + 1; j < MAX_ROW; j++) {
         const loadRow = rows[j] || [];
-        const descCol = String(loadRow[bc] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
-        const jobCol = String(loadRow[bc+1] || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
+        const descCol = cleanCell(loadRow[bc]);
+        const jobCol = cleanCell(loadRow[bc + 1]);
 
         if (descCol === 'Description') break;
         if (descCol.includes('Total Rate')) break;
+        if (/^Total\b/i.test(descCol)) break;
 
-        if (/^(Preload|Load \d+)$/i.test(descCol) && jobCol && jobCol !== '0' && jobCol !== 'nan') {
-          const {pickup: rawPickup, deliverTo} = splitJobString(jobCol);
-          const {pickup, product} = splitQuarryMaterial(rawPickup);
+        if (/^(Preload|Load\s*\d+)$/i.test(descCol) && jobCol && jobCol !== '0' && jobCol.toLowerCase() !== 'nan') {
+          const {pickup: rawPickup} = splitJobString(jobCol);
+          const {product} = splitQuarryMaterial(rawPickup);
           loads.push({
             label: descCol,
             pickup: '',
@@ -1418,13 +1435,15 @@ function parseScheduleRows(rows) {
             deliverTo: ''
           });
         }
-        j++;
       }
 
-      allDrivers[normalizeRego(truckNo)] = {depot, driver: driverName, loads};
+      if (loads.length > 0) {
+        const key = normalizeRego(regoKey);
+        if (!allDrivers[key]) allDrivers[key] = {depot: 'Subcontractor', driver: driverName, loads: []};
+        allDrivers[key].loads = allDrivers[key].loads.concat(loads);
+        if (!allDrivers[key].driver && driverName) allDrivers[key].driver = driverName;
+      }
     }
-
-    i++;
   }
 
   return allDrivers;
