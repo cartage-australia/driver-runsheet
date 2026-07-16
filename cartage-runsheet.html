@@ -1061,7 +1061,529 @@ function applyScanResults(ex) {
     }
 
     const rawPullFrom = (load.pullFrom && load.pullFrom.value) || '';
-    const pullFromMatch = matchList(rawPullFrom, KNOWN_LOCATIONS, 0.8);
+    const pfInput = document.getElementById('pullFrom' + idx);
+    if (pfInput && rawPullFrom) {
+      pfInput.value = matchList(rawPullFrom, KNOWN_LOCATIONS, 0.8) || rawPullFrom;
+      pfInput.classList.add('valid');
+      fieldsApplied++;
+    }
+
+    const rawDeliverTo = (load.deliverTo && load.deliverTo.value) || '';
+    const dtInput = document.getElementById('deliverTo' + idx);
+    if (dtInput && rawDeliverTo) {
+      dtInput.value = matchList(rawDeliverTo, KNOWN_LOCATIONS, 0.8) || rawDeliverTo;
+      dtInput.classList.add('valid');
+      fieldsApplied++;
+    }
+
+    const rawProduct = (load.product && load.product.value) || '';
+    const prodInput = document.getElementById('product' + idx);
+    if (prodInput && rawProduct) {
+      prodInput.value = matchList(rawProduct, KNOWN_PRODUCTS, 0.8) || rawProduct;
+      prodInput.classList.add('valid');
+      fieldsApplied++;
+    }
+
+    if (load.gross && load.gross.value) {
+      const el = document.getElementById('gross' + idx);
+      if (el) { el.value = load.gross.value; calcNet(idx); fieldsApplied++; }
+    }
+    if (load.tare && load.tare.value) {
+      const el = document.getElementById('tare' + idx);
+      if (el) { el.value = load.tare.value; calcNet(idx); fieldsApplied++; }
+    }
+    if (load.comments && load.comments.value) {
+      const el = document.getElementById('comments' + idx);
+      if (el) { el.value = load.comments.value; }
+    }
+  });
+
+  updateProgress();
+  document.getElementById('scanProgressUI').style.display = 'none';
+  document.getElementById('scanSuccessUI').style.display = 'block';
+  document.getElementById('scanSuccessMsg').textContent = `Scan complete - ${fieldsApplied} fields filled. Review everything below before submitting.`;
+}
+
+
+let scheduleData = {};
+let scheduleSheetDate = '';
+
+function toggleDispatcher() {
+  const wrapper = document.getElementById('dispatcherWrapper');
+  if (!wrapper) return;
+  wrapper.style.display = wrapper.style.display === 'none' ? 'block' : 'none';
+}
+
+function enterDispatcherMode() {
+  document.getElementById('mainForm').style.display = 'none';
+  const dispWrapper = document.getElementById('dispatcherWrapper');
+  if (dispWrapper) dispWrapper.style.display = 'block';
+}
+
+function processScheduleFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  document.getElementById('dispatchProgress').style.display = 'block';
+  document.getElementById('dispatchSuccess').style.display = 'none';
+  document.getElementById('dispatchUploadError').style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
+      const workbook = XLSX.read(data, {type: 'array'});
+
+      function getScheduleDateFromSheetName(name) {
+        const text = String(name || '').trim();
+        const currentYear = String(new Date().getFullYear()).slice(2);
+        const match = text.match(/(?:^|\D)(\d{2}\.\d{2})(?:\.(\d{2}))?(?:\D|$)/);
+        if (!match) return null;
+        return match[1] + '.' + (match[2] || currentYear);
+      }
+
+      const dateSheets = workbook.SheetNames.filter(s => getScheduleDateFromSheetName(s));
+      if (dateSheets.length === 0) throw new Error('No date sheets found in this file. Sheet tabs must include a date like 03.07 or 03.07.26.');
+
+      const dateKeyToNum = k => {
+        const [d,m,y] = k.split('.').map(Number);
+        return (2000 + y) * 10000 + m * 100 + d;
+      };
+
+      const today = new Date();
+      const todayDate = String(today.getDate()).padStart(2,'0') + '.' +
+                        String(today.getMonth()+1).padStart(2,'0') + '.' +
+                        String(today.getFullYear()).slice(2);
+
+      const allDaysData = {};
+      let todaySheetName = '';
+
+      for (const sName of dateSheets) {
+        const ws = workbook.Sheets[sName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
+        const parsed = parseScheduleRows(rows);
+        const dateStr = getScheduleDateFromSheetName(sName) || sName;
+        allDaysData[dateStr] = parsed;
+        if (dateStr === todayDate) todaySheetName = sName;
+      }
+
+      scheduleData = allDaysData[todayDate] || {};
+      const todayLoadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+
+      if (todayLoadCount === 0) {
+        const sortedDates = Object.keys(allDaysData)
+          .filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k))
+          .sort((a,b) => dateKeyToNum(b) - dateKeyToNum(a));
+        for (const dateStr of sortedDates) {
+          if (dateStr === todayDate) continue;
+          const count = Object.values(allDaysData[dateStr]).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+          if (count > 0) {
+            scheduleData = allDaysData[dateStr];
+            todaySheetName = dateStr;
+            break;
+          }
+        }
+      }
+
+      scheduleSheetDate = todayDate;
+      const sheetName = todaySheetName || dateSheets[dateSheets.length - 1];
+      const truckCount = Object.keys(scheduleData).length;
+      const loadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+
+      const todayPayload = {date: todayDate, sheet: sheetName, sheetDate: todayDate, data: scheduleData};
+      const fullPayload = Object.assign({}, todayPayload, {allDays: allDaysData});
+      localStorage.setItem('cartage_schedule', JSON.stringify(fullPayload));
+
+      try {
+        const saveRes = await fetch(CLOUDFLARE_WORKER, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(fullPayload)
+        });
+        const saveJson = await saveRes.json();
+        document.getElementById('dispatchProgress').style.display = 'none';
+        const successEl = document.getElementById('dispatchSuccess');
+        successEl.style.display = 'block';
+        if (saveJson.ok) {
+          const loadedKeys = Object.keys(allDaysData).filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k)).sort((a,b) => dateKeyToNum(a) - dateKeyToNum(b));
+          const dayCount = loadedKeys.length;
+          const rangeText = dayCount > 0 ? (loadedKeys[0] + ' to ' + loadedKeys[dayCount - 1]) : sheetName;
+          successEl.textContent = 'Done. Loaded ' + dayCount + ' day' + (dayCount === 1 ? '' : 's') + ' (' + rangeText + ') - ' + truckCount + ' trucks / ' + loadCount + ' loads on the latest day. All drivers can now load their jobs.';
+          successEl.style.color = '#16a34a';
+        } else {
+          successEl.textContent = 'Error saving schedule. Please try again.';
+          successEl.style.color = '#dc2626';
+        }
+      } catch(e) {
+        document.getElementById('dispatchProgress').style.display = 'none';
+        const successEl = document.getElementById('dispatchSuccess');
+        successEl.style.display = 'block';
+        successEl.textContent = 'Error saving schedule: ' + e.message;
+        successEl.style.color = '#dc2626';
+      }
+
+      checkForScheduledJobs();
+    } catch(err) {
+      document.getElementById('dispatchProgress').style.display = 'none';
+      const errEl = document.getElementById('dispatchUploadError');
+      errEl.style.display = 'block';
+      errEl.textContent = 'Error reading file: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function cleanCell(v) {
+  return String(v || '').trim().replace(/^[\u2018\u2019\u201C\u201D'"]+|[\u2018\u2019\u201C\u201D'"]+$/g, '');
+}
+
+function parseScheduleRows(rows) {
+  const BLOCK_COLS = [0, 4, 8, 12];
+  const MAX_ROW = Math.min(rows.length, 120);
+  const allDrivers = {};
+
+  let i = 0;
+  while (i < MAX_ROW) {
+    const row = rows[i] || [];
+    const isDescRow = BLOCK_COLS.some(bc => cleanCell(row[bc]) === 'Description');
+    if (!isDescRow) { i++; continue; }
+
+    const nameRow = i > 0 ? (rows[i-1] || []) : [];
+
+    for (const bc of BLOCK_COLS) {
+      if (cleanCell(row[bc]) !== 'Description') continue;
+
+      const truckCell = cleanCell(row[bc+1]);
+      const truckMatch = truckCell.match(/^(\d{3,4})\s+(.+)$/);
+      if (!truckMatch) continue;
+
+      const truckNo = truckMatch[1];
+      const depot = truckMatch[2].trim();
+
+      let driverName = cleanCell(nameRow[bc]);
+      if (driverName.toLowerCase() === 'nan') driverName = '';
+      driverName = driverName.replace(/\s*\([^)]+\)/g, '').trim();
+
+      const loads = [];
+      let j = i + 1;
+      while (j < MAX_ROW) {
+        const loadRow = rows[j] || [];
+        const descCol = cleanCell(loadRow[bc]);
+        const jobCol = normaliseJobText(cleanCell(loadRow[bc+1]));
+
+        if (descCol === 'Description') break;
+        if (descCol.includes('Total Rate')) break;
+
+        if (/^(Preload|Load \d+)$/i.test(descCol) && jobCol && jobCol !== '0' && jobCol.toLowerCase() !== 'nan') {
+          const split = splitJobString(jobCol);
+          const material = splitQuarryMaterial(split.pickup);
+          loads.push({
+            label: descCol,
+            pickup: material.pickup || split.pickup,
+            product: material.product || '',
+            deliverTo: split.deliverTo || '',
+            comments: split.comments || '',
+            noDocketRequired: isNoDocketJob(jobCol)
+          });
+        }
+        j++;
+      }
+
+      allDrivers[truckNo] = {depot, driver: driverName, loads};
+    }
+
+    i++;
+  }
+
+  return allDrivers;
+}
+
+function normaliseJobText(job) {
+  return String(job || '')
+    .replace(/Ipwsich/ig, 'Ipswich')
+    .replace(/Holcim\s+Petire/ig, 'Holcim Petrie')
+    .replace(/Course Sand/ig, 'Coarse Sand')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function splitJobString(job) {
+  job = normaliseJobText(job).replace(/\s*\u2192\s*/g, ' \u2192 ').replace(/\s*->\s*/g, ' -> ');
+  let comments = '';
+  if (/\bBackload\b/i.test(job)) {
+    comments = 'Backload';
+    job = job.replace(/\bBackload\b/ig, '').replace(/\s+/g, ' ').trim();
+  }
+
+  if (job.includes('\u2192')) {
+    const parts = job.split('\u2192');
+    return {pickup: parts[0].trim(), deliverTo: parts.slice(1).join(' \u2192 ').trim(), comments};
+  }
+  if (job.includes('->')) {
+    const parts = job.split('->');
+    return {pickup: parts[0].trim(), deliverTo: parts.slice(1).join(' -> ').trim(), comments};
+  }
+  const forMatch = job.match(/^(.+?)\s+for\s+(.+)$/i);
+  if (forMatch) return {pickup: forMatch[1].trim(), deliverTo: forMatch[2].trim(), comments};
+  if (job.includes(' - ')) {
+    const parts = job.split(' - ');
+    return {pickup: parts[0].trim(), deliverTo: parts.slice(1).join(' - ').trim(), comments};
+  }
+  const toMatch = job.match(/^(.+?)\s+to\s+(.+)$/i);
+  if (toMatch) return {pickup: toMatch[1].trim(), deliverTo: toMatch[2].trim(), comments};
+  return {pickup: job.trim(), deliverTo: '', comments};
+}
+
+function splitQuarryMaterial(rVal) {
+  rVal = normaliseJobText(rVal);
+
+  let m;
+
+  m = rVal.match(/^Bracalba Quarry\s+Class\s+A$/i);
+  if (m) return {pickup: 'Bracalba Quarry', product: 'Class A'};
+
+  m = rVal.match(/^Bracalba Quarry$/i);
+  if (m) return {pickup: 'Bracalba Quarry', product: ''};
+
+  m = rVal.match(/^(?:MBQ|BMQ)\s+(.+)$/i);
+  if (m) return {pickup: 'Maryborough Quarry', product: m[1].trim()};
+
+  m = rVal.match(/^DMC\s+Tenterfield\s+(.+)$/i);
+  if (m) return {pickup: 'DMC Tenterfield', product: m[1].trim()};
+
+  m = rVal.match(/^Adbri\s+Kalbar\s+(10mm|20mm)$/i);
+  if (m) return {pickup: 'Adbri Kalbar', product: m[1]};
+
+  m = rVal.match(/^(Ipswich|Tamborine)\s+Washout\s+Waste$/i);
+  if (m) return {pickup: m[1], product: 'Washout Waste'};
+
+  m = rVal.match(/^Bromelton\s+(.+?)\s+Truck\s*-?\s*(.+?)\s+Trailer$/i);
+  if (m) return {pickup: 'Bromelton', product: m[1].trim() + ' Truck / ' + m[2].trim() + ' Trailer'};
+
+  m = rVal.match(/^Mt\s+Marrow\s+(.+?)\s+Trailer\s+(.+?)\s+Truck$/i);
+  if (m) return {pickup: 'Mt Marrow', product: m[1].trim() + ' Trailer / ' + m[2].trim() + ' Truck'};
+
+  const patterns = [
+    [/^(Bromelton)\s+(.+)$/i, 'Bromelton'],
+    [/^(Mt Marrow)\s+(.+)$/i, 'Mt Marrow'],
+    [/^(Maryborough)\s+(.+)$/i, 'Maryborough'],
+    [/^(Fernvale)\s+(.+)$/i, 'Fernvale'],
+    [/^(CCS(?: Group)?)\s+(.+)$/i, 'CCS Group'],
+    [/^(Mt Cotton)\s+(.+)$/i, 'Mt Cotton'],
+    [/^(Fraser Coast)\s+(.+)$/i, 'Fraser Coast'],
+    [/^(Fraser)\s+(.+)$/i, 'Fraser'],
+    [/^(Coastal)\s+(.+)$/i, 'Coastal Sands'],
+    [/^(Coastal Sands)$/i, null],
+    [/^(Lantrak)$/i, null],
+    [/^(Ipswich Transfer)$/i, null],
+    [/^(Holcim Petrie)$/i, null],
+    [/^(ADBRI\s*-\s*Kalbar Quarry)$/i, 'Adbri Kalbar'],
+  ];
+
+  for (const [pat, quarryOverride] of patterns) {
+    const match = rVal.match(pat);
+    if (match) {
+      const pickup = quarryOverride || match[1];
+      const product = match[2] ? match[2].trim() : '';
+      return {pickup: pickup.trim(), product};
+    }
+  }
+
+  return {pickup: rVal, product: ''};
+}
+
+function isNoDocketJob(job) {
+  const t = String(job || '').toLowerCase();
+  return /\b(vcv\s*-\s*volvo|hercules|test drive|breakdown|maintenance|qrf beaudesert)\b/i.test(t);
+}
+
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return 9999;
+  const m = timeStr.match(/(\d+)\.?(\d*)\s*(am|pm)/i);
+  if (!m) return 9999;
+  let h = parseInt(m[1]);
+  const mins = m[2] ? parseInt(m[2]) : 0;
+  const period = m[3].toLowerCase();
+  if (period === 'pm' && h !== 12) h += 12;
+  if (period === 'am' && h === 12) h = 0;
+  return h * 60 + mins;
+}
+
+function resetDriverForNewTruck() {
+  driverLookupInProgress = true;
+  document.getElementById('driverName').value = '';
+  document.getElementById('driverID').value = '';
+  driverLookupInProgress = false;
+  verifiedDriverName = null;
+  document.getElementById('driverIdOk').style.display = 'none';
+  document.getElementById('driverIdWarning').style.display = 'none';
+  document.getElementById('driverNameNoMatch').style.display = 'none';
+}
+
+function resetLoadsForNewDriver() {
+  document.getElementById('loadsContainer').innerHTML = '';
+  loadCount = 0;
+  addLoad();
+  checkForScheduledJobs();
+  updateProgress();
+}
+
+function fetchScheduleFromJsonbin() {
+  localStorage.removeItem('cartage_schedule');
+  fetch(CLOUDFLARE_WORKER + '?t=' + Date.now())
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(res => {
+      if (res && res.allDays) {
+        window.allDaysSchedule = res.allDays;
+        localStorage.setItem('cartage_schedule', JSON.stringify(res));
+        applyScheduleForSelectedDate();
+      } else if (res && res.data && Object.keys(res.data).length > 0) {
+        scheduleData = res.data;
+        scheduleSheetDate = res.sheetDate || '';
+        localStorage.setItem('cartage_schedule', JSON.stringify(res));
+        checkForScheduledJobs();
+      }
+    })
+    .catch(() => {
+      const stored = localStorage.getItem('cartage_schedule');
+      if (stored) applyStoredSchedule(stored);
+    });
+}
+
+function applyScheduleForSelectedDate() {
+  const dateEl = document.getElementById('jobDate');
+  const selectedDate = dateEl ? dateEl.value : '';
+  let dateStr = '';
+  if (selectedDate) {
+    const parts = selectedDate.split('-');
+    if (parts.length === 3) {
+      dateStr = parts[2].slice(-2) + '.' + parts[1] + '.' + parts[0].slice(2);
+    }
+  }
+  if (!dateStr) {
+    const today = new Date();
+    dateStr = String(today.getDate()).padStart(2,'0') + '.' + String(today.getMonth()+1).padStart(2,'0') + '.' + String(today.getFullYear()).slice(2);
+  }
+
+  const allDays = window.allDaysSchedule || {};
+  if (allDays[dateStr] && Object.keys(allDays[dateStr]).length > 0) {
+    scheduleData = allDays[dateStr];
+    scheduleSheetDate = dateStr;
+  } else {
+    const sortedDates = Object.keys(allDays).sort().reverse();
+    for (const d of sortedDates) {
+      const count = Object.values(allDays[d]).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+      if (count > 0) {
+        scheduleData = allDays[d];
+        scheduleSheetDate = d;
+        break;
+      }
+    }
+  }
+  checkForScheduledJobs();
+}
+
+function checkForScheduledJobs() {
+  if (!scheduleData || Object.keys(scheduleData).length === 0) return;
+
+  const banner = document.getElementById('loadJobsBanner');
+  if (!banner) return;
+
+  const truckNo = document.getElementById('truckNo')?.value?.trim();
+  const driverName = document.getElementById('driverName')?.value?.trim();
+
+  const matchedTruck = (truckNo && scheduleData[truckNo]) ? truckNo :
+    driverName ? findTruckByDriverName(driverName) : null;
+
+  if (matchedTruck && scheduleData[matchedTruck]?.loads?.length > 0) {
+    banner.style.display = 'block';
+    const bannerMsg = banner.querySelector('div');
+    if (bannerMsg) {
+      bannerMsg.textContent = 'Allocated loads available - tap to load';
+      bannerMsg.style.color = '#92400e';
+    }
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function applyStoredSchedule(json) {
+  try {
+    const parsed = JSON.parse(json);
+    if (parsed.allDays) {
+      window.allDaysSchedule = parsed.allDays;
+      applyScheduleForSelectedDate();
+    } else {
+      scheduleData = parsed.data;
+      scheduleSheetDate = parsed.sheetDate || '';
+      checkForScheduledJobs();
+    }
+  } catch(e) { }
+}
+
+function findTruckByDriverName(name) {
+  if (!name || !scheduleData) return null;
+  const lower = name.toLowerCase();
+  for (const truck in scheduleData) {
+    const d = scheduleData[truck].driver || '';
+    if (d && (d.toLowerCase().includes(lower) || lower.includes(d.toLowerCase()))) {
+      return truck;
+    }
+  }
+  return null;
+}
+
+function loadJobsFromSchedule() {
+  const truckNo = document.getElementById('truckNo')?.value?.trim();
+  const driverName = document.getElementById('driverName')?.value?.trim();
+
+  let matchedTruck = null;
+  if (truckNo && scheduleData[truckNo]) {
+    matchedTruck = truckNo;
+  } else if (driverName) {
+    matchedTruck = findTruckByDriverName(driverName);
+  }
+
+  if (!matchedTruck || !scheduleData[matchedTruck]) {
+    showToast('No loads found for this truck/driver in today\'s schedule', 'warning');
+    return;
+  }
+
+  const truckData = scheduleData[matchedTruck];
+  const jobs = truckData.loads || [];
+
+  if (truckData.depot) {
+    const depotSel = document.getElementById('depot');
+    if (depotSel && !depotSel.value) {
+      const depotMatch = matchList(truckData.depot, ['Devon','Truganina','Queensland','South Australia'], 0.5);
+      if (depotMatch) depotSel.value = depotMatch;
+    }
+  }
+
+  if (truckData.driver && !verifiedDriverName) {
+    const match = matchNameFuzzy(truckData.driver.toLowerCase());
+    if (match) {
+      driverLookupInProgress = true;
+      document.getElementById('driverName').value = match.properName;
+      document.getElementById('driverID').value = match.id;
+      driverLookupInProgress = false;
+      verifiedDriverName = match.properName;
+      document.getElementById('driverIdOk').style.display = 'block';
+      document.getElementById('driverIdWarning').style.display = 'none';
+    }
+  }
+
+  document.getElementById('loadsContainer').innerHTML = '';
+  loadCount = 0;
+
+  jobs.forEach((job, i) => {
+    addLoad();
+    const idx = i + 1;
+
     const pfInput = document.getElementById('pullFrom' + idx);
     if (pfInput) {
       pfInput.value = job.pickup || '';
