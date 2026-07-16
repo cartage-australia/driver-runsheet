@@ -627,10 +627,10 @@
     <div class="card">
       <div class="row-2">
         <div class="field">
-          <label>Driver ID</label>
-          <input type="text" id="driverID" placeholder="e.g. 500574" inputmode="numeric"
-                 oninput="lookupDriver(); updateProgress()" autocomplete="off">
-          <div class="field-error" id="err-driverID">Please enter Driver ID or Name</div>
+          <label>Truck No. <span style="color:var(--orange);font-weight:700;text-transform:none;letter-spacing:0;">(enter first)</span> <span class="req">*</span></label>
+          <input type="text" id="truckNo" placeholder="e.g. 305"
+                 oninput="lookupTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
+          <div class="field-error" id="err-truckNo">Required</div>
         </div>
         <div class="field">
           <label>Date <span class="auto-tag">Auto</span></label>
@@ -640,28 +640,30 @@
             style="border-color: var(--orange); background: #fffbeb; font-weight:600;">
         </div>
       </div>
-      <div class="field">
-        <label>Driver Name <span class="req">*</span></label>
-        <input type="text" id="driverName" placeholder="Enter name or enter Driver ID above"
-               style="font-weight:600;" oninput="lookupDriverByName(); updateProgress()" autocomplete="off">
-        <div id="driverIdWarning" style="display:none; margin-top:6px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:9px 12px; font-size:12px; color:#dc2626; line-height:1.5;">
-          Driver ID not recognised. Please check the number - must be 6 digits and cannot start with a letter.
-        </div>
-        <div id="driverIdOk" style="display:none; margin-top:6px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:9px 12px; font-size:12px; color:#16a34a; line-height:1.5;">
-          Driver verified
-        </div>
-        <div id="driverNameNoMatch" style="display:none; margin-top:6px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:9px 12px; font-size:12px; color:#92400e; line-height:1.5;">
-          Name not found in employee list. Please check spelling, or enter your Driver ID above.
-        </div>
-        <div class="field-error" id="err-driverName">Driver Name is required</div>
-      </div>
       <div class="row-2">
         <div class="field">
-          <label>Truck No. <span class="req">*</span></label>
-          <input type="text" id="truckNo" placeholder="e.g. 305"
-                 oninput="lookupTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
-          <div class="field-error" id="err-truckNo">Required</div>
+          <label>Driver Name <span class="req">*</span></label>
+          <input type="text" id="driverName" placeholder="Enter driver name"
+                 style="font-weight:600;" oninput="lookupDriverByName(); updateProgress()" autocomplete="off">
+          <div id="driverNameNoMatch" style="display:none; margin-top:6px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:9px 12px; font-size:12px; color:#92400e; line-height:1.5;">
+            Name not found in employee list. Please check spelling, or enter the Driver ID beside this field.
+          </div>
+          <div class="field-error" id="err-driverName">Driver Name is required</div>
         </div>
+        <div class="field">
+          <label>Driver ID</label>
+          <input type="text" id="driverID" placeholder="e.g. 500574" maxlength="10"
+                 oninput="this.value=this.value.toUpperCase().slice(0,10); lookupDriver(); updateProgress()" autocomplete="off" autocapitalize="characters">
+          <div id="driverIdWarning" style="display:none; margin-top:6px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:9px 12px; font-size:12px; color:#dc2626; line-height:1.5;">
+            Driver ID not recognised. Please check the ID is 5-10 characters.
+          </div>
+          <div id="driverIdOk" style="display:none; margin-top:6px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:9px 12px; font-size:12px; color:#16a34a; line-height:1.5;">
+            Driver verified
+          </div>
+          <div class="field-error" id="err-driverID">Please enter Driver ID or Name</div>
+        </div>
+      </div>
+      <div class="row-2">
         <div class="field">
           <label>Rego <span class="req">*</span> <span class="auto-tag" id="regoAutoTag" style="display:none;">v Auto</span></label>
           <input type="text" id="truckRego" placeholder="e.g. XV67VO"
@@ -672,8 +674,6 @@
             ! Truck number not recognised. Please enter rego manually.
           </div>
         </div>
-      </div>
-      <div class="row-2">
         <div class="field">
           <label>Depot <span class="req">*</span></label>
           <select id="depot" onchange="validateField(this); updateProgress()">
@@ -1957,7 +1957,8 @@ function loadEmployeesFromGoogleSheet() {
 function lookupDriver() {
   if (driverLookupInProgress) return;
   const idInput = document.getElementById('driverID');
-  const id = idInput.value.trim();
+  const id = idInput.value.trim().toUpperCase();
+  if (idInput.value !== id) idInput.value = id;
   const nameField = document.getElementById('driverName');
   const warningEl = document.getElementById('driverIdWarning');
   const okEl = document.getElementById('driverIdOk');
@@ -1976,7 +1977,7 @@ function lookupDriver() {
     return;
   }
 
-  const validFormat = /^\d{6}$/.test(id);
+  const validFormat = /^[A-Z0-9]{5,10}$/.test(id);
   if (!validFormat) {
     driverLookupInProgress = true;
     nameField.value = '';
