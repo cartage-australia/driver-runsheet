@@ -675,16 +675,22 @@
           </div>
         </div>
         <div class="field">
-          <label>Depot <span class="req">*</span></label>
-          <select id="depot" onchange="validateField(this); updateProgress()">
+          <label>Location <span class="req">*</span></label>
+          <select id="depot" onchange="handleDepotChange()">
             <option value="">- Select -</option>
-            <option>Devon</option>
+            <option>Devon Meadows</option>
             <option>Truganina</option>
+            <option>Point Wilson</option>
+            <option>Wyndham Vale</option>
+            <option>Donnybrook</option>
             <option>Queensland</option>
             <option>South Australia</option>
             <option>Other</option>
           </select>
-          <div class="field-error" id="err-depot">Required</div>
+          <input type="text" id="depotOther" placeholder="Enter location"
+                 style="display:none; margin-top:8px;"
+                 oninput="validateDepotField(); updateProgress()" autocomplete="off">
+          <div class="field-error" id="err-depot">Location is required</div>
         </div>
       </div>
     </div>
@@ -1559,8 +1565,15 @@ function loadJobsFromSchedule() {
   if (truckData.depot) {
     const depotSel = document.getElementById('depot');
     if (depotSel && !depotSel.value) {
-      const depotMatch = matchList(truckData.depot, ['Devon','Truganina','Queensland','South Australia'], 0.5);
-      if (depotMatch) depotSel.value = depotMatch;
+      const depotMatch = matchList(truckData.depot, ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Queensland','South Australia'], 0.5);
+      if (depotMatch) {
+        depotSel.value = depotMatch;
+      } else {
+        depotSel.value = 'Other';
+        const depotOther = document.getElementById('depotOther');
+        if (depotOther) depotOther.value = truckData.depot;
+      }
+      handleDepotChange();
     }
   }
 
@@ -2511,6 +2524,46 @@ function resolveLocationValue(idx, type) {
   return field.value || '';
 }
 
+function getDepotValue() {
+  const depotSel = document.getElementById('depot');
+  const depotOther = document.getElementById('depotOther');
+  if (!depotSel) return '';
+  if (depotSel.value === 'Other') return depotOther ? depotOther.value.trim() : '';
+  return depotSel.value.trim();
+}
+
+function handleDepotChange() {
+  const depotSel = document.getElementById('depot');
+  const depotOther = document.getElementById('depotOther');
+  if (depotOther) {
+    const showOther = depotSel && depotSel.value === 'Other';
+    depotOther.style.display = showOther ? 'block' : 'none';
+    if (!showOther) depotOther.value = '';
+  }
+  validateDepotField();
+  updateProgress();
+}
+
+function validateDepotField() {
+  const depotSel = document.getElementById('depot');
+  const depotOther = document.getElementById('depotOther');
+  const errEl = document.getElementById('err-depot');
+  const value = getDepotValue();
+  const empty = value === '';
+
+  if (depotSel) {
+    depotSel.classList.toggle('error', empty);
+    depotSel.classList.toggle('valid', !empty);
+  }
+  if (depotOther) {
+    const otherSelected = depotSel && depotSel.value === 'Other';
+    depotOther.classList.toggle('error', empty && otherSelected);
+    depotOther.classList.toggle('valid', !empty && otherSelected);
+  }
+  if (errEl) errEl.classList.toggle('show', empty);
+  return !empty;
+}
+
 function validateField(el) {
   const errEl = document.getElementById(`err-${el.id}`);
   if (!errEl) return;
@@ -2521,9 +2574,10 @@ function validateField(el) {
 }
 
 function updateProgress() {
-  const baseFields = ['driverID','truckNo','truckRego','depot'];
-  let filled = 0, total = baseFields.length + 4;
+  const baseFields = ['driverID','truckNo','truckRego'];
+  let filled = 0, total = baseFields.length + 5;
   baseFields.forEach(id => { const el=document.getElementById(id); if(el&&el.value.trim()!=='') filled++; });
+  if (getDepotValue()) filled++;
   if (Object.keys(docketPhotos).length > 0) filled++;
   const t1 = document.getElementById('ticketNo1');
   const g1 = document.getElementById('gross1');
@@ -2562,12 +2616,14 @@ function submitForm() {
   const required = [
     {id:'truckNo',label:'Truck Number'},
     {id:'truckRego',label:'Truck Rego'},
-    {id:'depot',label:'Depot'},
+    {id:'depot',label:'Location'},
   ];
   required.forEach(f => {
     const el = document.getElementById(f.id);
-    if (!el||!el.value.trim()) {
+    const value = f.id === 'depot' ? getDepotValue() : (el ? el.value.trim() : '');
+    if (!el || !value) {
       el&&el.classList.add('error');
+      if (f.id === 'depot') validateDepotField();
       const trigger = document.getElementById(`${f.id}_trigger`);
       if (trigger) trigger.classList.add('error');
       document.getElementById(`err-${f.id}`)?.classList.add('show');
@@ -2645,7 +2701,7 @@ function submitForm() {
     driverName: document.getElementById('driverName').value,
     truckNo: document.getElementById('truckNo').value,
     truckRego: document.getElementById('truckRego').value,
-    depot: document.getElementById('depot').value,
+    depot: getDepotValue(),
     jobDate: document.getElementById('jobDate').value,
     startTime: '',
     finishTime: '',
@@ -2789,7 +2845,7 @@ function resetForm() {
   document.getElementById('loadsContainer').innerHTML = '';
   loadCount = 0;
   addLoad();
-  ['driverID','driverName','truckNo','truckRego','depot','notes'].forEach(id => {
+  ['driverID','driverName','truckNo','truckRego','depot','depotOther','notes'].forEach(id => {
     const el=document.getElementById(id); if(el){el.value='';el.classList.remove('error','valid');}
   });
   verifiedDriverName = null;
@@ -2804,6 +2860,7 @@ function resetForm() {
   runSheetPhotoData = null;
   document.getElementById('runSheetPhotoPreview').style.display = 'none';
   document.getElementById('runSheetPhotoBtnLabel').textContent = 'Photograph Run Sheet';
+  handleDepotChange();
   clearSignature(); updateProgress(); updateAddLoadBtn();
   window.scrollTo(0,0);
 }
