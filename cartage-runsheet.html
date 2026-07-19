@@ -1404,6 +1404,31 @@ function isNoDocketJob(job) {
   return /\b(vcv\s*-\s*volvo|hercules|test drive|breakdown|maintenance|qrf beaudesert)\b/i.test(t);
 }
 
+function inferLocationFromSchedule(truckData) {
+  if (!truckData) return null;
+
+  const textParts = [truckData.depot || ''];
+  (truckData.loads || []).forEach(load => {
+    textParts.push(load.pickup || '', load.deliverTo || '', load.product || '', load.comments || '');
+  });
+
+  const text = textParts.join(' ');
+
+  if (/Hervey\s*Bay/i.test(text)) {
+    return {value: 'Other', other: 'Hervey Bay'};
+  }
+
+  if (/Maryborough/i.test(text)) {
+    return {value: 'Other', other: 'Maryborough'};
+  }
+
+  if (/(Bromelton|Mt\s*Marrow|Mt\s*Cotton|Elimbah|Yatala|Stapylton)/i.test(text)) {
+    return {value: 'Queensland', other: ''};
+  }
+
+  return null;
+}
+
 function parseTimeToMinutes(timeStr) {
   if (!timeStr) return 9999;
   const m = timeStr.match(/(\d+)\.?(\d*)\s*(am|pm)/i);
@@ -1562,17 +1587,25 @@ function loadJobsFromSchedule() {
   const truckData = scheduleData[matchedTruck];
   const jobs = truckData.loads || [];
 
-  if (truckData.depot) {
+  if (truckData.depot || jobs.length) {
     const depotSel = document.getElementById('depot');
     if (depotSel && !depotSel.value) {
-      const depotMatch = matchList(truckData.depot, ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Queensland','South Australia'], 0.5);
-      if (depotMatch) {
-        depotSel.value = depotMatch;
+      const inferredLocation = inferLocationFromSchedule(truckData);
+      const depotOther = document.getElementById('depotOther');
+
+      if (inferredLocation) {
+        depotSel.value = inferredLocation.value;
+        if (depotOther) depotOther.value = inferredLocation.other || '';
       } else {
-        depotSel.value = 'Other';
-        const depotOther = document.getElementById('depotOther');
-        if (depotOther) depotOther.value = truckData.depot;
+        const depotMatch = matchList(truckData.depot, ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Queensland','South Australia'], 0.5);
+        if (depotMatch) {
+          depotSel.value = depotMatch;
+        } else {
+          depotSel.value = 'Other';
+          if (depotOther) depotOther.value = truckData.depot;
+        }
       }
+
       handleDepotChange();
     }
   }
