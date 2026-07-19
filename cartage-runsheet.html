@@ -1261,11 +1261,11 @@ function parseScheduleRows(rows) {
       if (cleanCell(row[bc]) !== 'Description') continue;
 
       const truckCell = cleanCell(row[bc+1]);
-      const truckMatch = truckCell.match(/^(\d{3,4})\s+(.+)$/);
+      const truckMatch = truckCell.match(/^(\d{3,4})(?:\s+(.+))?$/);
       if (!truckMatch) continue;
 
       const truckNo = truckMatch[1];
-      const depot = truckMatch[2].trim();
+      const depot = (truckMatch[2] || '').trim();
 
       let driverName = cleanCell(nameRow[bc]);
       if (driverName.toLowerCase() === 'nan') driverName = '';
@@ -1286,6 +1286,7 @@ function parseScheduleRows(rows) {
           const material = splitQuarryMaterial(split.pickup);
           loads.push({
             label: descCol,
+            originalJob: jobCol,
             pickup: material.pickup || split.pickup,
             product: material.product || '',
             deliverTo: split.deliverTo || '',
@@ -1407,22 +1408,44 @@ function isNoDocketJob(job) {
 function inferLocationFromSchedule(truckData) {
   if (!truckData) return null;
 
-  const textParts = [truckData.depot || ''];
-  (truckData.loads || []).forEach(load => {
-    textParts.push(load.pickup || '', load.deliverTo || '', load.product || '', load.comments || '');
-  });
+  // Location must only be taken from the text immediately beside the truck number
+  // in the dispatch sheet, e.g. "439 Elimbah" or "427 Mt Cotton".
+  // Do not infer Location from pickup, delivery, product or load descriptions.
+  const truckLocation = String(truckData.depot || '').replace(/\s+/g, ' ').trim();
+  if (!truckLocation) return null;
 
-  const text = textParts.join(' ');
+  function matches(pattern) {
+    return new RegExp('^' + pattern + '$', 'i').test(truckLocation);
+  }
 
-  if (/Hervey\s*Bay/i.test(text)) {
+  const exactLocationMatch = matchList(
+    truckLocation,
+    ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Queensland','South Australia'],
+    0.92
+  );
+
+  if (exactLocationMatch) {
+    return {value: exactLocationMatch, other: ''};
+  }
+
+  if (matches('Hervey\\s*Bay')) {
     return {value: 'Other', other: 'Hervey Bay'};
   }
 
-  if (/Maryborough/i.test(text)) {
+  if (matches('Maryborough')) {
     return {value: 'Other', other: 'Maryborough'};
   }
 
-  if (/(Bromelton|Mt\s*Marrow|Mt\s*Cotton|Elimbah|Yatala|Stapylton)/i.test(text)) {
+  if (
+    matches('Bromelton') ||
+    matches('Mt\\s*Marrow') ||
+    matches('Mount\\s*Marrow') ||
+    matches('Mt\\s*Cotton') ||
+    matches('Mount\\s*Cotton') ||
+    matches('Elimbah') ||
+    matches('Yatala') ||
+    matches('Stapylton')
+  ) {
     return {value: 'Queensland', other: ''};
   }
 
@@ -1597,13 +1620,8 @@ function loadJobsFromSchedule() {
         depotSel.value = inferredLocation.value;
         if (depotOther) depotOther.value = inferredLocation.other || '';
       } else {
-        const depotMatch = matchList(truckData.depot, ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Queensland','South Australia'], 0.5);
-        if (depotMatch) {
-          depotSel.value = depotMatch;
-        } else {
-          depotSel.value = 'Other';
-          if (depotOther) depotOther.value = truckData.depot;
-        }
+        depotSel.value = '';
+        if (depotOther) depotOther.value = '';
       }
 
       handleDepotChange();
