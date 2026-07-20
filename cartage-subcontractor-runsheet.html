@@ -1327,14 +1327,17 @@ function extractRegoFromCells() {
     return token;
   }
 
-  // First and preferred rule: the dispatch sheet now marks the rego with "Subby".
-  // Examples accepted: "ABC123 Subby", "ABC 123 Subby", "ABC-123 Subby 1".
+  // First and preferred rule: the dispatch sheet marks the rego immediately before
+  // Subby/Subbie wording. Examples accepted: "ABC123 Subby", "ABC123 Subbie",
+  // "ABC 123 Subby 1", "ABC-123 Subby1", "ABC123 Subbies".
+  const subbyMarkerRegex = /\bSUBB(?:Y|IE)S?\s*\d*\b/i;
   for (const cell of arguments) {
     const text = String(cell || '').toUpperCase().trim();
     if (!text || text === 'NAN' || text === '0') continue;
-    if (!/\bSUBBY\b/.test(text)) continue;
+    const markerMatch = text.match(subbyMarkerRegex);
+    if (!markerMatch) continue;
 
-    const beforeSubby = text.split(/\bSUBBY\b/)[0].trim();
+    const beforeSubby = text.slice(0, markerMatch.index).trim();
     const direct = isLikelyRego(beforeSubby);
     if (direct) return direct;
 
@@ -2329,6 +2332,35 @@ function addLoad() {
       <span class="load-badge">Load ${idx}</span>
     </div>
     <div class="load-body">
+      <div id="docketPhotoSection${idx}" style="margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:14px;">
+        <label style="font-size:11px; font-weight:700; color:var(--label); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:10px;">
+          Weighbridge Docket Photo <span class="req">*</span> <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--orange);">(scan docket first)</span>
+        </label>
+        <div id="docketPhotoBtn${idx}" class="photo-btn" onclick="triggerDocketPhoto(${idx})" style="padding:18px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span class="btn-label" id="docketBtnLabel${idx}">Add Docket Photo</span>
+          <span class="btn-sub">Take a photo or choose from camera roll</span>
+        </div>
+        <input type="file" id="docketInput${idx}" accept="image/*"
+               onchange="handleDocketPhoto(${idx}, this)" style="display:none;">
+        <div id="docketPreview${idx}" style="display:none; margin-top:10px;">
+          <img id="docketImg${idx}" src="" alt="Docket" style="width:100%; border-radius:8px; max-height:110px; object-fit:cover;">
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button onclick="triggerDocketPhoto(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake / Change</button>
+            <button onclick="scanDocket(${idx})" id="scanDocketBtn${idx}" style="flex:2; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Read Docket Weights</button>
+          </div>
+        </div>
+        <div id="docketScanProgress${idx}" style="display:none; text-align:center; padding:12px 0;">
+          <div style="width:24px; height:24px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 8px;"></div>
+          <span style="font-size:12px; color:var(--label);">Reading docket...</span>
+        </div>
+        <div id="docketScanResult${idx}" style="display:none; margin-top:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px; font-size:12px; color:#16a34a;"></div>
+        <div id="docketScanError${idx}" style="display:none; margin-top:8px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 12px; font-size:12px; color:#dc2626;"></div>
+      </div>
+
       <div class="field">
         <label>Docket Number <span class="req">*</span></label>
         <input type="text" id="ticketNo${idx}" placeholder="e.g. 24089128"
@@ -2388,34 +2420,7 @@ function addLoad() {
                   oninput="updateProgress()" rows="2"></textarea>
       </div>
 
-      <div id="docketPhotoSection${idx}" style="margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
-        <label style="font-size:11px; font-weight:700; color:var(--label); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:10px;">
-          Weighbridge Docket Photo <span class="req">*</span>
-        </label>
-        <div id="docketPhotoBtn${idx}" class="photo-btn" onclick="triggerDocketPhoto(${idx})" style="padding:18px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
-            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-            <circle cx="12" cy="13" r="4"/>
-          </svg>
-          <span class="btn-label" id="docketBtnLabel${idx}">Add Docket Photo</span>
-          <span class="btn-sub">Take a photo or choose from camera roll</span>
-        </div>
-        <input type="file" id="docketInput${idx}" accept="image/*"
-               onchange="handleDocketPhoto(${idx}, this)" style="display:none;">
-        <div id="docketPreview${idx}" style="display:none; margin-top:10px;">
-          <img id="docketImg${idx}" src="" alt="Docket" style="width:100%; border-radius:8px; max-height:110px; object-fit:cover;">
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <button onclick="triggerDocketPhoto(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake / Change</button>
-            <button onclick="scanDocket(${idx})" id="scanDocketBtn${idx}" style="flex:2; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Read Docket Weights</button>
-          </div>
-        </div>
-        <div id="docketScanProgress${idx}" style="display:none; text-align:center; padding:12px 0;">
-          <div style="width:24px; height:24px; border:2px solid var(--border); border-top-color:var(--orange); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 8px;"></div>
-          <span style="font-size:12px; color:var(--label);">Reading docket...</span>
-        </div>
-        <div id="docketScanResult${idx}" style="display:none; margin-top:8px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px; font-size:12px; color:#16a34a;"></div>
-        <div id="docketScanError${idx}" style="display:none; margin-top:8px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 12px; font-size:12px; color:#dc2626;"></div>
-      </div>
+
 
       ${idx > 1 ? `<button onclick="removeLoad(${idx})" style="margin-top:12px;background:transparent;border:1px solid #fecaca;color:#dc2626;font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;">Remove Load ${idx}</button>` : ''}
     </div>
@@ -2779,12 +2784,14 @@ function submitForm() {
     errors.push('Deliver To (Load 1)');
   }
   if (document.getElementById('tonnes1')?.value === 'Check weights') errors.push('Load 1: Gross weight must be greater than Tare weight');
-  let anyRequiredDocket = false;
   for (let i = 1; i <= MAX_LOADS; i++) {
     const card = document.getElementById('loadCard' + i);
-    if (card && loadRequiresDocket(i)) anyRequiredDocket = true;
+    if (card && loadRequiresDocket(i) && !docketPhotos[i]) {
+      errors.push(`Weighbridge Docket photo required (Load ${i})`);
+      const docketSection = document.getElementById('docketPhotoSection' + i);
+      if (docketSection) docketSection.scrollIntoView({behavior:'smooth', block:'center'});
+    }
   }
-  if (anyRequiredDocket && !Object.keys(docketPhotos).length) errors.push('At least 1 Weighbridge Docket photo required');
   if (!hasSig) errors.push('Driver Signature');
 
   if (errors.length>0) {
