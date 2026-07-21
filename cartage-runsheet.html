@@ -728,19 +728,28 @@
       <p style="font-size:12px;color:var(--label);margin-bottom:12px;line-height:1.5;">
         Take a photo or select an existing photo of your completed paper run sheet.
       </p>
-      <div class="photo-btn" id="runSheetPhotoBtn" onclick="document.getElementById('runSheetPhotoInput').click()" style="padding:20px;">
+      <div class="photo-btn" id="runSheetPhotoBtn" style="padding:20px;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
           <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
           <circle cx="12" cy="13" r="4"/>
         </svg>
         <span class="btn-label" id="runSheetPhotoBtnLabel">Add Run Sheet Photo</span>
-        <span class="btn-sub">Take a photo or choose from camera roll</span>
+        <span class="btn-sub">Take a new photo or choose from camera roll</span>
+        <div style="display:flex; gap:8px; width:100%; margin-top:10px;">
+          <button type="button" onclick="event.stopPropagation(); document.getElementById('runSheetPhotoCameraInput').click()" style="flex:1; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Take Photo</button>
+          <button type="button" onclick="event.stopPropagation(); document.getElementById('runSheetPhotoInput').click()" style="flex:1; background:white; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;">Choose Existing</button>
+        </div>
       </div>
+      <input type="file" id="runSheetPhotoCameraInput" accept="image/*" capture="environment"
+             onchange="handleRunSheetPhoto(this)" style="display:none;">
       <input type="file" id="runSheetPhotoInput" accept="image/*"
              onchange="handleRunSheetPhoto(this)" style="display:none;">
       <div id="runSheetPhotoPreview" style="display:none; margin-top:10px;">
         <img id="runSheetPhotoImg" src="" alt="Run sheet" style="width:100%; border-radius:8px; max-height:180px; object-fit:cover;">
-        <button onclick="document.getElementById('runSheetPhotoInput').click()" style="margin-top:8px; width:100%; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake / Change Photo</button>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button type="button" onclick="document.getElementById('runSheetPhotoCameraInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake Photo</button>
+          <button type="button" onclick="document.getElementById('runSheetPhotoInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Choose Existing</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1872,6 +1881,10 @@ function loadJobsFromSchedule() {
 
 const docketPhotos = {};
 
+function triggerDocketCamera(idx) {
+  document.getElementById('docketCameraInput' + idx)?.click();
+}
+
 function triggerDocketPhoto(idx) {
   document.getElementById('docketInput' + idx)?.click();
 }
@@ -2412,21 +2425,28 @@ function addLoad() {
         <label style="font-size:11px; font-weight:700; color:var(--label); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:10px;">
           Weighbridge Docket Photo <span class="req">*</span> <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--orange);">(scan docket first)</span>
         </label>
-        <div id="docketPhotoBtn${idx}" class="photo-btn" onclick="triggerDocketPhoto(${idx})" style="padding:18px;">
+        <div id="docketPhotoBtn${idx}" class="photo-btn" style="padding:18px;">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
             <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
             <circle cx="12" cy="13" r="4"/>
           </svg>
           <span class="btn-label" id="docketBtnLabel${idx}">Add Docket Photo</span>
-          <span class="btn-sub">Take a photo or choose from camera roll</span>
+          <span class="btn-sub">Take a new photo or choose from camera roll</span>
+          <div style="display:flex; gap:8px; width:100%; margin-top:10px;">
+            <button type="button" onclick="event.stopPropagation(); triggerDocketCamera(${idx})" style="flex:1; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Take Photo</button>
+            <button type="button" onclick="event.stopPropagation(); triggerDocketPhoto(${idx})" style="flex:1; background:white; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;">Choose Existing</button>
+          </div>
         </div>
+        <input type="file" id="docketCameraInput${idx}" accept="image/*" capture="environment"
+               onchange="handleDocketPhoto(${idx}, this)" style="display:none;">
         <input type="file" id="docketInput${idx}" accept="image/*"
                onchange="handleDocketPhoto(${idx}, this)" style="display:none;">
         <div id="docketPreview${idx}" style="display:none; margin-top:10px;">
           <img id="docketImg${idx}" src="" alt="Docket" style="width:100%; border-radius:8px; max-height:110px; object-fit:cover;">
           <div style="display:flex; gap:8px; margin-top:8px;">
-            <button onclick="triggerDocketPhoto(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake / Change</button>
-            <button onclick="scanDocket(${idx})" id="scanDocketBtn${idx}" style="flex:2; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Read Docket Weights</button>
+            <button type="button" onclick="triggerDocketCamera(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake Photo</button>
+            <button type="button" onclick="triggerDocketPhoto(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Choose Existing</button>
+            <button type="button" onclick="scanDocket(${idx})" id="scanDocketBtn${idx}" style="flex:2; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Read Docket Weights</button>
           </div>
         </div>
         <div id="docketScanProgress${idx}" style="display:none; text-align:center; padding:12px 0;">
@@ -3108,6 +3128,10 @@ function resetForm() {
   runSheetPhotoData = null;
   document.getElementById('runSheetPhotoPreview').style.display = 'none';
   document.getElementById('runSheetPhotoBtnLabel').textContent = 'Add Run Sheet Photo';
+  const runSheetPhotoCameraInput = document.getElementById('runSheetPhotoCameraInput');
+  const runSheetPhotoInput = document.getElementById('runSheetPhotoInput');
+  if (runSheetPhotoCameraInput) runSheetPhotoCameraInput.value = '';
+  if (runSheetPhotoInput) runSheetPhotoInput.value = '';
   handleDepotChange();
   clearSignature(); updateProgress(); updateAddLoadBtn();
   window.scrollTo(0,0);
