@@ -1538,6 +1538,8 @@ function applyScheduleForSelectedDate() {
       }
     }
   }
+  const currentTruck = document.getElementById('truckNo')?.value?.trim();
+  if (currentTruck) populateDriverFromScheduleByTruck(currentTruck);
   checkForScheduledJobs();
 }
 
@@ -1589,6 +1591,54 @@ function findTruckByDriverName(name) {
     }
   }
   return null;
+}
+
+function populateDriverFromScheduleByTruck(truckNo) {
+  if (!truckNo || !scheduleData || !scheduleData[truckNo]) return false;
+
+  const scheduleName = String(scheduleData[truckNo].driver || '').replace(/\s*\([^)]+\)/g, '').trim();
+  if (!scheduleName) return false;
+
+  const nameField = document.getElementById('driverName');
+  const idInput = document.getElementById('driverID');
+  const warningEl = document.getElementById('driverIdWarning');
+  const okEl = document.getElementById('driverIdOk');
+  const noMatchEl = document.getElementById('driverNameNoMatch');
+
+  if (!nameField || !idInput) return false;
+
+  const match = matchNameFuzzy(scheduleName.toLowerCase());
+
+  driverLookupInProgress = true;
+
+  if (match) {
+    nameField.value = match.properName;
+    idInput.value = match.id;
+    verifiedDriverName = match.properName;
+    idInput.classList.add('valid');
+    idInput.classList.remove('error');
+    nameField.classList.add('valid');
+    nameField.classList.remove('error');
+    if (okEl) okEl.style.display = 'block';
+    if (warningEl) warningEl.style.display = 'none';
+    if (noMatchEl) noMatchEl.style.display = 'none';
+    document.getElementById('err-driverName')?.classList.remove('show');
+  } else {
+    // Show the driver name from the dispatch sheet even when it cannot be
+    // matched to the employee ID list. The ID stays blank so the driver can
+    // enter it manually, and this also makes unmatched names easy to identify.
+    nameField.value = scheduleName;
+    idInput.value = '';
+    verifiedDriverName = null;
+    idInput.classList.remove('valid');
+    if (okEl) okEl.style.display = 'none';
+    if (warningEl) warningEl.style.display = 'block';
+    if (noMatchEl) noMatchEl.style.display = 'block';
+  }
+
+  driverLookupInProgress = false;
+  updateProgress();
+  return true;
 }
 
 function loadJobsFromSchedule() {
@@ -2015,6 +2065,8 @@ function loadEmployeesFromGoogleSheet() {
       });
 
       console.log('Employee list loaded from Google Sheet');
+      const currentTruck = document.getElementById('truckNo')?.value?.trim();
+      if (currentTruck) populateDriverFromScheduleByTruck(currentTruck);
     })
     .catch(() => {
       console.log('Could not load employees from Google Sheet. Using built-in list.');
@@ -2163,6 +2215,7 @@ function lookupTruck() {
     }
     warningEl.style.display = 'block';
   }
+  populateDriverFromScheduleByTruck(truckNo);
   checkForScheduledJobs();
 }
 
