@@ -1612,14 +1612,16 @@ function loadJobsFromSchedule() {
 
   if (truckData.depot || jobs.length) {
     const depotSel = document.getElementById('depot');
-    if (depotSel && !depotSel.value) {
+    if (depotSel) {
       const inferredLocation = inferLocationFromSchedule(truckData);
       const depotOther = document.getElementById('depotOther');
 
       if (inferredLocation) {
         depotSel.value = inferredLocation.value;
         if (depotOther) depotOther.value = inferredLocation.other || '';
-      } else {
+      } else if (truckData.depot) {
+        // If the dispatch sheet has text beside the truck number but it does not
+        // match an approved location rule, leave Location blank.
         depotSel.value = '';
         if (depotOther) depotOther.value = '';
       }
@@ -2111,7 +2113,8 @@ function lookupDriverByName() {
   }
 }
 
-const TRUCK_LOOKUP = {"305":"XW61HK","307":"XW63HK","312":"XW70HK","315":"XW72HK","317":"XW71HK","319":"XW76HX","318":"XW77HX","323":"XW96HX","325":"XW92IF","331":"XW90IF","326":"XW13IG","328":"XW14IG","330":"XW51ZM","336":"XW36IG","338":"XW28IS","342":"XW60IS","343":"XW30ZQ","332":"XW36IS","334":"XW29IS","341":"XW64IS","344":"XW65IS","356":"XW94JQ","351":"XW70IS","352":"XW74IS","345":"XW66IS","346":"XW67IS","347":"XW68IS","349":"XW72IS","353":"XW75IS","348":"XW71IS","355":"XW46YD","354":"XW73IS","357":"XW40KL","362":"XW46NB","359":"XW21NE","361":"XW37NE","365":"XW22NE","369":"XW45NB","366":"XW91RG","364":"XW44NB","363":"XW47NB","367":"XW52NB","371":"XW20NE","370":"XW49NB","368":"XW48NB","377":"XW59NB","372":"XW42NE","375":"XW57NB","373":"XW51NB","376":"XW34NE","360":"XW28NE","374":"XW38NE","378":"XW23NE","382":"XW43NE","379":"XW25NE","381":"XW52NE","380":"XW56ZM","383":"XW36NE","385":"XW55NB","384":"XW29NE","386":"XW47NE","388":"XW49NE","387":"XW48NE","391":"XW58NB","390":"XW33NE","389":"XW44NE","392":"XW27RB","402":"XW35RB","393":"XW46NE","394":"XW53NB","395":"XW27NE","396":"XW35NE","397":"XW45NE","398":"XW56NB","399":"XW40NE","401":"XW53NE","408":"XW18SO","407":"XW30NE","406":"XW31NE","405":"XW26NE","404":"XW39NE","403":"XW51NE","409":"XW21UN","410":"XW22UN","411":"XW23UN","412":"XW24UN","417":"XW57UN","413":"XW53UN","416":"XW56UN","418":"XW58UN","414":"XW54UN","415":"XW55UN","400":"XW59UN","419":"XW28VW","420":"XW29VW","421":"XW30VW","422":"XW31VW","423":"XW32VW","424":"XW33VW","425":"XW82VW","426":"XW80VW","427":"XW81VW","428":"XW19XD","429":"XW20XD","430":"XW21XD","431":"XW02ZP","432":"XW00ZP","433":"XW01ZP","436":"XW63ZV","435":"XW61ZV","437":"XW62ZV","434":"XX58AZ","438":"XW02ZW","439":"XW03ZW","441":"XW05ZW","442":"XW06ZW","443":"XW07ZW","444":"XW08ZW","449":"XW13ZW","440":"XW04ZW","450":"XW14ZW","448":"XW12ZW","446":"XW10ZW"};
+const TRUCK_LOOKUP = {"323":"XW96HX","325":"XW92IF","343":"XW30ZQ","377":"XW59NB","385":"XW55NB","396":"XW35NE","398":"XW56NB","403":"XW51NE","405":"XW26NE","406":"XW31NE","411":"XW23UN","419":"XW28VW","420":"XW29VW","421":"XW30VW","422":"XW31VW","423":"XW32VW","425":"XW82VW","426":"XW80VW","427":"XW81VW","8065":"XW50NB","8066":"XW24NE","8067":"XW32NE","8068":"XW50NE","428":"XW19XD","433":"XW01ZP","435":"XW61ZV","436":"XW63ZV","437":"XW62ZV","438":"XW02ZW","439":"XW03ZW","442":"XW06ZW","448":"XW12ZW","454":"XX75CC","455":"XX68CC","456":"XX76CC","457":"XX01CD","459":"XX67CC","462":"XX06CD"};
+const TRUCK_LOCATION_LOOKUP = {"323":"Donnybrook","325":"Donnybrook","343":"Donnybrook","377":"South Australia","385":"Point Wilson","396":"South Australia","398":"South Australia","403":"Point Wilson","405":"South Australia","406":"South Australia","411":"South Australia","419":"Queensland","420":"Queensland","421":"Queensland","422":"Queensland","423":"Queensland","425":"Queensland","426":"Queensland","427":"Queensland","8065":"Queensland","8066":"Queensland","8067":"Queensland","8068":"Queensland","428":"Wyndham Vale","433":"Point Wilson","435":"Queensland","436":"Queensland","437":"Queensland","438":"Queensland","439":"Queensland","442":"South Australia","448":"Queensland","454":"Queensland","455":"Queensland","456":"Queensland","457":"Queensland","459":"Queensland","462":"Queensland"};
 
 let userEditedRego = false;
 
@@ -2137,6 +2140,21 @@ function lookupTruck() {
     regoInput.classList.add('valid');
     regoInput.classList.remove('error');
     document.getElementById('err-truckRego')?.classList.remove('show');
+
+    const defaultLocation = TRUCK_LOCATION_LOOKUP[truckNo] || '';
+    const depotSel = document.getElementById('depot');
+    const depotOther = document.getElementById('depotOther');
+    if (depotSel && defaultLocation) {
+      const hasOption = Array.from(depotSel.options).some(opt => opt.value === defaultLocation || opt.textContent === defaultLocation);
+      if (hasOption) {
+        depotSel.value = defaultLocation;
+        if (depotOther) depotOther.value = '';
+      } else {
+        depotSel.value = 'Other';
+        if (depotOther) depotOther.value = defaultLocation;
+      }
+      handleDepotChange();
+    }
   } else {
     autoTag.style.display = 'none';
     if (!userEditedRego) {
