@@ -737,7 +737,7 @@
         <span class="btn-sub">Take a new photo or choose from camera roll</span>
         <div style="display:flex; gap:8px; width:100%; margin-top:10px;">
           <button type="button" onclick="event.stopPropagation(); document.getElementById('runSheetPhotoCameraInput').click()" style="flex:1; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Take Photo</button>
-          <button type="button" onclick="event.stopPropagation(); document.getElementById('runSheetPhotoInput').click()" style="flex:1; background:white; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;">Choose Existing</button>
+          <button type="button" onclick="event.stopPropagation(); document.getElementById('runSheetPhotoInput').click()" style="flex:1; background:white; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;">Library / File</button>
         </div>
       </div>
       <input type="file" id="runSheetPhotoCameraInput" accept="image/*" capture="environment"
@@ -748,7 +748,7 @@
         <img id="runSheetPhotoImg" src="" alt="Run sheet" style="width:100%; border-radius:8px; max-height:180px; object-fit:cover;">
         <div style="display:flex; gap:8px; margin-top:8px;">
           <button type="button" onclick="document.getElementById('runSheetPhotoCameraInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake Photo</button>
-          <button type="button" onclick="document.getElementById('runSheetPhotoInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Choose Existing</button>
+          <button type="button" onclick="document.getElementById('runSheetPhotoInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Library / File</button>
         </div>
       </div>
     </div>
@@ -2118,12 +2118,12 @@ Return exactly this JSON shape:
         hasMismatch = true;
         notes.push(`⚠ Date ${formatDateObj(docketDate)} does NOT match run sheet date (${formatDateObj(runSheetDate)})`);
       } else {
-        hasMismatch = true;
+        hasMismatch = false;
         notes.push('Date could not be checked. Enter docket details manually.');
       }
 
     } else {
-      hasMismatch = true;
+      hasMismatch = false;
       notes.push('Date not read. Enter docket details manually.');
     }
 
@@ -2359,7 +2359,7 @@ function lookupTruck() {
 }
 
 let loadCount = 0;
-const MAX_LOADS = 6;
+const MAX_LOADS = 12;
 const NUM_DOCKETS = 6;
 let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
@@ -2408,7 +2408,7 @@ function optionListHTML(list) {
 }
 
 function addLoad() {
-  if (loadCount >= MAX_LOADS) { showToast('Maximum 6 loads reached','warning'); return; }
+  if (loadCount >= MAX_LOADS) { showToast('Maximum 12 loads reached','warning'); return; }
   loadCount++;
   const idx = loadCount;
   const container = document.getElementById('loadsContainer');
@@ -2434,7 +2434,7 @@ function addLoad() {
           <span class="btn-sub">Take a new photo or choose from camera roll</span>
           <div style="display:flex; gap:8px; width:100%; margin-top:10px;">
             <button type="button" onclick="event.stopPropagation(); triggerDocketCamera(${idx})" style="flex:1; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Take Photo</button>
-            <button type="button" onclick="event.stopPropagation(); triggerDocketPhoto(${idx})" style="flex:1; background:white; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;">Choose Existing</button>
+            <button type="button" onclick="event.stopPropagation(); triggerDocketPhoto(${idx})" style="flex:1; background:white; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;">Library / File</button>
           </div>
         </div>
         <input type="file" id="docketCameraInput${idx}" accept="image/*" capture="environment"
@@ -2445,7 +2445,7 @@ function addLoad() {
           <img id="docketImg${idx}" src="" alt="Docket" style="width:100%; border-radius:8px; max-height:110px; object-fit:cover;">
           <div style="display:flex; gap:8px; margin-top:8px;">
             <button type="button" onclick="triggerDocketCamera(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake Photo</button>
-            <button type="button" onclick="triggerDocketPhoto(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Choose Existing</button>
+            <button type="button" onclick="triggerDocketPhoto(${idx})" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Library / File</button>
             <button type="button" onclick="scanDocket(${idx})" id="scanDocketBtn${idx}" style="flex:2; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:8px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Read Docket Weights</button>
           </div>
         </div>
