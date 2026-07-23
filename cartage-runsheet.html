@@ -751,6 +751,42 @@
           <button type="button" onclick="document.getElementById('runSheetPhotoInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Library / File</button>
         </div>
       </div>
+
+      <button type="button" class="add-load-btn" id="addLogbookBtn" onclick="showLogbookUpload()" style="margin-top:14px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        Add Logbook
+      </button>
+
+      <div id="logbookUploadWrap" style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
+        <p style="font-size:12px;color:var(--label);margin-bottom:12px;line-height:1.5;">
+          Add a logbook photo if required.
+        </p>
+        <div class="photo-btn" id="logbookPhotoBtn" style="padding:18px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.5">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span class="btn-label" id="logbookPhotoBtnLabel">Add Logbook Photo</span>
+          <span class="btn-sub">Take a new photo or choose from camera roll</span>
+          <div style="display:flex; gap:8px; width:100%; margin-top:10px;">
+            <button type="button" onclick="event.stopPropagation(); document.getElementById('logbookPhotoCameraInput').click()" style="flex:1; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:white; cursor:pointer;">Take Photo</button>
+            <button type="button" onclick="event.stopPropagation(); document.getElementById('logbookPhotoInput').click()" style="flex:1; background:white; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;">Library / File</button>
+          </div>
+        </div>
+        <input type="file" id="logbookPhotoCameraInput" accept="image/*" capture="environment"
+               onchange="handleLogbookPhoto(this)" style="display:none;">
+        <input type="file" id="logbookPhotoInput" accept="image/*"
+               onchange="handleLogbookPhoto(this)" style="display:none;">
+        <div id="logbookPhotoPreview" style="display:none; margin-top:10px;">
+          <img id="logbookPhotoImg" src="" alt="Logbook" style="width:100%; border-radius:8px; max-height:180px; object-fit:cover;">
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button type="button" onclick="document.getElementById('logbookPhotoCameraInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Retake Photo</button>
+            <button type="button" onclick="document.getElementById('logbookPhotoInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Library / File</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2183,6 +2219,31 @@ async function handleRunSheetPhoto(input) {
   }
 }
 
+let logbookPhotoData = null;
+
+function showLogbookUpload() {
+  const wrap = document.getElementById('logbookUploadWrap');
+  const btn = document.getElementById('addLogbookBtn');
+  if (wrap) wrap.style.display = 'block';
+  if (btn) btn.style.display = 'none';
+}
+
+async function handleLogbookPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  try {
+    const compressed = await compressImage(file, 1800, 0.75);
+    logbookPhotoData = compressed;
+    document.getElementById('logbookPhotoImg').src = compressed;
+    document.getElementById('logbookPhotoPreview').style.display = 'block';
+    document.getElementById('logbookPhotoBtnLabel').textContent = 'Logbook Captured';
+    updateProgress();
+  } catch (err) {
+    showToast('Could not compress logbook photo. Please retake photo.', 'error');
+  }
+}
+
 let driverLookupInProgress = false;
 function loadEmployeesFromGoogleSheet() {
   fetch(EMPLOYEE_LOOKUP_URL + '?t=' + Date.now())
@@ -2985,6 +3046,7 @@ function submitForm() {
     signature: getSignatureDataUrl(),
     docketPhotos: docketPhotos,
     runSheetPhoto: runSheetPhotoData,
+    logbookPhoto: logbookPhotoData,
     submittedAt: new Date().toISOString(),
   };
 
@@ -3132,6 +3194,19 @@ function resetForm() {
   const runSheetPhotoInput = document.getElementById('runSheetPhotoInput');
   if (runSheetPhotoCameraInput) runSheetPhotoCameraInput.value = '';
   if (runSheetPhotoInput) runSheetPhotoInput.value = '';
+  logbookPhotoData = null;
+  const logbookWrap = document.getElementById('logbookUploadWrap');
+  const addLogbookBtn = document.getElementById('addLogbookBtn');
+  if (logbookWrap) logbookWrap.style.display = 'none';
+  if (addLogbookBtn) addLogbookBtn.style.display = 'flex';
+  const logbookPreview = document.getElementById('logbookPhotoPreview');
+  if (logbookPreview) logbookPreview.style.display = 'none';
+  const logbookLabel = document.getElementById('logbookPhotoBtnLabel');
+  if (logbookLabel) logbookLabel.textContent = 'Add Logbook Photo';
+  const logbookPhotoCameraInput = document.getElementById('logbookPhotoCameraInput');
+  const logbookPhotoInput = document.getElementById('logbookPhotoInput');
+  if (logbookPhotoCameraInput) logbookPhotoCameraInput.value = '';
+  if (logbookPhotoInput) logbookPhotoInput.value = '';
   handleDepotChange();
   clearSignature(); updateProgress(); updateAddLoadBtn();
   window.scrollTo(0,0);
