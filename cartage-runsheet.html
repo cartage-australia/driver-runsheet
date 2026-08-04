@@ -2568,6 +2568,13 @@ function splitJobString(job) {
   }
   const forMatch = job.match(/^(.+?)\s+for\s+(.+)$/i);
   if (forMatch) return {pickup: forMatch[1].trim(), deliverTo: forMatch[2].trim(), comments};
+
+  // Do not treat the hyphen inside "Adbri - Kalbar" as a delivery separator.
+  // If a delivery destination is present it should normally be split by an arrow, "for", or "to".
+  if (/^ADBRI\s*-\s*Kalbar\b/i.test(job)) {
+    return {pickup: job.trim(), deliverTo: '', comments};
+  }
+
   if (job.includes(' - ')) {
     const parts = job.split(' - ');
     return {pickup: parts[0].trim(), deliverTo: parts.slice(1).join(' - ').trim(), comments};
@@ -2586,11 +2593,14 @@ function splitQuarryMaterial(rVal) {
     return {pickup: 'Pinkenba Bay Sand Depot', product: 'Sand'};
   }
 
-  m = rVal.match(/^Bracalba Quarry\s+Class\s+A$/i);
+  m = rVal.match(/^Bracalba Quarry\s+Class\s+A(?:\b.*)?$/i);
   if (m) return {pickup: 'Bracalba Quarry', product: 'Class A'};
 
   m = rVal.match(/^Bracalba Quarry$/i);
   if (m) return {pickup: 'Bracalba Quarry', product: ''};
+
+  m = rVal.match(/^Coastal(?:\s+Sands)?\s+Fine\s+Sand$/i);
+  if (m) return {pickup: 'Coastal Sands', product: 'Fine Sand'};
 
   m = rVal.match(/^(?:MBQ|BMQ)\s+(.+)$/i);
   if (m) return {pickup: 'Maryborough Quarry', product: m[1].trim()};
@@ -2598,8 +2608,11 @@ function splitQuarryMaterial(rVal) {
   m = rVal.match(/^DMC\s+Tenterfield\s+(.+)$/i);
   if (m) return {pickup: 'DMC Tenterfield', product: m[1].trim()};
 
-  m = rVal.match(/^Adbri\s+Kalbar\s+(10mm|20mm)$/i);
-  if (m) return {pickup: 'Adbri Kalbar', product: m[1]};
+  m = rVal.match(/^Adbri\s+Kalbar\s+(.+)$/i);
+  if (m) return {pickup: 'Adbri Kalbar', product: m[1].trim()};
+
+  m = rVal.match(/^ADBRI\s*-\s*Kalbar(?:\s+Quarry)?\s+(.+)$/i);
+  if (m) return {pickup: 'Adbri Kalbar', product: m[1].trim()};
 
   m = rVal.match(/^(Ipswich|Tamborine)\s+Washout\s+Waste$/i);
   if (m) return {pickup: m[1], product: 'Washout Waste'};
@@ -2619,12 +2632,14 @@ function splitQuarryMaterial(rVal) {
     [/^(Mt Cotton)\s+(.+)$/i, 'Mt Cotton'],
     [/^(Fraser Coast)\s+(.+)$/i, 'Fraser Coast'],
     [/^(Fraser)\s+(.+)$/i, 'Fraser'],
+    [/^(Coastal(?: Sands)?)\s+Fine\s+Sand$/i, 'Coastal Sands'],
     [/^(Coastal)\s+(.+)$/i, 'Coastal Sands'],
     [/^(Coastal Sands)$/i, null],
     [/^(Lantrak)$/i, null],
     [/^(Ipswich Transfer)$/i, null],
     [/^(Holcim Petrie)$/i, null],
     [/^(ADBRI\s*-\s*Kalbar Quarry)$/i, 'Adbri Kalbar'],
+    [/^(ADBRI\s*-\s*Kalbar)$/i, 'Adbri Kalbar'],
   ];
 
   for (const [pat, quarryOverride] of patterns) {
