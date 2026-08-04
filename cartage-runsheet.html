@@ -569,6 +569,128 @@
     cursor: pointer;
   }
   .preset-chip:active { background: #e2e8f0; }
+
+  .help-btn {
+    margin-left: auto;
+    background: rgba(255,255,255,0.10);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    color: var(--white);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .help-btn:active { transform: scale(0.98); }
+  .help-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.72);
+    z-index: 5000;
+    padding: 14px;
+    overflow-y: auto;
+  }
+  .help-overlay.show { display: block; }
+  .help-panel {
+    max-width: 520px;
+    margin: 18px auto;
+    background: var(--white);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.30);
+  }
+  .help-head {
+    background: var(--navy);
+    color: var(--white);
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 3px solid var(--orange);
+  }
+  .help-head h2 { font-size: 18px; margin-bottom: 4px; }
+  .help-head p { font-size: 12px; color: #cbd5e1; line-height: 1.35; }
+  .help-close {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: var(--white);
+    border-radius: 999px;
+    width: 34px;
+    height: 34px;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .help-body { padding: 16px; }
+  .help-voice-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .help-voice-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .help-voice-btn.primary {
+    background: linear-gradient(135deg,var(--orange),var(--orange-dk));
+    color: var(--white);
+  }
+  .help-voice-btn.secondary {
+    background: #f8fafc;
+    border: 1.5px solid var(--border);
+    color: var(--text);
+  }
+  .help-note {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 11px 12px;
+    color: #92400e;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .help-step {
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .help-step:last-child { border-bottom: none; }
+  .help-num {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fff7ed;
+    color: var(--orange-dk);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 900;
+  }
+  .help-step h3 { font-size: 14px; margin-bottom: 3px; color: var(--text); }
+  .help-step p { font-size: 12px; line-height: 1.45; color: var(--label); }
+  .help-highlight {
+    position: relative;
+    z-index: 3000;
+    outline: 3px solid var(--orange) !important;
+    box-shadow: 0 0 0 6px rgba(245,158,11,0.24) !important;
+    border-radius: 12px !important;
+    transition: box-shadow 0.2s, outline 0.2s;
+  }
+
 </style>
 </head>
 <body>
@@ -580,6 +702,58 @@
 
 <div class="toast" id="toast"></div>
 
+<div class="help-overlay" id="helpOverlay" onclick="if(event.target.id==='helpOverlay') closeHelp()">
+  <div class="help-panel" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="help-head">
+      <div>
+        <h2 id="helpTitle">Driver App Help</h2>
+        <p>Tap a step to jump to that part of the form. Use voice guide to hear the instructions.</p>
+      </div>
+      <button type="button" class="help-close" onclick="closeHelp()" aria-label="Close help">&times;</button>
+    </div>
+    <div class="help-body">
+      <div class="help-voice-row">
+        <button type="button" class="help-voice-btn primary" onclick="playHelpVoice()">Play voice guide</button>
+        <button type="button" class="help-voice-btn secondary" onclick="stopHelpVoice()">Stop voice</button>
+      </div>
+      <div class="help-note">
+        This is a guide only. It will not submit anything or change the run sheet.
+      </div>
+      <div class="help-step" onclick="helpJump('#truckNo', 'Step 1. Enter your truck number first. This helps the app find your rego, location, driver name, and allocated jobs.')">
+        <div class="help-num">1</div><div><h3>Enter Truck No. first</h3><p>Start here so the app can load the correct truck and job details.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('#driverName', 'Step 2. Check your driver name and Driver ID. If the ID is blank, enter it manually before submitting.')">
+        <div class="help-num">2</div><div><h3>Check Driver Name and Driver ID</h3><p>Confirm your name and ID are correct. Enter missing details if needed.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('#depot', 'Step 3. Check the location. If Other is selected, enter the location in the box that appears.')">
+        <div class="help-num">3</div><div><h3>Check Location</h3><p>Use the selected location or enter another location if required.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('#loadJobsBanner', 'Step 4. If allocated jobs are available, tap Load Today's Jobs. Otherwise add loads manually.')">
+        <div class="help-num">4</div><div><h3>Load or add jobs</h3><p>Tap Load Today's Jobs when shown, or add loads manually.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('#loadsContainer', 'Step 5. For each load, add the docket photo first. Take a photo or choose one from Library or File.')">
+        <div class="help-num">5</div><div><h3>Scan docket first</h3><p>For each load, add the weighbridge docket photo before entering details.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('#loadsContainer', 'Step 6. Review the docket number, gross, tare, and tonnes. If the docket is handwritten or unclear, manually enter the details.')">
+        <div class="help-num">6</div><div><h3>Review scanned details</h3><p>Correct anything the scan missed or read incorrectly.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('#runSheetPhotoBtn', 'Step 7. Upload your completed run sheet photo. You can take a new photo or choose one from Library or File.')">
+        <div class="help-num">7</div><div><h3>Upload run sheet</h3><p>Add a photo of the completed paper run sheet.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('#logbookUploadWrap', 'Step 8. Add a logbook photo if required. This section appears with the run sheet upload area.')">
+        <div class="help-num">8</div><div><h3>Upload logbook if required</h3><p>Add a logbook photo when it is required for the day.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('#sigCanvas', 'Step 9. Sign the run sheet before submitting.')">
+        <div class="help-num">9</div><div><h3>Sign</h3><p>Use your finger to sign in the signature box.</p></div>
+      </div>
+      <div class="help-step" onclick="helpJump('.submit-btn', 'Step 10. Submit once everything has been checked. Do not close the page until the success message appears.')">
+        <div class="help-num">10</div><div><h3>Submit</h3><p>Submit after all required photos, load details, and signature are complete.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div class="header">
   <img src="https://cdn.prod.website-files.com/60d0143cfc485a21fd7a0e9c/60d01bc0000a6decc8e1ec32_cartage-logo-275-2.png"
        alt="Cartage Australia"
@@ -589,6 +763,7 @@
     <h1>Cartage Australia</h1>
     <p>Daily Run Sheet &amp; Dockets</p>
   </div>
+  <button onclick="openHelp()" id="helpBtn" class="help-btn">Help</button>
   <button onclick="toggleDispatcher()" id="dispatcherToggleBtn" style="display:none; margin-left:auto; background:transparent; border:1.5px solid rgba(255,255,255,0.3); color:white; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">Dispatcher</button>
 </div>
 
@@ -2437,6 +2612,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const dispatcherToggleBtn = document.getElementById('dispatcherToggleBtn');
     if (dispatcherToggleBtn) dispatcherToggleBtn.style.display = 'none';
 
+    const helpBtn = document.getElementById('helpBtn');
+    if (helpBtn) helpBtn.style.display = 'none';
+
     return;
   }
 
@@ -3303,6 +3481,59 @@ function confirmProduct(idx, confirmed) {
 function handleProductChange(idx) {
   const suggestEl = document.getElementById('productSuggest'+idx);
   if (suggestEl) suggestEl.style.display = 'none';
+}
+
+
+const HELP_VOICE_TEXT = `Cartage Australia driver app help. First, enter your truck number. This should be done before anything else so the app can load your rego, location, driver name, and allocated jobs. Next, check your driver name and Driver ID. If anything is missing, enter it manually. Check the location and use Other only when required. If allocated jobs are available, tap Load Today's Jobs. For each load, add the weighbridge docket photo first. You can take a new photo, or choose one from Library or File. Review the scanned docket number, gross, tare, and tonnes. If a docket is handwritten or unclear, manually enter the details. Upload your completed run sheet photo. Add a logbook photo if required. Sign in the signature box. Finally, submit the run sheet and wait for the success message before closing the page.`;
+let helpSpeechUtterance = null;
+let helpHighlightTimer = null;
+
+function openHelp() {
+  const overlay = document.getElementById('helpOverlay');
+  if (overlay) overlay.classList.add('show');
+}
+
+function closeHelp() {
+  const overlay = document.getElementById('helpOverlay');
+  if (overlay) overlay.classList.remove('show');
+  stopHelpVoice();
+  clearHelpHighlight();
+}
+
+function playHelpVoice(text) {
+  const voiceText = text || HELP_VOICE_TEXT;
+  if (!('speechSynthesis' in window)) {
+    showToast('Voice guide is not supported on this device/browser.', 'error');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  helpSpeechUtterance = new SpeechSynthesisUtterance(voiceText);
+  helpSpeechUtterance.rate = 0.92;
+  helpSpeechUtterance.pitch = 1;
+  helpSpeechUtterance.lang = 'en-AU';
+  window.speechSynthesis.speak(helpSpeechUtterance);
+}
+
+function stopHelpVoice() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+function clearHelpHighlight() {
+  document.querySelectorAll('.help-highlight').forEach(el => el.classList.remove('help-highlight'));
+  if (helpHighlightTimer) clearTimeout(helpHighlightTimer);
+}
+
+function helpJump(selector, voiceText) {
+  closeHelp();
+  setTimeout(() => {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    clearHelpHighlight();
+    el.classList.add('help-highlight');
+    helpHighlightTimer = setTimeout(() => el.classList.remove('help-highlight'), 4500);
+    playHelpVoice(voiceText);
+  }, 120);
 }
 
 function showLoading(msg) { document.getElementById('loadingMsg').textContent=msg||'Please wait...'; document.getElementById('loadingOverlay').classList.add('show'); }
