@@ -825,6 +825,45 @@
     margin-top: 8px;
     line-height: 1.4;
   }
+  .dispatch-summary-stat small {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: rgba(255,255,255,0.78);
+    font-weight: 700;
+  }
+  .dispatch-filterbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .dispatch-filterbar input,
+  .dispatch-filterbar select {
+    border: 1px solid rgba(26,34,53,0.18);
+    border-radius: 10px;
+    padding: 9px 10px;
+    font-size: 12px;
+    color: var(--text);
+    background: #ffffff;
+    min-width: 150px;
+    flex: 1;
+  }
+  .dispatch-filterbar select {
+    flex: 0 1 190px;
+  }
+  .dispatch-filterbar .dispatch-filter-small {
+    flex: 0 1 145px;
+  }
+  @media (max-width: 560px) {
+    .dispatch-filterbar input,
+    .dispatch-filterbar select,
+    .dispatch-filterbar .dispatch-filter-small {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+  }
 
 </style>
 </head>
@@ -934,22 +973,41 @@
         </div>
         <div class="dispatch-summary-total">
           <div class="dispatch-summary-stat"><span>Total Loads</span><strong id="dispatchSummaryTotalLoads">0</strong></div>
-          <div class="dispatch-summary-stat"><span>Trucks on Road</span><strong id="dispatchSummaryTruckCount">0</strong></div>
+          <div class="dispatch-summary-stat"><span>Trucks on Road</span><strong id="dispatchSummaryTruckCount">0</strong><small id="dispatchSummaryTruckBreakdown">0 company owned, 0 subbies</small></div>
           <div class="dispatch-summary-stat"><span>Loads / Truck</span><strong id="dispatchSummaryLoadRatio">0.00</strong></div>
           <div class="dispatch-summary-stat"><span>Concrete Plants</span><strong id="dispatchSummaryPlantCount">0</strong></div>
         </div>
         <div class="dispatch-summary-body">
           <div class="dispatch-summary-block">
+            <h4>Previous 14 Days</h4>
+            <div id="dispatchFortnightChart" class="dispatch-chart-wrap"></div>
+          </div>
+          <div class="dispatch-summary-block">
             <h4>Material Summary</h4>
+            <div class="dispatch-filterbar">
+              <input id="dispatchMaterialFilter" type="search" placeholder="Filter material / product">
+              <select id="dispatchMaterialSort">
+                <option value="loadsDesc">Loads: high to low</option>
+                <option value="loadsAsc">Loads: low to high</option>
+                <option value="productAsc">Product: A to Z</option>
+              </select>
+            </div>
             <div id="dispatchMaterialSummary"></div>
           </div>
           <div class="dispatch-summary-block">
             <h4>Concrete Plant Requirements</h4>
+            <div class="dispatch-filterbar">
+              <select id="dispatchPlantFilter">
+                <option value="">All concrete plants</option>
+              </select>
+              <input id="dispatchPlantProductFilter" type="search" placeholder="Filter product / material">
+              <select id="dispatchPlantSort" class="dispatch-filter-small">
+                <option value="plantAsc">Plant: A to Z</option>
+                <option value="loadsDesc">Loads: high to low</option>
+                <option value="loadsAsc">Loads: low to high</option>
+              </select>
+            </div>
             <div id="dispatchPlantSummary"></div>
-          </div>
-          <div class="dispatch-summary-block">
-            <h4>Previous 14 Days</h4>
-            <div id="dispatchFortnightChart" class="dispatch-chart-wrap"></div>
           </div>
         </div>
       </div>
@@ -1655,6 +1713,7 @@ function processScheduleFile(input) {
                         String(today.getFullYear()).slice(2);
 
       const allDaysData = {};
+      const allDaysSummaryData = {};
       let todaySheetName = '';
       let activeSummaryDate = todayDate;
 
@@ -1662,23 +1721,28 @@ function processScheduleFile(input) {
         const ws = workbook.Sheets[sName];
         const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
         const parsed = parseScheduleRows(rows);
+        const parsedSummary = parseDispatchSummaryRows(rows, parsed);
         const dateStr = getScheduleDateFromSheetName(sName) || sName;
         allDaysData[dateStr] = parsed;
+        allDaysSummaryData[dateStr] = parsedSummary;
         if (dateStr === todayDate) todaySheetName = sName;
       }
 
       scheduleData = allDaysData[todayDate] || {};
+      let activeSummaryData = allDaysSummaryData[todayDate] || {};
       const todayLoadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+      const todaySummaryLoadCount = Object.values(activeSummaryData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
 
-      if (todayLoadCount === 0) {
+      if (todayLoadCount === 0 && todaySummaryLoadCount === 0) {
         const sortedDates = Object.keys(allDaysData)
           .filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k))
           .sort((a,b) => dateKeyToNum(b) - dateKeyToNum(a));
         for (const dateStr of sortedDates) {
           if (dateStr === todayDate) continue;
-          const count = Object.values(allDaysData[dateStr]).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+          const count = Object.values(allDaysSummaryData[dateStr] || allDaysData[dateStr] || {}).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
           if (count > 0) {
             scheduleData = allDaysData[dateStr];
+            activeSummaryData = allDaysSummaryData[dateStr] || scheduleData;
             todaySheetName = dateStr;
             activeSummaryDate = dateStr;
             break;
@@ -1688,14 +1752,15 @@ function processScheduleFile(input) {
 
       scheduleSheetDate = todayDate;
       const sheetName = todaySheetName || dateSheets[dateSheets.length - 1];
-      const daySummaryForUpload = summariseDispatchDay(scheduleData);
+      const daySummaryForUpload = summariseDispatchDay(activeSummaryData);
       const truckCount = daySummaryForUpload.trucksOnRoad;
       const loadCount = daySummaryForUpload.totalLoads;
-      renderDispatchSummary(scheduleData, sheetName, allDaysData, activeSummaryDate);
+      renderDispatchSummary(activeSummaryData, sheetName, allDaysSummaryData, activeSummaryDate);
 
       const todayPayload = {date: todayDate, sheet: sheetName, sheetDate: todayDate, data: scheduleData};
-      const fullPayload = Object.assign({}, todayPayload, {allDays: allDaysData});
+      const fullPayload = Object.assign({}, todayPayload, {allDays: allDaysData, allDaysSummary: allDaysSummaryData});
       localStorage.setItem('cartage_schedule', JSON.stringify(fullPayload));
+      localStorage.setItem('cartage_dispatch_summary', JSON.stringify(fullPayload));
 
       try {
         const saveRes = await fetch(CLOUDFLARE_WORKER, {
@@ -1756,11 +1821,152 @@ function makeDispatchSummaryTable(headers, rows) {
   return '<div class="dispatch-table-wrap"><table class="dispatch-summary-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
 }
 
+
+function cloneDispatchTruckData(truckData, fleetType) {
+  const cloned = Object.assign({}, truckData || {});
+  cloned.loads = Array.isArray(truckData && truckData.loads) ? truckData.loads.slice() : [];
+  cloned.fleetType = fleetType;
+  return cloned;
+}
+
+function normalizeDispatchRego(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function extractDispatchSubbyRegoFromCells() {
+  const subbyMarkerRegex = /\bSUBB(?:Y|IE)S?\s*\d*\b/i;
+
+  function isLikelyRego(value) {
+    const token = normalizeDispatchRego(value);
+    if (!token) return '';
+    if (!/[A-Z]/.test(token) || !/[0-9]/.test(token)) return '';
+    if (!/^[A-Z0-9]{5,8}$/.test(token)) return '';
+    if (/^(LOAD\d*|PRELOAD|\d{1,2}MM|CLASSA|CLASSB|PROJECT|ELIMBAH|IPSWICH|SWANBANK|TENTERFIELD|BRACALBA|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC)$/i.test(token)) return '';
+    return token;
+  }
+
+  for (const cell of arguments) {
+    const text = String(cell || '').toUpperCase().trim();
+    if (!text || text === 'NAN' || text === '0') continue;
+
+    const markerMatch = text.match(subbyMarkerRegex);
+    if (!markerMatch) continue;
+
+    const beforeSubby = text.slice(0, markerMatch.index).trim();
+    const direct = isLikelyRego(beforeSubby);
+    if (direct) return direct;
+
+    const parts = beforeSubby.split(/\s+/).filter(Boolean);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const one = isLikelyRego(parts[i]);
+      if (one) return one;
+      if (i > 0) {
+        const two = isLikelyRego(parts[i - 1] + parts[i]);
+        if (two) return two;
+      }
+    }
+
+    const candidates = beforeSubby.match(/[A-Z0-9][A-Z0-9\s-]{3,12}[A-Z0-9]/g) || [];
+    for (let i = candidates.length - 1; i >= 0; i--) {
+      const found = isLikelyRego(candidates[i]);
+      if (found) return found;
+    }
+  }
+
+  return '';
+}
+
+function parseDispatchSubbyRowsForSummary(rows) {
+  const allSubbies = {};
+  const maxRow = rows.length;
+
+  for (let i = 0; i < maxRow; i++) {
+    const row = rows[i] || [];
+    const descCols = [];
+
+    for (let c = 0; c < row.length; c++) {
+      if (cleanCell(row[c]) === 'Description') descCols.push(c);
+    }
+
+    if (descCols.length === 0) continue;
+
+    for (const bc of descCols) {
+      const regoCandidates = [cleanCell(row[bc + 1])];
+
+      for (let r = Math.max(0, i - 6); r <= i; r++) {
+        const nearRow = rows[r] || [];
+        regoCandidates.push(cleanCell(nearRow[bc + 1]));
+        regoCandidates.push(cleanCell(nearRow[bc]));
+      }
+
+      const regoKey = extractDispatchSubbyRegoFromCells.apply(null, regoCandidates);
+      if (!regoKey) continue;
+
+      const loads = [];
+      for (let j = i + 1; j < maxRow; j++) {
+        const loadRow = rows[j] || [];
+        const descCol = cleanCell(loadRow[bc]);
+        const jobCol = normaliseJobText(cleanCell(loadRow[bc + 1]));
+
+        if (descCol === 'Description') break;
+        if (descCol.includes('Total Rate')) break;
+        if (/^Total/i.test(descCol)) break;
+
+        if (/^(Preload|Load\s*\d+)$/i.test(descCol) && jobCol && jobCol !== '0' && jobCol.toLowerCase() !== 'nan') {
+          const split = splitJobString(jobCol);
+          const material = splitQuarryMaterial(split.pickup);
+          loads.push({
+            label: descCol,
+            originalJob: jobCol,
+            pickup: material.pickup || split.pickup,
+            product: material.product || '',
+            deliverTo: split.deliverTo || '',
+            comments: split.comments || '',
+            noDocketRequired: isNoDocketJob(jobCol)
+          });
+        }
+      }
+
+      if (loads.length > 0) {
+        const key = normalizeDispatchRego(regoKey);
+        if (!allSubbies[key]) allSubbies[key] = {depot: 'Subcontractor', driver: '', fleetType: 'subby', loads: []};
+        allSubbies[key].loads = allSubbies[key].loads.concat(loads);
+      }
+    }
+  }
+
+  return allSubbies;
+}
+
+function parseDispatchSummaryRows(rows, companyData) {
+  const summaryData = {};
+
+  Object.entries(companyData || {}).forEach(([truckNo, truckData]) => {
+    summaryData[truckNo] = cloneDispatchTruckData(truckData, 'company');
+  });
+
+  const subbyData = parseDispatchSubbyRowsForSummary(rows);
+  Object.entries(subbyData || {}).forEach(([rego, truckData]) => {
+    const key = summaryData[rego] ? ('SUBBY-' + rego) : rego;
+    summaryData[key] = truckData;
+  });
+
+  return summaryData;
+}
+
+let dispatchSummaryTableState = {
+  materialRows: [],
+  plantRows: [],
+  plantOptions: []
+};
+
 function summariseDispatchDay(dayData) {
   const materialCounts = {};
   const plantCounts = {};
   const plantProductCounts = {};
   const activeTruckSet = new Set();
+  const companyTruckSet = new Set();
+  const subbyTruckSet = new Set();
   let totalLoads = 0;
 
   Object.entries(dayData || {}).forEach(([truckNo, truck]) => {
@@ -1782,12 +1988,22 @@ function summariseDispatchDay(dayData) {
       plantProductCounts[plantKey] = (plantProductCounts[plantKey] || 0) + 1;
     });
 
-    if (truckHasRoadLoad) activeTruckSet.add(String(truckNo || '').trim());
+    if (truckHasRoadLoad) {
+      const truckKey = String(truckNo || '').trim();
+      activeTruckSet.add(truckKey);
+      if ((truck && truck.fleetType) === 'subby') {
+        subbyTruckSet.add(truckKey);
+      } else {
+        companyTruckSet.add(truckKey);
+      }
+    }
   });
 
   return {
     totalLoads,
     trucksOnRoad: activeTruckSet.size,
+    companyTrucksOnRoad: companyTruckSet.size,
+    subbyTrucksOnRoad: subbyTruckSet.size,
     loadsPerTruck: activeTruckSet.size ? totalLoads / activeTruckSet.size : 0,
     materialCounts,
     plantCounts,
@@ -1805,6 +2021,27 @@ function makeDispatchDateKey(dateObj) {
   return String(dateObj.getDate()).padStart(2, '0') + '.' +
          String(dateObj.getMonth() + 1).padStart(2, '0') + '.' +
          String(dateObj.getFullYear()).slice(2);
+}
+
+function dispatchDateKeyToNumber(dateKey) {
+  const match = String(dateKey || '').match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
+  if (!match) return 0;
+  return (2000 + Number(match[3])) * 10000 + Number(match[2]) * 100 + Number(match[1]);
+}
+
+function getBestDispatchSummaryDate(allDaysData, preferredDate) {
+  const data = allDaysData || {};
+  if (preferredDate && data[preferredDate] && summariseDispatchDay(data[preferredDate]).totalLoads > 0) return preferredDate;
+
+  const datedKeys = Object.keys(data)
+    .filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k))
+    .sort((a, b) => dispatchDateKeyToNumber(b) - dispatchDateKeyToNumber(a));
+
+  for (const key of datedKeys) {
+    if (summariseDispatchDay(data[key]).totalLoads > 0) return key;
+  }
+
+  return datedKeys[0] || preferredDate || '';
 }
 
 function formatDispatchChartDate(dateKey) {
@@ -1895,6 +2132,126 @@ function renderDispatchFortnightChart(allDaysData, endDateKey) {
     '<div class="dispatch-chart-note">Chart uses the date tabs available in the uploaded dispatch workbook and refreshes on each upload.</div>';
 }
 
+function setDispatchFilterListeners() {
+  ['dispatchMaterialFilter', 'dispatchMaterialSort', 'dispatchPlantFilter', 'dispatchPlantProductFilter', 'dispatchPlantSort'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.dispatchListenerAttached === 'true') return;
+    el.dataset.dispatchListenerAttached = 'true';
+    el.addEventListener('input', renderFilteredDispatchSummaryTables);
+    el.addEventListener('change', renderFilteredDispatchSummaryTables);
+  });
+}
+
+function sortDispatchRows(rows, sortMode, type) {
+  const sorted = rows.slice();
+
+  if (sortMode === 'loadsAsc') {
+    sorted.sort((a, b) => Number(a[a.length - 1]) - Number(b[b.length - 1]));
+  } else if (sortMode === 'loadsDesc') {
+    sorted.sort((a, b) => Number(b[b.length - 1]) - Number(a[a.length - 1]));
+  } else if (sortMode === 'productAsc') {
+    sorted.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || Number(b[1]) - Number(a[1]));
+  } else if (sortMode === 'plantAsc' && type === 'plant') {
+    sorted.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || String(a[1]).localeCompare(String(b[1])) || Number(b[2]) - Number(a[2]));
+  }
+
+  return sorted;
+}
+
+function renderFilteredDispatchSummaryTables() {
+  const materialFilter = (document.getElementById('dispatchMaterialFilter')?.value || '').toLowerCase().trim();
+  const materialSort = document.getElementById('dispatchMaterialSort')?.value || 'loadsDesc';
+  const plantFilter = document.getElementById('dispatchPlantFilter')?.value || '';
+  const plantProductFilter = (document.getElementById('dispatchPlantProductFilter')?.value || '').toLowerCase().trim();
+  const plantSort = document.getElementById('dispatchPlantSort')?.value || 'plantAsc';
+
+  let materialRows = dispatchSummaryTableState.materialRows.slice();
+  if (materialFilter) {
+    materialRows = materialRows.filter(row => String(row[0]).toLowerCase().includes(materialFilter));
+  }
+  materialRows = sortDispatchRows(materialRows, materialSort, 'material');
+
+  let plantRows = dispatchSummaryTableState.plantRows.slice();
+  if (plantFilter) {
+    plantRows = plantRows.filter(row => row[0] === plantFilter);
+  }
+  if (plantProductFilter) {
+    plantRows = plantRows.filter(row => String(row[1]).toLowerCase().includes(plantProductFilter));
+  }
+  plantRows = sortDispatchRows(plantRows, plantSort, 'plant');
+
+  const materialEl = document.getElementById('dispatchMaterialSummary');
+  if (materialEl) materialEl.innerHTML = makeDispatchSummaryTable(['Product / Material', 'Loads'], materialRows);
+
+  const plantEl = document.getElementById('dispatchPlantSummary');
+  if (plantEl) plantEl.innerHTML = makeDispatchSummaryTable(['Concrete Plant', 'Product / Material', 'Loads'], plantRows);
+}
+
+function populateDispatchPlantFilter(plantOptions) {
+  const plantFilterEl = document.getElementById('dispatchPlantFilter');
+  if (!plantFilterEl) return;
+
+  const current = plantFilterEl.value;
+  plantFilterEl.innerHTML = '<option value="">All concrete plants</option>' +
+    plantOptions.map(plant => '<option value="' + escapeDispatchHtml(plant) + '">' + escapeDispatchHtml(plant) + '</option>').join('');
+
+  if (plantOptions.includes(current)) plantFilterEl.value = current;
+}
+
+
+function renderStoredDispatchSummaryPayload(payload, sourceText) {
+  if (!payload || typeof payload !== 'object') return false;
+
+  const allDaysData = payload.allDaysSummary || payload.allDays || {};
+  const preferredDate = payload.sheetDate || payload.date || '';
+  const activeDateKey = getBestDispatchSummaryDate(allDaysData, preferredDate);
+  const dayData = allDaysData[activeDateKey] || payload.data || {};
+
+  if (!dayData || Object.keys(dayData).length === 0) return false;
+
+  const label = activeDateKey || payload.sheet || 'Previous upload';
+  renderDispatchSummary(dayData, label, allDaysData, activeDateKey);
+
+  const subtext = document.getElementById('dispatchSummarySubtext');
+  if (subtext) {
+    subtext.textContent = 'Showing previous upload' + (sourceText ? ' from ' + sourceText : '') + ': ' + label + '. This refreshes when a new dispatch sheet is uploaded.';
+  }
+
+  return true;
+}
+
+function loadPreviousDispatchSummary() {
+  let loadedFromBrowser = false;
+
+  try {
+    const storedSummary = localStorage.getItem('cartage_dispatch_summary') || localStorage.getItem('cartage_schedule');
+    if (storedSummary) {
+      loadedFromBrowser = renderStoredDispatchSummaryPayload(JSON.parse(storedSummary), 'this browser');
+    }
+  } catch (err) {
+    console.warn('Could not load stored dispatch summary', err);
+  }
+
+  fetch(CLOUDFLARE_WORKER + '?t=' + Date.now())
+    .then(res => res.ok ? res.json() : null)
+    .then(payload => {
+      if (!payload) return;
+      const loadedFromWorker = renderStoredDispatchSummaryPayload(payload, 'the last saved dispatch upload');
+      if (loadedFromWorker) {
+        try {
+          localStorage.setItem('cartage_dispatch_summary', JSON.stringify(payload));
+        } catch (err) {
+          console.warn('Could not store latest dispatch summary', err);
+        }
+      }
+    })
+    .catch(err => {
+      if (!loadedFromBrowser) {
+        console.warn('Could not fetch previous dispatch summary', err);
+      }
+    });
+}
+
 function renderDispatchSummary(dayData, sheetLabel, allDaysData, activeDateKey) {
   const summaryEl = document.getElementById('dispatchSummary');
   if (!summaryEl) return;
@@ -1905,29 +2262,33 @@ function renderDispatchSummary(dayData, sheetLabel, allDaysData, activeDateKey) 
   const plantProductCounts = summary.plantProductCounts;
 
   const materialRows = Object.entries(materialCounts)
-    .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([product, count]) => [product, count]);
 
   const plantRows = Object.entries(plantProductCounts)
-    .sort((a,b) => {
-      const [plantA, productA] = a[0].split('||');
-      const [plantB, productB] = b[0].split('||');
-      return plantA.localeCompare(plantB) || productA.localeCompare(productB);
-    })
     .map(([key, count]) => {
       const [plant, product] = key.split('||');
       return [plant, product, count];
     });
 
+  const plantOptions = Object.keys(plantCounts).sort((a, b) => a.localeCompare(b));
   const ratioText = summary.trucksOnRoad ? summary.loadsPerTruck.toFixed(2) : '0.00';
+
+  dispatchSummaryTableState = {
+    materialRows,
+    plantRows,
+    plantOptions
+  };
 
   document.getElementById('dispatchSummaryTotalLoads').textContent = String(summary.totalLoads);
   document.getElementById('dispatchSummaryTruckCount').textContent = String(summary.trucksOnRoad);
+  document.getElementById('dispatchSummaryTruckBreakdown').textContent = String(summary.companyTrucksOnRoad) + ' company owned, ' + String(summary.subbyTrucksOnRoad) + ' subbies';
   document.getElementById('dispatchSummaryLoadRatio').textContent = ratioText;
   document.getElementById('dispatchSummaryPlantCount').textContent = String(Object.keys(plantCounts).length);
   document.getElementById('dispatchSummarySubtext').textContent = 'Latest uploaded day: ' + (sheetLabel || 'Uploaded sheet') + '. This table refreshes whenever a new dispatch sheet is uploaded.';
-  document.getElementById('dispatchMaterialSummary').innerHTML = makeDispatchSummaryTable(['Product / Material', 'Loads'], materialRows);
-  document.getElementById('dispatchPlantSummary').innerHTML = makeDispatchSummaryTable(['Concrete Plant', 'Product / Material', 'Loads'], plantRows);
+
+  populateDispatchPlantFilter(plantOptions);
+  setDispatchFilterListeners();
+  renderFilteredDispatchSummaryTables();
   renderDispatchFortnightChart(allDaysData || {}, activeDateKey || sheetLabel);
 
   summaryEl.style.display = 'block';
@@ -2977,6 +3338,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) helpBtn.style.display = 'none';
+
+    loadPreviousDispatchSummary();
 
     return;
   }
