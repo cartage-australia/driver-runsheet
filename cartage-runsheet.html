@@ -691,6 +691,141 @@
     transition: box-shadow 0.2s, outline 0.2s;
   }
 
+
+
+  .dispatch-summary-card {
+    margin-top: 16px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(26,34,53,0.12);
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15,23,42,0.08);
+  }
+  .dispatch-summary-head {
+    background: var(--navy);
+    color: #ffffff;
+    padding: 16px;
+  }
+  .dispatch-summary-head h3 {
+    font-size: 15px;
+    line-height: 1.2;
+    margin: 0 0 4px;
+    font-weight: 800;
+  }
+  .dispatch-summary-head p {
+    font-size: 12px;
+    color: rgba(255,255,255,0.78);
+    margin: 0;
+    line-height: 1.45;
+  }
+  .dispatch-summary-total {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    padding: 14px;
+    background: #f8fafc;
+  }
+  .dispatch-summary-stat {
+    background: var(--navy);
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 13px 14px;
+  }
+  .dispatch-summary-stat span {
+    display: block;
+    font-size: 11px;
+    opacity: 0.72;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 4px;
+  }
+  .dispatch-summary-stat strong {
+    display: block;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .dispatch-summary-body {
+    padding: 14px;
+  }
+  .dispatch-summary-block {
+    margin-top: 14px;
+  }
+  .dispatch-summary-block:first-child {
+    margin-top: 0;
+  }
+  .dispatch-summary-block h4 {
+    font-size: 12px;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    font-weight: 800;
+  }
+  .dispatch-table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(26,34,53,0.12);
+  }
+  .dispatch-summary-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    min-width: 320px;
+  }
+  .dispatch-summary-table th {
+    background: var(--navy);
+    color: #ffffff;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    padding: 11px 12px;
+    white-space: nowrap;
+  }
+  .dispatch-summary-table td {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    color: var(--text);
+    font-size: 13px;
+    padding: 11px 12px;
+    vertical-align: top;
+  }
+  .dispatch-summary-table tr:last-child td {
+    border-bottom: 0;
+  }
+  .dispatch-summary-table td:last-child,
+  .dispatch-summary-table th:last-child {
+    text-align: right;
+    font-weight: 800;
+  }
+  .dispatch-summary-empty {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+  }
+
+  .dispatch-chart-wrap {
+    border-radius: 12px;
+    border: 1px solid rgba(26,34,53,0.12);
+    background: #ffffff;
+    overflow: hidden;
+    padding: 10px;
+  }
+  .dispatch-chart-wrap svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .dispatch-chart-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
 </style>
 </head>
 <body>
@@ -767,7 +902,7 @@
   <button onclick="toggleDispatcher()" id="dispatcherToggleBtn" style="display:none; margin-left:auto; background:transparent; border:1.5px solid rgba(255,255,255,0.3); color:white; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">Dispatcher</button>
 </div>
 
-<div id="dispatcherWrapper" style="display:none; padding:20px; max-width:480px; margin:0 auto;">
+<div id="dispatcherWrapper" style="display:none; padding:20px; max-width:920px; margin:0 auto;">
   <div class="section">
     <div class="section-title">Upload Today's Schedule</div>
     <div class="card">
@@ -791,6 +926,33 @@
         <span style="font-size:13px; color:var(--label);">Processing and saving schedule for all drivers...</span>
       </div>
       <div id="dispatchSuccess" style="display:none; margin-top:14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:14px; font-size:13px; color:#16a34a; line-height:1.6;"></div>
+
+      <div id="dispatchSummary" class="dispatch-summary-card" style="display:none;">
+        <div class="dispatch-summary-head">
+          <h3>Daily Dispatch Summary</h3>
+          <p id="dispatchSummarySubtext">Summary will refresh each time a dispatch sheet is uploaded.</p>
+        </div>
+        <div class="dispatch-summary-total">
+          <div class="dispatch-summary-stat"><span>Total Loads</span><strong id="dispatchSummaryTotalLoads">0</strong></div>
+          <div class="dispatch-summary-stat"><span>Trucks on Road</span><strong id="dispatchSummaryTruckCount">0</strong></div>
+          <div class="dispatch-summary-stat"><span>Loads / Truck</span><strong id="dispatchSummaryLoadRatio">0.00</strong></div>
+          <div class="dispatch-summary-stat"><span>Concrete Plants</span><strong id="dispatchSummaryPlantCount">0</strong></div>
+        </div>
+        <div class="dispatch-summary-body">
+          <div class="dispatch-summary-block">
+            <h4>Material Summary</h4>
+            <div id="dispatchMaterialSummary"></div>
+          </div>
+          <div class="dispatch-summary-block">
+            <h4>Concrete Plant Requirements</h4>
+            <div id="dispatchPlantSummary"></div>
+          </div>
+          <div class="dispatch-summary-block">
+            <h4>Previous 14 Days</h4>
+            <div id="dispatchFortnightChart" class="dispatch-chart-wrap"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1494,6 +1656,7 @@ function processScheduleFile(input) {
 
       const allDaysData = {};
       let todaySheetName = '';
+      let activeSummaryDate = todayDate;
 
       for (const sName of dateSheets) {
         const ws = workbook.Sheets[sName];
@@ -1517,6 +1680,7 @@ function processScheduleFile(input) {
           if (count > 0) {
             scheduleData = allDaysData[dateStr];
             todaySheetName = dateStr;
+            activeSummaryDate = dateStr;
             break;
           }
         }
@@ -1524,8 +1688,10 @@ function processScheduleFile(input) {
 
       scheduleSheetDate = todayDate;
       const sheetName = todaySheetName || dateSheets[dateSheets.length - 1];
-      const truckCount = Object.keys(scheduleData).length;
-      const loadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+      const daySummaryForUpload = summariseDispatchDay(scheduleData);
+      const truckCount = daySummaryForUpload.trucksOnRoad;
+      const loadCount = daySummaryForUpload.totalLoads;
+      renderDispatchSummary(scheduleData, sheetName, allDaysData, activeSummaryDate);
 
       const todayPayload = {date: todayDate, sheet: sheetName, sheetDate: todayDate, data: scheduleData};
       const fullPayload = Object.assign({}, todayPayload, {allDays: allDaysData});
@@ -1568,6 +1734,203 @@ function processScheduleFile(input) {
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+
+function escapeDispatchHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+
+function makeDispatchSummaryTable(headers, rows) {
+  if (!rows || rows.length === 0) {
+    return '<div class="dispatch-summary-empty">No loads found for this summary.</div>';
+  }
+
+  const head = headers.map(h => '<th>' + escapeDispatchHtml(h) + '</th>').join('');
+  const body = rows.map(row => {
+    return '<tr>' + row.map(cell => '<td>' + escapeDispatchHtml(cell) + '</td>').join('') + '</tr>';
+  }).join('');
+
+  return '<div class="dispatch-table-wrap"><table class="dispatch-summary-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+
+function summariseDispatchDay(dayData) {
+  const materialCounts = {};
+  const plantCounts = {};
+  const plantProductCounts = {};
+  const activeTruckSet = new Set();
+  let totalLoads = 0;
+
+  Object.entries(dayData || {}).forEach(([truckNo, truck]) => {
+    let truckHasRoadLoad = false;
+
+    (truck.loads || []).forEach(load => {
+      if (load.noDocketRequired) return;
+
+      totalLoads++;
+      truckHasRoadLoad = true;
+
+      const product = String(load.product || '').trim() || 'Unspecified';
+      const plant = String(load.deliverTo || '').trim() || 'Unspecified';
+
+      materialCounts[product] = (materialCounts[product] || 0) + 1;
+      plantCounts[plant] = (plantCounts[plant] || 0) + 1;
+
+      const plantKey = plant + '||' + product;
+      plantProductCounts[plantKey] = (plantProductCounts[plantKey] || 0) + 1;
+    });
+
+    if (truckHasRoadLoad) activeTruckSet.add(String(truckNo || '').trim());
+  });
+
+  return {
+    totalLoads,
+    trucksOnRoad: activeTruckSet.size,
+    loadsPerTruck: activeTruckSet.size ? totalLoads / activeTruckSet.size : 0,
+    materialCounts,
+    plantCounts,
+    plantProductCounts
+  };
+}
+
+function parseDispatchDateKey(dateKey) {
+  const match = String(dateKey || '').match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
+  if (!match) return null;
+  return new Date(2000 + Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+}
+
+function makeDispatchDateKey(dateObj) {
+  return String(dateObj.getDate()).padStart(2, '0') + '.' +
+         String(dateObj.getMonth() + 1).padStart(2, '0') + '.' +
+         String(dateObj.getFullYear()).slice(2);
+}
+
+function formatDispatchChartDate(dateKey) {
+  const parts = String(dateKey || '').split('.');
+  if (parts.length < 2) return dateKey || '';
+  return parts[0] + '/' + parts[1];
+}
+
+function buildDispatchFortnightRows(allDaysData, endDateKey) {
+  const endDate = parseDispatchDateKey(endDateKey) || new Date();
+  const rows = [];
+
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(endDate);
+    d.setDate(endDate.getDate() - i);
+    const key = makeDispatchDateKey(d);
+    const summary = summariseDispatchDay((allDaysData || {})[key] || {});
+
+    rows.push({
+      key,
+      label: formatDispatchChartDate(key),
+      loads: summary.totalLoads,
+      trucks: summary.trucksOnRoad
+    });
+  }
+
+  return rows;
+}
+
+function renderDispatchFortnightChart(allDaysData, endDateKey) {
+  const chartEl = document.getElementById('dispatchFortnightChart');
+  if (!chartEl) return;
+
+  const rows = buildDispatchFortnightRows(allDaysData, endDateKey);
+  const maxValue = Math.max(1, ...rows.map(r => Math.max(r.loads, r.trucks)));
+  const width = 760;
+  const height = 260;
+  const padLeft = 42;
+  const padRight = 18;
+  const padTop = 26;
+  const padBottom = 52;
+  const plotW = width - padLeft - padRight;
+  const plotH = height - padTop - padBottom;
+
+  function xAt(i) {
+    return rows.length === 1 ? padLeft + plotW / 2 : padLeft + (plotW * i / (rows.length - 1));
+  }
+
+  function yAt(value) {
+    return padTop + plotH - (plotH * value / maxValue);
+  }
+
+  function pointsFor(field) {
+    return rows.map((r, i) => xAt(i).toFixed(1) + ',' + yAt(r[field]).toFixed(1)).join(' ');
+  }
+
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(frac => {
+    const y = padTop + plotH - (plotH * frac);
+    const value = Math.round(maxValue * frac);
+    return '<line x1="' + padLeft + '" y1="' + y + '" x2="' + (width - padRight) + '" y2="' + y + '" stroke="#e2e8f0" stroke-width="1" />' +
+           '<text x="' + (padLeft - 8) + '" y="' + (y + 4) + '" font-size="10" fill="#64748b" text-anchor="end">' + value + '</text>';
+  }).join('');
+
+  const xLabels = rows.map((r, i) => {
+    const x = xAt(i);
+    return '<text x="' + x + '" y="' + (height - 24) + '" font-size="9" fill="#64748b" text-anchor="middle" transform="rotate(-35 ' + x + ' ' + (height - 24) + ')">' + escapeDispatchHtml(r.label) + '</text>';
+  }).join('');
+
+  const loadDots = rows.map((r, i) => '<circle cx="' + xAt(i).toFixed(1) + '" cy="' + yAt(r.loads).toFixed(1) + '" r="3.2" fill="#1a2235"><title>' + escapeDispatchHtml(r.key + ': ' + r.loads + ' loads') + '</title></circle>').join('');
+  const truckDots = rows.map((r, i) => '<circle cx="' + xAt(i).toFixed(1) + '" cy="' + yAt(r.trucks).toFixed(1) + '" r="3.2" fill="#f59e0b"><title>' + escapeDispatchHtml(r.key + ': ' + r.trucks + ' trucks') + '</title></circle>').join('');
+
+  const hasAnyData = rows.some(r => r.loads || r.trucks);
+
+  chartEl.innerHTML =
+    '<svg viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="Previous 14 days loads and trucks on road chart">' +
+      '<rect x="0" y="0" width="' + width + '" height="' + height + '" rx="12" fill="#ffffff" />' +
+      gridLines +
+      '<polyline fill="none" stroke="#1a2235" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="' + pointsFor('loads') + '" />' +
+      '<polyline fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="' + pointsFor('trucks') + '" />' +
+      loadDots + truckDots +
+      '<text x="' + padLeft + '" y="15" font-size="11" fill="#1a2235" font-weight="800">● Total loads</text>' +
+      '<text x="150" y="15" font-size="11" fill="#f59e0b" font-weight="800">● Trucks on road</text>' +
+      '<line x1="' + padLeft + '" y1="' + (padTop + plotH) + '" x2="' + (width - padRight) + '" y2="' + (padTop + plotH) + '" stroke="#94a3b8" stroke-width="1" />' +
+      '<line x1="' + padLeft + '" y1="' + padTop + '" x2="' + padLeft + '" y2="' + (padTop + plotH) + '" stroke="#94a3b8" stroke-width="1" />' +
+      xLabels +
+      (hasAnyData ? '' : '<text x="' + (width / 2) + '" y="' + (height / 2) + '" font-size="13" fill="#64748b" text-anchor="middle">No load history found in the uploaded sheet for this fortnight.</text>') +
+    '</svg>' +
+    '<div class="dispatch-chart-note">Chart uses the date tabs available in the uploaded dispatch workbook and refreshes on each upload.</div>';
+}
+
+function renderDispatchSummary(dayData, sheetLabel, allDaysData, activeDateKey) {
+  const summaryEl = document.getElementById('dispatchSummary');
+  if (!summaryEl) return;
+
+  const summary = summariseDispatchDay(dayData);
+  const materialCounts = summary.materialCounts;
+  const plantCounts = summary.plantCounts;
+  const plantProductCounts = summary.plantProductCounts;
+
+  const materialRows = Object.entries(materialCounts)
+    .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([product, count]) => [product, count]);
+
+  const plantRows = Object.entries(plantProductCounts)
+    .sort((a,b) => {
+      const [plantA, productA] = a[0].split('||');
+      const [plantB, productB] = b[0].split('||');
+      return plantA.localeCompare(plantB) || productA.localeCompare(productB);
+    })
+    .map(([key, count]) => {
+      const [plant, product] = key.split('||');
+      return [plant, product, count];
+    });
+
+  const ratioText = summary.trucksOnRoad ? summary.loadsPerTruck.toFixed(2) : '0.00';
+
+  document.getElementById('dispatchSummaryTotalLoads').textContent = String(summary.totalLoads);
+  document.getElementById('dispatchSummaryTruckCount').textContent = String(summary.trucksOnRoad);
+  document.getElementById('dispatchSummaryLoadRatio').textContent = ratioText;
+  document.getElementById('dispatchSummaryPlantCount').textContent = String(Object.keys(plantCounts).length);
+  document.getElementById('dispatchSummarySubtext').textContent = 'Latest uploaded day: ' + (sheetLabel || 'Uploaded sheet') + '. This table refreshes whenever a new dispatch sheet is uploaded.';
+  document.getElementById('dispatchMaterialSummary').innerHTML = makeDispatchSummaryTable(['Product / Material', 'Loads'], materialRows);
+  document.getElementById('dispatchPlantSummary').innerHTML = makeDispatchSummaryTable(['Concrete Plant', 'Product / Material', 'Loads'], plantRows);
+  renderDispatchFortnightChart(allDaysData || {}, activeDateKey || sheetLabel);
+
+  summaryEl.style.display = 'block';
 }
 
 function cleanCell(v) {
