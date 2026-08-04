@@ -1689,7 +1689,7 @@ function processScheduleFile(input) {
     try {
       const data = new Uint8Array(e.target.result);
       const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs');
-      const workbook = XLSX.read(data, {type: 'array'});
+      const workbook = XLSX.read(data, {type: 'array', cellStyles: true});
 
       function getScheduleDateFromSheetName(name) {
         const text = String(name || '').trim();
@@ -1721,7 +1721,8 @@ function processScheduleFile(input) {
         const ws = workbook.Sheets[sName];
         const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
         const parsed = parseScheduleRows(rows);
-        const parsedSummary = parseDispatchSummaryRows(rows, parsed);
+        const separatorRowIndex = findDispatchSubbySeparatorRow(ws, rows, XLSX);
+        const parsedSummary = parseDispatchSummaryRows(rows, parsed, separatorRowIndex);
         const dateStr = getScheduleDateFromSheetName(sName) || sName;
         allDaysData[dateStr] = parsed;
         allDaysSummaryData[dateStr] = parsedSummary;
@@ -1833,8 +1834,13 @@ function normalizeDispatchRego(value) {
   return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
+function isDispatchSubbyMarkerText(value) {
+  return /\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/i.test(String(value || '')) || /\bCOL\s+MOORE\b/i.test(String(value || ''));
+}
+
 function extractDispatchSubbyRegoFromCells() {
-  const subbyMarkerRegex = /\bSUBB(?:Y|IE)S?\s*\d*\b/i;
+  const subbyMarkerRegex = /\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/i;
+  const colMooreRegex = /\bCOL\s+MOORE\b/i;
 
   function isLikelyRego(value) {
     const token = normalizeDispatchRego(value);
@@ -1845,18 +1851,12 @@ function extractDispatchSubbyRegoFromCells() {
     return token;
   }
 
-  for (const cell of arguments) {
-    const text = String(cell || '').toUpperCase().trim();
-    if (!text || text === 'NAN' || text === '0') continue;
-
-    const markerMatch = text.match(subbyMarkerRegex);
-    if (!markerMatch) continue;
-
-    const beforeSubby = text.slice(0, markerMatch.index).trim();
-    const direct = isLikelyRego(beforeSubby);
+  function findRegoBeforeMarker(text, markerMatch) {
+    const beforeMarker = text.slice(0, markerMatch.index).trim();
+    const direct = isLikelyRego(beforeMarker);
     if (direct) return direct;
 
-    const parts = beforeSubby.split(/\s+/).filter(Boolean);
+    const parts = beforeMarker.split(/\s+/).filter(Boolean);
     for (let i = parts.length - 1; i >= 0; i--) {
       const one = isLikelyRego(parts[i]);
       if (one) return one;
@@ -1866,18 +1866,151 @@ function extractDispatchSubbyRegoFromCells() {
       }
     }
 
-    const candidates = beforeSubby.match(/[A-Z0-9][A-Z0-9\s-]{3,12}[A-Z0-9]/g) || [];
+    const candidates = beforeMarker.match(/[A-Z0-9][A-Z0-9\s-]{3,12}[A-Z0-9]/g) || [];
     for (let i = candidates.length - 1; i >= 0; i--) {
       const found = isLikelyRego(candidates[i]);
       if (found) return found;
+    }
+
+    return '';
+  }
+
+  for (const cell of arguments) {
+    const text = String(cell || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    if (!text || text === 'NAN' || text === '0') continue;
+
+    const subbyMatch = text.match(subbyMarkerRegex);
+    if (subbyMatch) {
+      const rego = findRegoBeforeMarker(text, subbyMatch);
+      if (rego) return rego;
+    }
+
+    const colMooreMatch = text.match(colMooreRegex);
+    if (colMooreMatch) {
+      const rego = findRegoBeforeMarker(text, colMooreMatch);
+      if (rego) return rego;
+      return 'COLMOORE';
     }
   }
 
   return '';
 }
 
-function parseDispatchSubbyRowsForSummary(rows) {
-  const allSubbies = {};
+function findDispatchLikelyRegoFromText(value) {
+  const text = String(value || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+
+  const blocked = /\b(LOAD|PRELOAD|CLASS|PROJECT|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC|IPSWICH|ELIMBAH|SWANBANK|TENTERFIELD|BRACALBA|PINKENBA|SAND|DEPOT|RATE|DESCRIPTION)\b/i;
+  const candidates = text.match(/\b[A-Z0-9]{5,8}\b/g) || [];
+  for (const candidate of candidates) {
+    if (/[A-Z]/.test(candidate) && /[0-9]/.test(candidate) && !blocked.test(candidate)) return candidate;
+  }
+
+  return '';
+}
+
+function getDispatchRowText(row) {
+  return (row || []).map(v => cleanCell(v)).filter(Boolean).join(' ');
+}
+
+function isDarkDispatchCell(cell) {
+  if (!cell || !cell.s || !cell.s.fill) return false;
+  const fill = cell.s.fill || {};
+  const colours = [
+    fill.fgColor && (fill.fgColor.rgb || fill.fgColor.indexed || fill.fgColor.theme),
+    fill.bgColor && (fill.bgColor.rgb || fill.bgColor.indexed || fill.bgColor.theme)
+  ].filter(v => v !== undefined && v !== null).map(v => String(v).toUpperCase());
+
+  return colours.some(c => c === '0' || c === '000000' || c === 'FF000000' || c.endsWith('000000'));
+}
+
+function findDispatchSubbySeparatorRow(ws, rows, XLSX) {
+  let styleSeparator = -1;
+
+  try {
+    const range = XLSX && XLSX.utils && ws && ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
+    if (range) {
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        let darkCount = 0;
+        let checked = 0;
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const addr = XLSX.utils.encode_cell({r, c});
+          const cell = ws[addr];
+          if (!cell) continue;
+          checked++;
+          if (isDarkDispatchCell(cell)) darkCount++;
+        }
+
+        const rowText = getDispatchRowText(rows[r] || []);
+        const isDescriptionRow = /\bDescription\b/i.test(rowText);
+        if (!isDescriptionRow && darkCount >= 4 && darkCount >= Math.max(4, Math.ceil(checked * 0.5))) {
+          styleSeparator = r;
+          break;
+        }
+      }
+    }
+  } catch (e) {}
+
+  if (styleSeparator >= 0) return styleSeparator;
+
+  // Fallback if the browser cannot read the black row style: find the first
+  // Description block with a clear subcontractor marker, then treat that block
+  // and everything below it as subcontractor work.
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] || [];
+    for (let c = 0; c < row.length; c++) {
+      if (cleanCell(row[c]) !== 'Description') continue;
+
+      const nearby = [];
+      for (let r = Math.max(0, i - 6); r <= i; r++) {
+        nearby.push(getDispatchRowText(rows[r] || []));
+      }
+      nearby.push(getDispatchRowText(row));
+
+      if (isDispatchSubbyMarkerText(nearby.join(' '))) return Math.max(0, i - 1);
+    }
+  }
+
+  return -1;
+}
+
+function isSummaryBlockBelowSeparator(rowIndex, separatorRowIndex) {
+  return separatorRowIndex >= 0 && rowIndex > separatorRowIndex;
+}
+
+function getDispatchSummaryBlockKey(rows, rowIndex, bc, fleetType) {
+  const row = rows[rowIndex] || [];
+  const truckCell = cleanCell(row[bc + 1]);
+  const nearby = [truckCell];
+
+  for (let r = Math.max(0, rowIndex - 6); r <= rowIndex; r++) {
+    const nearRow = rows[r] || [];
+    nearby.push(cleanCell(nearRow[bc + 1]));
+    nearby.push(cleanCell(nearRow[bc]));
+  }
+
+  if (fleetType === 'subby') {
+    const markedRego = extractDispatchSubbyRegoFromCells.apply(null, nearby);
+    if (markedRego) return markedRego;
+
+    const likelyRego = findDispatchLikelyRegoFromText(nearby.join(' '));
+    if (likelyRego) return likelyRego;
+
+    if (/\bCOL\s+MOORE\b/i.test(nearby.join(' '))) return 'COLMOORE';
+
+    const cleanName = truckCell
+      .replace(/\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/ig, '')
+      .replace(/[^A-Z0-9]+/ig, '')
+      .toUpperCase();
+    return cleanName || ('SUBBYR' + (rowIndex + 1) + 'C' + (bc + 1));
+  }
+
+  const truckMatch = truckCell.match(/^(\d{3,4})(?:\s+(.+))?$/);
+  return truckMatch ? truckMatch[1] : '';
+}
+
+function parseDispatchSummaryRows(rows, companyData, separatorRowIndex) {
+  const summaryData = {};
   const maxRow = rows.length;
 
   for (let i = 0; i < maxRow; i++) {
@@ -1891,16 +2024,17 @@ function parseDispatchSubbyRowsForSummary(rows) {
     if (descCols.length === 0) continue;
 
     for (const bc of descCols) {
-      const regoCandidates = [cleanCell(row[bc + 1])];
+      const truckCell = cleanCell(row[bc + 1]);
+      const belowSeparator = isSummaryBlockBelowSeparator(i, separatorRowIndex);
+      const nearbyText = [];
+      for (let r = Math.max(0, i - 6); r <= i; r++) nearbyText.push(getDispatchRowText(rows[r] || []));
 
-      for (let r = Math.max(0, i - 6); r <= i; r++) {
-        const nearRow = rows[r] || [];
-        regoCandidates.push(cleanCell(nearRow[bc + 1]));
-        regoCandidates.push(cleanCell(nearRow[bc]));
-      }
+      const hasExplicitSubbyMarker = isDispatchSubbyMarkerText([truckCell].concat(nearbyText).join(' '));
+      const fleetType = (belowSeparator || hasExplicitSubbyMarker) ? 'subby' : 'company';
+      const blockKey = getDispatchSummaryBlockKey(rows, i, bc, fleetType);
 
-      const regoKey = extractDispatchSubbyRegoFromCells.apply(null, regoCandidates);
-      if (!regoKey) continue;
+      if (!blockKey) continue;
+      if (fleetType === 'company' && !/^\d{3,4}$/.test(blockKey)) continue;
 
       const loads = [];
       for (let j = i + 1; j < maxRow; j++) {
@@ -1910,7 +2044,7 @@ function parseDispatchSubbyRowsForSummary(rows) {
 
         if (descCol === 'Description') break;
         if (descCol.includes('Total Rate')) break;
-        if (/^Total/i.test(descCol)) break;
+        if (/^Total\b/i.test(descCol)) break;
 
         if (/^(Preload|Load\s*\d+)$/i.test(descCol) && jobCol && jobCol !== '0' && jobCol.toLowerCase() !== 'nan') {
           const split = splitJobString(jobCol);
@@ -1928,28 +2062,28 @@ function parseDispatchSubbyRowsForSummary(rows) {
       }
 
       if (loads.length > 0) {
-        const key = normalizeDispatchRego(regoKey);
-        if (!allSubbies[key]) allSubbies[key] = {depot: 'Subcontractor', driver: '', fleetType: 'subby', loads: []};
-        allSubbies[key].loads = allSubbies[key].loads.concat(loads);
+        const keyPrefix = fleetType === 'subby' ? 'SUBBY-' : 'COMPANY-';
+        const key = keyPrefix + normalizeDispatchRego(blockKey || ('R' + i + 'C' + bc));
+        if (!summaryData[key]) {
+          summaryData[key] = {
+            depot: fleetType === 'subby' ? 'Subcontractor' : '',
+            driver: '',
+            fleetType,
+            displayTruck: blockKey,
+            loads: []
+          };
+        }
+        summaryData[key].loads = summaryData[key].loads.concat(loads);
       }
     }
   }
 
-  return allSubbies;
-}
-
-function parseDispatchSummaryRows(rows, companyData) {
-  const summaryData = {};
-
-  Object.entries(companyData || {}).forEach(([truckNo, truckData]) => {
-    summaryData[truckNo] = cloneDispatchTruckData(truckData, 'company');
-  });
-
-  const subbyData = parseDispatchSubbyRowsForSummary(rows);
-  Object.entries(subbyData || {}).forEach(([rego, truckData]) => {
-    const key = summaryData[rego] ? ('SUBBY-' + rego) : rego;
-    summaryData[key] = truckData;
-  });
+  // Fallback to the standard company schedule if no summary blocks were found.
+  if (Object.keys(summaryData).length === 0) {
+    Object.entries(companyData || {}).forEach(([truckNo, truckData]) => {
+      summaryData['COMPANY-' + truckNo] = cloneDispatchTruckData(truckData, 'company');
+    });
+  }
 
   return summaryData;
 }
@@ -2420,6 +2554,10 @@ function splitQuarryMaterial(rVal) {
   rVal = normaliseJobText(rVal);
 
   let m;
+
+  if (/Pinkenba\s+.*Bay\s+.*Sand\s+.*Depot/i.test(rVal) || /Pinkenba\s+.*Sand\s+.*Depot/i.test(rVal)) {
+    return {pickup: 'Pinkenba Bay Sand Depot', product: 'Sand'};
+  }
 
   m = rVal.match(/^Bracalba Quarry\s+Class\s+A$/i);
   if (m) return {pickup: 'Bracalba Quarry', product: 'Class A'};
