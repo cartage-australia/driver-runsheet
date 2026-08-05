@@ -718,6 +718,25 @@
     margin: 0;
     line-height: 1.45;
   }
+  .dispatch-summary-date-line {
+    margin-top: 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    font-size: 12px;
+    font-weight: 800;
+    color: #ffffff;
+  }
+  .dispatch-summary-date-line span {
+    opacity: 0.78;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-size: 10px;
+  }
   .dispatch-summary-total {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -1005,6 +1024,7 @@
         <div class="dispatch-summary-head">
           <h3>Daily Dispatch Summary</h3>
           <p id="dispatchSummarySubtext">Summary will refresh each time a dispatch sheet is uploaded.</p>
+          <div class="dispatch-summary-date-line"><span>Summary date</span><strong id="dispatchSummaryDate">Today</strong></div>
         </div>
         <div class="dispatch-summary-total">
           <div class="dispatch-summary-stat"><span>Total Loads</span><strong id="dispatchSummaryTotalLoads">0</strong></div>
@@ -1774,25 +1794,17 @@ function processScheduleFile(input) {
       const todayLoadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
       const todaySummaryLoadCount = Object.values(activeSummaryData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
 
+      // The dispatcher summary is always for the current day.
+      // If the uploaded workbook does not contain today's dated sheet, show today's date with zero values rather than falling back to an older day.
       if (todayLoadCount === 0 && todaySummaryLoadCount === 0) {
-        const sortedDates = Object.keys(allDaysData)
-          .filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k))
-          .sort((a,b) => dateKeyToNum(b) - dateKeyToNum(a));
-        for (const dateStr of sortedDates) {
-          if (dateStr === todayDate) continue;
-          const count = Object.values(allDaysSummaryData[dateStr] || allDaysData[dateStr] || {}).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
-          if (count > 0) {
-            scheduleData = allDaysData[dateStr];
-            activeSummaryData = allDaysSummaryData[dateStr] || scheduleData;
-            todaySheetName = dateStr;
-            activeSummaryDate = dateStr;
-            break;
-          }
-        }
+        scheduleData = {};
+        activeSummaryData = {};
+        todaySheetName = todayDate;
+        activeSummaryDate = todayDate;
       }
 
       scheduleSheetDate = todayDate;
-      const sheetName = todaySheetName || dateSheets[dateSheets.length - 1];
+      const sheetName = todaySheetName || todayDate;
       const daySummaryForUpload = summariseDispatchDay(activeSummaryData);
       const truckCount = daySummaryForUpload.trucksOnRoad;
       const loadCount = daySummaryForUpload.totalLoads;
@@ -1876,18 +1888,19 @@ function normalizeDispatchRego(value) {
 }
 
 function isDispatchSubbyMarkerText(value) {
-  return /\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/i.test(String(value || '')) || /\bCOL\s+MOORE\b/i.test(String(value || ''));
+  return /\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/i.test(String(value || '')) || /\bCOL\s+MOORE(?:\s*\d+)?\b/i.test(String(value || ''));
 }
 
 function extractDispatchSubbyRegoFromCells() {
   const subbyMarkerRegex = /\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/i;
-  const colMooreRegex = /\bCOL\s+MOORE\b/i;
+  const colMooreRegex = /\bCOL\s+MOORE(?:\s*\d+)?\b/i;
 
   function isLikelyRego(value) {
     const token = normalizeDispatchRego(value);
     if (!token) return '';
     if (!/[A-Z]/.test(token) || !/[0-9]/.test(token)) return '';
     if (!/^[A-Z0-9]{5,8}$/.test(token)) return '';
+    if (/^(RATE|TOTAL)\d*$/i.test(token) || /(?:RATE|TOTAL)/i.test(token)) return '';
     if (/^(LOAD\d*|PRELOAD|\d{1,2}MM|CLASSA|CLASSB|PROJECT|ELIMBAH|IPSWICH|SWANBANK|TENTERFIELD|BRACALBA|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC)$/i.test(token)) return '';
     return token;
   }
@@ -1928,9 +1941,8 @@ function extractDispatchSubbyRegoFromCells() {
 
     const colMooreMatch = text.match(colMooreRegex);
     if (colMooreMatch) {
-      const rego = findRegoBeforeMarker(text, colMooreMatch);
-      if (rego) return rego;
-      return 'COLMOORE';
+      const matchedName = normalizeDispatchRego(colMooreMatch[0]);
+      return matchedName || 'COLMOORE';
     }
   }
 
@@ -1941,10 +1953,11 @@ function findDispatchLikelyRegoFromText(value) {
   const text = String(value || '').toUpperCase().replace(/\s+/g, ' ').trim();
   if (!text) return '';
 
-  const blocked = /\b(LOAD|PRELOAD|CLASS|PROJECT|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC|IPSWICH|ELIMBAH|SWANBANK|TENTERFIELD|BRACALBA|PINKENBA|SAND|DEPOT|RATE|DESCRIPTION)\b/i;
+  const blockedWords = /(?:RATE|TOTAL)|\b(LOAD|PRELOAD|CLASS|PROJECT|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC|IPSWICH|ELIMBAH|SWANBANK|TENTERFIELD|BRACALBA|PINKENBA|SAND|DEPOT|DESCRIPTION)\b/i;
   const candidates = text.match(/\b[A-Z0-9]{5,8}\b/g) || [];
   for (const candidate of candidates) {
-    if (/[A-Z]/.test(candidate) && /[0-9]/.test(candidate) && !blocked.test(candidate)) return candidate;
+    if (/^RATE\d*$/i.test(candidate)) continue;
+    if (/[A-Z]/.test(candidate) && /[0-9]/.test(candidate) && !blockedWords.test(candidate)) return candidate;
   }
 
   return '';
@@ -2036,7 +2049,8 @@ function isLikelySubbyHeaderText(value) {
   const text = String(value || '').trim();
   if (!text) return false;
   if (/^\d{3,4}(?:\s+.+)?$/.test(text)) return false;
-  if (/^(rate|description|total|truck earnings|shift earnings)$/i.test(text)) return false;
+  if (/^(rate\d*|rate|description|total|truck earnings|shift earnings)$/i.test(text)) return false;
+  if (/(?:RATE|TOTAL)/i.test(text)) return false;
   if (isDispatchSubbyMarkerText(text)) return true;
   const rego = findDispatchLikelyRegoFromText(text);
   if (rego) return true;
@@ -2051,20 +2065,30 @@ function getDispatchSummaryBlockKey(rows, rowIndex, bc, fleetType) {
   const nearby = [truckCell, cleanCell(row[bc + 2]), cleanCell(row[bc + 3]), localText];
 
   if (fleetType === 'subby') {
+    const nearbyText = nearby.join(' ');
+
+    const colMooreMatch = nearbyText.match(/\bCOL\s+MOORE(?:\s*\d+)?\b/i);
+    if (colMooreMatch) {
+      return normalizeDispatchRego(colMooreMatch[0]) || 'COLMOORE';
+    }
+
     const markedRego = extractDispatchSubbyRegoFromCells.apply(null, nearby);
-    if (markedRego) return markedRego;
+    if (markedRego && !/(?:RATE|TOTAL)/i.test(markedRego)) return markedRego;
 
-    const likelyRego = findDispatchLikelyRegoFromText(nearby.join(' '));
-    if (likelyRego) return likelyRego;
-
-    if (/\bCOL\s+MOORE\b/i.test(nearby.join(' '))) return 'COLMOORE';
+    const likelyRego = findDispatchLikelyRegoFromText(nearbyText);
+    if (likelyRego && !/(?:RATE|TOTAL)/i.test(likelyRego)) return likelyRego;
 
     const cleanName = (truckCell || cleanCell(row[bc + 2]) || localText)
       .replace(/\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/ig, '')
-      .replace(/\bCOL\s+MOORE\b/ig, 'COLMOORE')
+      .replace(/\bCOL\s+MOORE(?:\s*\d+)?\b/ig, function(match) { return normalizeDispatchRego(match); })
       .replace(/[^A-Z0-9]+/ig, '')
       .toUpperCase();
-    return cleanName || ('SUBBYR' + (rowIndex + 1) + 'C' + (bc + 1));
+
+    if (cleanName && !/(?:RATE|TOTAL)/i.test(cleanName) && !/^(DESCRIPTION|TOTAL|TRUCKEARNINGS|SHIFTEARNINGS)$/i.test(cleanName)) {
+      return cleanName;
+    }
+
+    return 'SUBBYR' + (rowIndex + 1) + 'C' + (bc + 1);
   }
 
   const truckMatch = truckCell.match(/^(\d{3,4})(?:\s+(.+))?$/);
@@ -2130,6 +2154,7 @@ function parseDispatchSummaryRows(rows, companyData, separatorRowIndex) {
 
       let blockKey = getDispatchSummaryBlockKey(rows, i, bc, fleetType);
       if (!blockKey) continue;
+      if (/(?:RATE|TOTAL)/i.test(String(blockKey))) continue;
       if (fleetType === 'company' && !/^\d{3,4}$/.test(blockKey)) continue;
 
       const keyPrefix = fleetType === 'subby' ? 'SUBBY-' : 'COMPANY-';
@@ -2224,6 +2249,16 @@ function makeDispatchDateKey(dateObj) {
   return String(dateObj.getDate()).padStart(2, '0') + '.' +
          String(dateObj.getMonth() + 1).padStart(2, '0') + '.' +
          String(dateObj.getFullYear()).slice(2);
+}
+
+function getTodayDispatchDateKey() {
+  return makeDispatchDateKey(new Date());
+}
+
+function formatDispatchSummaryDate(dateKey) {
+  const match = String(dateKey || '').match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
+  if (!match) return dateKey || 'Today';
+  return match[1] + '/' + match[2] + '/20' + match[3];
 }
 
 
@@ -2477,18 +2512,15 @@ function renderStoredDispatchSummaryPayload(payload, sourceText) {
   if (!payload || typeof payload !== 'object') return false;
 
   const allDaysData = payload.allDaysSummary || payload.allDays || {};
-  const preferredDate = payload.sheetDate || payload.date || '';
-  const activeDateKey = getBestDispatchSummaryDate(allDaysData, preferredDate);
-  const dayData = allDaysData[activeDateKey] || payload.data || {};
+  const activeDateKey = getTodayDispatchDateKey();
+  const dayData = allDaysData[activeDateKey] || {};
 
-  if (!dayData || Object.keys(dayData).length === 0) return false;
-
-  const label = activeDateKey || payload.sheet || 'Previous upload';
+  const label = activeDateKey;
   renderDispatchSummary(dayData, label, allDaysData, activeDateKey);
 
   const subtext = document.getElementById('dispatchSummarySubtext');
   if (subtext) {
-    subtext.textContent = 'Showing previous upload' + (sourceText ? ' from ' + sourceText : '') + ': ' + label + '. This refreshes when a new dispatch sheet is uploaded.';
+    subtext.textContent = 'Showing current-day summary for ' + formatDispatchSummaryDate(activeDateKey) + (sourceText ? ' from ' + sourceText : '') + '. This refreshes when a new dispatch sheet is uploaded.';
   }
 
   return true;
@@ -2587,6 +2619,17 @@ function renderDispatchSummary(dayData, sheetLabel, allDaysData, activeDateKey) 
   const summaryEl = document.getElementById('dispatchSummary');
   if (!summaryEl) return;
 
+  const summaryDateKey = getTodayDispatchDateKey();
+  if (allDaysData && allDaysData[summaryDateKey]) {
+    dayData = allDaysData[summaryDateKey];
+    activeDateKey = summaryDateKey;
+    sheetLabel = summaryDateKey;
+  } else {
+    activeDateKey = summaryDateKey;
+    sheetLabel = summaryDateKey;
+    dayData = dayData || {};
+  }
+
   const summary = summariseDispatchDay(dayData);
   const materialCounts = summary.materialCounts;
   const plantCounts = summary.plantCounts;
@@ -2629,7 +2672,9 @@ function renderDispatchSummary(dayData, sheetLabel, allDaysData, activeDateKey) 
   document.getElementById('dispatchSummaryTruckBreakdown').textContent = String(summary.companyTrucksOnRoad) + ' company owned, ' + String(summary.subbyTrucksOnRoad) + ' subbies';
   document.getElementById('dispatchSummaryLoadRatio').textContent = ratioText;
   document.getElementById('dispatchSummaryPlantCount').textContent = String(Object.keys(plantCounts).length);
-  document.getElementById('dispatchSummarySubtext').textContent = 'Latest uploaded day: ' + (sheetLabel || 'Uploaded sheet') + '. This table refreshes whenever a new dispatch sheet is uploaded.';
+  const dateEl = document.getElementById('dispatchSummaryDate');
+  if (dateEl) dateEl.textContent = formatDispatchSummaryDate(activeDateKey || getTodayDispatchDateKey());
+  document.getElementById('dispatchSummarySubtext').textContent = 'This summary is for today: ' + formatDispatchSummaryDate(activeDateKey || getTodayDispatchDateKey()) + '. It refreshes whenever a new dispatch sheet is uploaded.';
 
   populateDispatchPlantFilter(plantOptions);
   setDispatchFilterListeners();
@@ -3512,28 +3557,55 @@ function loadEmployeesFromGoogleSheet() {
   fetch(EMPLOYEE_LOOKUP_URL + '?t=' + Date.now())
     .then(r => r.json())
     .then(data => {
-      if (!data.ok || !data.employees) return;
+      if (!data || !data.ok) return;
 
-      Object.keys(DRIVER_LOOKUP).forEach(k => delete DRIVER_LOOKUP[k]);
-      Object.keys(NAME_LOOKUP).forEach(k => delete NAME_LOOKUP[k]);
+      if (data.employees) {
+        Object.keys(DRIVER_LOOKUP).forEach(k => delete DRIVER_LOOKUP[k]);
+        Object.keys(NAME_LOOKUP).forEach(k => delete NAME_LOOKUP[k]);
 
-      Object.entries(data.employees).forEach(([driverId, driverName]) => {
-        driverId = String(driverId || '').trim();
-        driverName = String(driverName || '').trim();
+        Object.entries(data.employees).forEach(([driverId, driverName]) => {
+          driverId = String(driverId || '').trim();
+          driverName = String(driverName || '').trim();
 
-        if (!driverId || !driverName) return;
+          if (!driverId || !driverName) return;
 
-        DRIVER_LOOKUP[driverId] = driverName;
-        addNameLookup(driverId, driverName);
-      });
+          DRIVER_LOOKUP[driverId] = driverName;
+          addNameLookup(driverId, driverName);
+        });
 
-      console.log('Employee list loaded from Google Sheet');
+        console.log('Employee list loaded from Google Sheet');
+      }
+
+      if (Array.isArray(data.truckFleet) && data.truckFleet.length) {
+        applyTruckFleetFromGoogleSheet(data.truckFleet);
+        console.log('Truck fleet loaded from Google Sheet');
+      }
+
       const currentTruck = document.getElementById('truckNo')?.value?.trim();
-      if (currentTruck) populateDriverFromScheduleByTruck(currentTruck);
+      if (currentTruck) {
+        lookupTruck();
+        populateDriverFromScheduleByTruck(currentTruck);
+      }
     })
     .catch(() => {
-      console.log('Could not load employees from Google Sheet. Using built-in list.');
+      console.log('Could not load employee/truck fleet data from Google Sheet. Using built-in lists.');
     });
+}
+
+function applyTruckFleetFromGoogleSheet(truckFleet) {
+  Object.keys(TRUCK_LOOKUP).forEach(k => delete TRUCK_LOOKUP[k]);
+  Object.keys(TRUCK_LOCATION_LOOKUP).forEach(k => delete TRUCK_LOCATION_LOOKUP[k]);
+
+  truckFleet.forEach(truck => {
+    const truckNo = String(truck.truckNo || truck.TruckNo || truck.truck || '').trim();
+    const rego = String(truck.rego || truck.Rego || '').trim().toUpperCase();
+    const defaultLocation = String(truck.defaultLocation || truck.DefaultLocation || truck.location || '').trim();
+
+    if (!truckNo) return;
+
+    TRUCK_LOOKUP[truckNo] = rego;
+    TRUCK_LOCATION_LOOKUP[truckNo] = defaultLocation;
+  });
 }
 function lookupDriver() {
   if (driverLookupInProgress) return;
