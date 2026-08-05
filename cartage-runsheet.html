@@ -1817,7 +1817,8 @@ function processScheduleFile(input) {
           const loadedKeys = Object.keys(allDaysData).filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k)).sort((a,b) => dateKeyToNum(a) - dateKeyToNum(b));
           const dayCount = loadedKeys.length;
           const rangeText = dayCount > 0 ? (loadedKeys[0] + ' to ' + loadedKeys[dayCount - 1]) : sheetName;
-          successEl.textContent = 'Done. Loaded ' + dayCount + ' day' + (dayCount === 1 ? '' : 's') + ' (' + rangeText + ') - ' + truckCount + ' trucks / ' + loadCount + ' loads on the latest day. All drivers can now load their jobs.';
+          await saveExpectedRunsToGoogleSheet(allDaysSummaryData, file.name);
+          successEl.textContent = 'Done. Loaded ' + dayCount + ' day' + (dayCount === 1 ? '' : 's') + ' (' + rangeText + ') - ' + truckCount + ' trucks / ' + loadCount + ' loads on the latest day. All drivers can now load their jobs. Expected Runs sent to Google Sheet for accounts checking.';
           successEl.style.color = '#16a34a';
         } else {
           successEl.textContent = 'Error saving schedule. Please try again.';
@@ -2223,6 +2224,77 @@ function makeDispatchDateKey(dateObj) {
   return String(dateObj.getDate()).padStart(2, '0') + '.' +
          String(dateObj.getMonth() + 1).padStart(2, '0') + '.' +
          String(dateObj.getFullYear()).slice(2);
+}
+
+
+function dispatchDateKeyToIso(dateKey) {
+  const match = String(dateKey || '').match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
+  if (!match) return String(dateKey || '');
+  return '20' + match[3] + '-' + match[2] + '-' + match[1];
+}
+
+function buildExpectedRunsForAccounts(allDaysSummaryData) {
+  const expectedRuns = [];
+  const allDays = allDaysSummaryData || {};
+
+  Object.keys(allDays)
+    .filter(dateKey => /^\d{2}\.\d{2}\.\d{2}$/.test(dateKey))
+    .sort((a, b) => dispatchDateKeyToNumber(a) - dispatchDateKeyToNumber(b))
+    .forEach(dateKey => {
+      const isoDate = dispatchDateKeyToIso(dateKey);
+      const dayData = allDays[dateKey] || {};
+
+      Object.entries(dayData).forEach(([rawKey, truck]) => {
+        const loads = Array.isArray(truck && truck.loads) ? truck.loads : [];
+        if (loads.length === 0) return;
+
+        const requiredDocketLoads = loads.filter(load => !load.noDocketRequired).length;
+        const noDocketRequiredLoads = loads.length - requiredDocketLoads;
+        const fleetType = (truck && truck.fleetType) === 'subby' ? 'Subby' : 'Company';
+        const displayTruck = String((truck && truck.displayTruck) || rawKey || '')
+          .replace(/^COMPANY-/i, '')
+          .replace(/^SUBBY-/i, '')
+          .trim();
+
+        expectedRuns.push({
+          date: isoDate,
+          dateKey,
+          truckOrRego: displayTruck,
+          truckNo: fleetType === 'Company' ? displayTruck : '',
+          driver: (truck && truck.driver) || '',
+          companyType: fleetType,
+          expectedLoads: requiredDocketLoads,
+          totalScheduledLoads: loads.length,
+          noDocketRequiredLoads,
+          statusHint: requiredDocketLoads > 0 ? 'Working' : 'No Docket Required',
+          sourceKey: rawKey
+        });
+      });
+    });
+
+  return expectedRuns;
+}
+
+async function saveExpectedRunsToGoogleSheet(allDaysSummaryData, sourceFileName) {
+  const expectedRuns = buildExpectedRunsForAccounts(allDaysSummaryData);
+  if (!expectedRuns.length) return;
+
+  const payload = {
+    action: 'saveExpectedRuns',
+    uploadedAt: new Date().toISOString(),
+    sourceFileName: sourceFileName || '',
+    expectedRuns
+  };
+
+  try {
+    await fetch(SUBMIT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.warn('Could not send expected runs to Google Sheet', err);
+  }
 }
 
 function dispatchDateKeyToNumber(dateKey) {
