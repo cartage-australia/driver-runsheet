@@ -660,8 +660,19 @@
           <label>Date <span class="auto-tag">Auto</span></label>
           <input type="date" id="jobDate" readonly
             onclick="this.removeAttribute('readonly'); this.showPicker && this.showPicker();"
-            onchange="this.setAttribute('readonly',''); applyScheduleForSelectedDate(); resetLoadsForNewDriver();"
+            onchange="this.setAttribute('readonly',''); enforceNoFutureJobDate(); applyScheduleForSelectedDate(); resetLoadsForNewDriver();"
             style="border-color: var(--orange); background: #fffbeb; font-weight:600;">
+        </div>
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--label);">
+          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">Shift</span>
+          <label style="display:inline-flex; align-items:center; gap:5px; margin:0; font-size:12px; font-weight:600; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="radio" name="shiftType" value="Day" checked onchange="updateProgress()" style="width:13px; height:13px; margin:0; accent-color:var(--orange);"> Day
+          </label>
+          <label style="display:inline-flex; align-items:center; gap:5px; margin:0; font-size:12px; font-weight:600; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="radio" name="shiftType" value="Night" onchange="updateProgress()" style="width:13px; height:13px; margin:0; accent-color:var(--orange);"> Night
+          </label>
         </div>
       </div>
     </div>
@@ -2378,12 +2389,38 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchScheduleFromJsonbin();
 });
 
-function setTodayDate() {
+function getTodayIsoDate() {
   const d = new Date();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth()+1).padStart(2,'0');
   const dd = String(d.getDate()).padStart(2,'0');
-  document.getElementById('jobDate').value = `${yyyy}-${mm}-${dd}`;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function setTodayDate() {
+  const todayIso = getTodayIsoDate();
+  const dateEl = document.getElementById('jobDate');
+  if (!dateEl) return;
+  dateEl.value = todayIso;
+  dateEl.max = todayIso;
+}
+
+function enforceNoFutureJobDate() {
+  const dateEl = document.getElementById('jobDate');
+  if (!dateEl) return true;
+
+  const todayIso = getTodayIsoDate();
+  dateEl.max = todayIso;
+
+  if (dateEl.value && dateEl.value > todayIso) {
+    dateEl.value = todayIso;
+    dateEl.classList.add('error');
+    showToast('Future dates are not allowed. Date reset to today.', 'error');
+    return false;
+  }
+
+  dateEl.classList.remove('error');
+  return true;
 }
 
 function optionListHTML(list) {
@@ -2818,8 +2855,23 @@ function resolveProductValue(idx) {
   return field.value || '';
 }
 
+function getShiftType() {
+  const selected = document.querySelector('input[name="shiftType"]:checked');
+  return selected ? selected.value : 'Day';
+}
+
 function submitForm() {
   const errors = [];
+
+  const jobDateEl = document.getElementById('jobDate');
+  const selectedJobDate = jobDateEl ? jobDateEl.value : '';
+  const todayIso = getTodayIsoDate();
+  if (!selectedJobDate) {
+    errors.push('Run sheet date');
+  } else if (selectedJobDate > todayIso) {
+    if (jobDateEl) jobDateEl.classList.add('error');
+    errors.push('Run sheet date cannot be in the future');
+  }
 
   const required = [
     {id:'subcontractorCompany',label:'Subcontractor Company Name'},
@@ -2910,6 +2962,8 @@ function submitForm() {
     truckNo: document.getElementById('truckRego').value,
     truckRego: document.getElementById('truckRego').value,
     depot: 'Subcontractor',
+    shiftType: getShiftType(),
+    shift: getShiftType(),
     jobDate: document.getElementById('jobDate').value,
     startTime: '',
     finishTime: '',
@@ -3054,6 +3108,8 @@ function resetForm() {
   document.getElementById('loadsContainer').innerHTML = '';
   loadCount = 0;
   addLoad();
+  const dayShift = document.querySelector('input[name="shiftType"][value="Day"]');
+  if (dayShift) dayShift.checked = true;
   ['subcontractorCompany','driverName','truckRego','notes'].forEach(id => {
     const el=document.getElementById(id); if(el){el.value='';el.classList.remove('error','valid');}
   });
