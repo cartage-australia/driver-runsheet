@@ -1117,17 +1117,6 @@
           <div class="field-error" id="err-driverID">Please enter Driver ID or Name</div>
         </div>
       </div>
-      <div class="field" style="margin-top:12px;">
-        <label>Shift</label>
-        <div style="display:flex; gap:18px; align-items:center; background:#f9fafb; border:1px solid var(--border); border-radius:8px; padding:11px 12px;">
-          <label style="display:flex; align-items:center; gap:8px; margin:0; font-size:14px; font-weight:700; color:var(--text); text-transform:none; letter-spacing:0;">
-            <input type="radio" name="shiftType" value="Day" checked onchange="updateProgress()" style="width:auto; accent-color:var(--orange);"> Day
-          </label>
-          <label style="display:flex; align-items:center; gap:8px; margin:0; font-size:14px; font-weight:700; color:var(--text); text-transform:none; letter-spacing:0;">
-            <input type="radio" name="shiftType" value="Night" onchange="updateProgress()" style="width:auto; accent-color:var(--orange);"> Night
-          </label>
-        </div>
-      </div>
       <div class="row-2">
         <div class="field">
           <label>Rego <span class="req">*</span> <span class="auto-tag" id="regoAutoTag" style="display:none;">v Auto</span></label>
@@ -1156,6 +1145,17 @@
                  style="display:none; margin-top:8px;"
                  oninput="validateDepotField(); updateProgress()" autocomplete="off">
           <div class="field-error" id="err-depot">Location is required</div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--label);">
+          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">Shift</span>
+          <label style="display:inline-flex; align-items:center; gap:5px; margin:0; font-size:12px; font-weight:600; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="radio" name="shiftType" value="Day" checked onchange="updateProgress()" style="width:13px; height:13px; margin:0; accent-color:var(--orange);"> Day
+          </label>
+          <label style="display:inline-flex; align-items:center; gap:5px; margin:0; font-size:12px; font-weight:600; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="radio" name="shiftType" value="Night" onchange="updateProgress()" style="width:13px; height:13px; margin:0; accent-color:var(--orange);"> Night
+          </label>
         </div>
       </div>
     </div>
