@@ -1117,6 +1117,17 @@
           <div class="field-error" id="err-driverID">Please enter Driver ID or Name</div>
         </div>
       </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Shift</label>
+        <div style="display:flex; gap:18px; align-items:center; background:#f9fafb; border:1px solid var(--border); border-radius:8px; padding:11px 12px;">
+          <label style="display:flex; align-items:center; gap:8px; margin:0; font-size:14px; font-weight:700; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="radio" name="shiftType" value="Day" checked onchange="updateProgress()" style="width:auto; accent-color:var(--orange);"> Day
+          </label>
+          <label style="display:flex; align-items:center; gap:8px; margin:0; font-size:14px; font-weight:700; color:var(--text); text-transform:none; letter-spacing:0;">
+            <input type="radio" name="shiftType" value="Night" onchange="updateProgress()" style="width:auto; accent-color:var(--orange);"> Night
+          </label>
+        </div>
+      </div>
       <div class="row-2">
         <div class="field">
           <label>Rego <span class="req">*</span> <span class="auto-tag" id="regoAutoTag" style="display:none;">v Auto</span></label>
@@ -4452,6 +4463,11 @@ function resolveProductValue(idx) {
   return field.value || '';
 }
 
+function getShiftType() {
+  const selected = document.querySelector('input[name="shiftType"]:checked');
+  return selected ? selected.value : 'Day';
+}
+
 function submitForm() {
   const errors = [];
 
@@ -4560,6 +4576,8 @@ function submitForm() {
     truckNo: document.getElementById('truckNo').value,
     truckRego: document.getElementById('truckRego').value,
     depot: getDepotValue(),
+    shiftType: getShiftType(),
+    shift: getShiftType(),
     jobDate: document.getElementById('jobDate').value,
     startTime: '',
     finishTime: '',
@@ -4704,6 +4722,8 @@ function resetForm() {
   document.getElementById('loadsContainer').innerHTML = '';
   loadCount = 0;
   addLoad();
+  const dayShift = document.querySelector('input[name="shiftType"][value="Day"]');
+  if (dayShift) dayShift.checked = true;
   ['driverID','driverName','truckNo','truckRego','depot','depotOther','notes'].forEach(id => {
     const el=document.getElementById(id); if(el){el.value='';el.classList.remove('error','valid');}
   });
