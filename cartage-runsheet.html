@@ -1090,7 +1090,7 @@
           <label>Date <span class="auto-tag">Auto</span></label>
           <input type="date" id="jobDate" readonly
             onclick="this.removeAttribute('readonly'); this.showPicker && this.showPicker();"
-            onchange="this.setAttribute('readonly',''); applyScheduleForSelectedDate(); resetLoadsForNewDriver();"
+            onchange="this.setAttribute('readonly',''); enforceNoFutureJobDate(); applyScheduleForSelectedDate(); resetLoadsForNewDriver();"
             style="border-color: var(--orange); background: #fffbeb; font-weight:600;">
         </div>
       </div>
@@ -3943,12 +3943,36 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchScheduleFromJsonbin();
 });
 
-function setTodayDate() {
+function getTodayIsoDate() {
   const d = new Date();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth()+1).padStart(2,'0');
   const dd = String(d.getDate()).padStart(2,'0');
-  document.getElementById('jobDate').value = `${yyyy}-${mm}-${dd}`;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function setTodayDate() {
+  const todayIso = getTodayIsoDate();
+  const dateEl = document.getElementById('jobDate');
+  if (!dateEl) return;
+  dateEl.value = todayIso;
+  dateEl.max = todayIso;
+}
+
+function enforceNoFutureJobDate() {
+  const dateEl = document.getElementById('jobDate');
+  if (!dateEl) return true;
+
+  const todayIso = getTodayIsoDate();
+  dateEl.max = todayIso;
+
+  if (dateEl.value && dateEl.value > todayIso) {
+    dateEl.value = todayIso;
+    showToast('Future dates cannot be selected. Date reset to today.', 'error');
+    return false;
+  }
+
+  return true;
 }
 
 
@@ -4430,6 +4454,16 @@ function resolveProductValue(idx) {
 
 function submitForm() {
   const errors = [];
+
+  const jobDateEl = document.getElementById('jobDate');
+  const selectedJobDate = jobDateEl ? jobDateEl.value : '';
+  const todayIso = getTodayIsoDate();
+  if (!selectedJobDate) {
+    errors.push('Run sheet date');
+  } else if (selectedJobDate > todayIso) {
+    if (jobDateEl) jobDateEl.classList.add('error');
+    errors.push('Run sheet date cannot be in the future');
+  }
 
   if (!verifiedDriverName) {
     document.getElementById('driverID').classList.add('error');
