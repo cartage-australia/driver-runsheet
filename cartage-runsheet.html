@@ -1784,7 +1784,7 @@ function processScheduleFile(input) {
         const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: '', blankrows: true});
         const parsed = parseScheduleRows(rows);
         const separatorRowIndex = findDispatchSubbySeparatorRow(ws, rows, XLSX);
-        const parsedSummary = parseDispatchSummaryRows(rows, parsed, separatorRowIndex);
+        const parsedSummary = parseDispatchSummaryRows(rows, parsed, separatorRowIndex, ws, XLSX);
         const dateStr = getScheduleDateFromSheetName(sName) || sName;
         allDaysData[dateStr] = parsed;
         allDaysSummaryData[dateStr] = parsedSummary;
@@ -1889,6 +1889,83 @@ function normalizeDispatchRego(value) {
   return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
+// Dispatch sheet identifier guardrails:
+// - Truck/rego identifiers must come from columns A to P only.
+// - The real truck/rego heading cells are orange/dark-orange in the workbook.
+// - Random text from columns Q onward or ordinary description/rate/total cells must never become Truck/Rego.
+const DISPATCH_IDENTIFIER_MAX_COL = 15; // A=0, P=15
+
+function isDispatchIdentifierColumn(colIndex) {
+  return Number(colIndex) >= 0 && Number(colIndex) <= DISPATCH_IDENTIFIER_MAX_COL;
+}
+
+function getDispatchCell(ws, XLSX, rowIndex, colIndex) {
+  if (!ws || !XLSX || !XLSX.utils || !isDispatchIdentifierColumn(colIndex)) return null;
+  try {
+    return ws[XLSX.utils.encode_cell({r: rowIndex, c: colIndex})] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function dispatchColourToRgb(colour) {
+  if (colour === undefined || colour === null) return '';
+  const text = String(colour).toUpperCase().replace(/[^A-F0-9]/g, '');
+  if (!text) return '';
+  if (text.length === 8) return text.slice(2);
+  if (text.length === 6) return text;
+  return '';
+}
+
+function isOrangeDispatchCell(cell) {
+  if (!cell || !cell.s || !cell.s.fill) return false;
+  const fill = cell.s.fill || {};
+  const colours = [
+    fill.fgColor && (fill.fgColor.rgb || fill.fgColor.indexed || fill.fgColor.theme),
+    fill.bgColor && (fill.bgColor.rgb || fill.bgColor.indexed || fill.bgColor.theme)
+  ].filter(v => v !== undefined && v !== null);
+
+  return colours.some(value => {
+    const rgb = dispatchColourToRgb(value);
+    if (!rgb) return false;
+    const r = parseInt(rgb.slice(0, 2), 16);
+    const g = parseInt(rgb.slice(2, 4), 16);
+    const b = parseInt(rgb.slice(4, 6), 16);
+    if ([r, g, b].some(n => Number.isNaN(n))) return false;
+
+    // Covers dark orange/brown-orange and Excel orange fills while excluding black separator rows,
+    // plain yellow highlights, white cells and blue/green formatting.
+    return r >= 120 && g >= 45 && g <= 190 && b <= 120 && r > g && g > b;
+  });
+}
+
+function getDispatchOrangeHeaderValues(ws, XLSX, rows, rowIndex, bc) {
+  const values = [];
+  const seen = {};
+
+  // Header identifiers are normally on the same row as Description, in the cells to the right.
+  // Look a few rows above as a safety net, but never beyond column P.
+  const rowStart = Math.max(0, rowIndex - 3);
+  const rowEnd = rowIndex;
+  const colStart = Math.max(0, bc + 1);
+  const colEnd = Math.min(DISPATCH_IDENTIFIER_MAX_COL, bc + 5);
+
+  for (let r = rowStart; r <= rowEnd; r++) {
+    const row = rows[r] || [];
+    for (let c = colStart; c <= colEnd; c++) {
+      const cell = getDispatchCell(ws, XLSX, r, c);
+      if (!isOrangeDispatchCell(cell)) continue;
+      const value = cleanCell(row[c]);
+      const key = normalizeDispatchRego(value);
+      if (!value || !key || seen[key]) continue;
+      seen[key] = true;
+      values.push(value);
+    }
+  }
+
+  return values;
+}
+
 function isBlockedDispatchIdentifier(value) {
   const raw = String(value || '').trim();
   const token = normalizeDispatchRego(raw);
@@ -1900,7 +1977,7 @@ function isBlockedDispatchIdentifier(value) {
     'RATE','TOTAL','LOAD','PRELOAD','DESCRIPTION','TRUCKEARNINGS','SHIFTEARNINGS',
     'DEMAND','TONNE','TONNES','TONS','CLASS','PROJECT','QUARRY','HYTEC','PRONTO',
     'HOLCIM','ADBRI','DMC','IPSWICH','ELIMBAH','SWANBANK','TENTERFIELD',
-    'BRACALBA','PINKENBA','SAND','DEPOT','MATERIAL','PRODUCT','CONCRETE'
+    'BRACALBA','PINKENBA','YATALA','STAPYLTON','BROMELTON','MTCOTTON','MTMARROW','SAND','DEPOT','MATERIAL','PRODUCT','CONCRETE'
   ];
 
   if (blocked.some(word => token.includes(word))) return true;
@@ -1949,7 +2026,7 @@ function extractDispatchSubbyRegoFromCells() {
     if (!token) return '';
     if (!/[A-Z]/.test(token) || !/[0-9]/.test(token)) return '';
     if (!/^[A-Z0-9]{5,8}$/.test(token)) return '';
-    if (/^(RATE|TOTAL)\d*$/i.test(token) || /(?:RATE|TOTAL)/i.test(token)) return '';
+    if (/^(RATE|TOTAL)\d*$/i.test(token) || /(?:RATE|TOTAL|LOAD|PRELOAD)/i.test(token)) return '';
     if (/^(LOAD\d*|PRELOAD|\d{1,2}MM|CLASSA|CLASSB|PROJECT|ELIMBAH|IPSWICH|SWANBANK|TENTERFIELD|BRACALBA|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC)$/i.test(token)) return '';
     return token;
   }
@@ -2086,7 +2163,7 @@ function getDispatchLocalBlockText(rows, rowIndex, bc) {
   const parts = [];
   for (let r = Math.max(0, rowIndex - 6); r <= rowIndex; r++) {
     const nearRow = rows[r] || [];
-    for (let c = Math.max(0, bc - 1); c <= bc + 4; c++) {
+    for (let c = Math.max(0, bc - 1); c <= Math.min(DISPATCH_IDENTIFIER_MAX_COL, bc + 4); c++) {
       const val = cleanCell(nearRow[c]);
       if (val) parts.push(val);
     }
@@ -2109,39 +2186,53 @@ function isLikelySubbyHeaderText(value) {
   return !!rego && isValidSubbyIdentifier(rego);
 }
 
-function getDispatchSummaryBlockKey(rows, rowIndex, bc, fleetType) {
+function getDispatchSummaryBlockKey(rows, rowIndex, bc, fleetType, ws, XLSX) {
   const row = rows[rowIndex] || [];
-  const truckCell = cleanCell(row[bc + 1]);
-  const localText = getDispatchLocalBlockText(rows, rowIndex, bc);
-  const nearby = [truckCell, cleanCell(row[bc + 2]), cleanCell(row[bc + 3]), localText];
+  const truckCell = isDispatchIdentifierColumn(bc + 1) ? cleanCell(row[bc + 1]) : '';
+  const orangeValues = getDispatchOrangeHeaderValues(ws, XLSX, rows, rowIndex, bc);
+
+  function candidateValues() {
+    // If orange cells are available, only trust them. That is the strongest guard against
+    // rogue identifiers such as 7Load, Yatala56, Rate460, 7Total, etc.
+    if (orangeValues.length) return orangeValues;
+
+    // Fallback for browsers/workbooks that do not expose fill colours: only use the immediate
+    // header cell beside Description and still validate strictly.
+    return truckCell ? [truckCell] : [];
+  }
 
   if (fleetType === 'subby') {
-    const nearbyText = nearby.join(' ');
+    const values = candidateValues();
+    const text = values.join(' ');
 
-    const colMooreMatch = nearbyText.match(/\bCOL\s+MOORE(?:\s*\d+)?\b/i);
+    const colMooreMatch = text.match(/\bCOL\s+MOORE(?:\s*\d+)?\b/i);
     if (colMooreMatch) {
       const colMooreKey = normalizeDispatchRego(colMooreMatch[0]);
       return isValidSubbyIdentifier(colMooreKey) ? colMooreKey : '';
     }
 
-    const markedRego = extractDispatchSubbyRegoFromCells.apply(null, nearby);
+    const markedRego = extractDispatchSubbyRegoFromCells.apply(null, values);
     if (markedRego && isValidSubbyIdentifier(markedRego)) return markedRego;
 
-    const likelyRego = findDispatchLikelyRegoFromText(nearbyText);
-    if (likelyRego && isValidSubbyIdentifier(likelyRego)) return likelyRego;
+    // If the orange cell itself is a clean rego-like value, accept it.
+    for (const value of values) {
+      const token = normalizeDispatchRego(value);
+      if (token && isValidSubbyIdentifier(token)) return token;
+    }
 
-    // Deliberately do not create fallback IDs from free text.
-    // If the block does not contain a valid rego or approved subby name, skip it
-    // rather than creating rogue accounts rows such as Rate460, 7Total, etc.
     return '';
   }
 
-  const truckMatch = truckCell.match(/^(\d{3,4})(?:\s+(.+))?$/);
-  const truckNo = truckMatch ? truckMatch[1] : '';
-  return isKnownCompanyTruckNumber(truckNo) ? truckNo : '';
+  for (const value of candidateValues()) {
+    const match = cleanCell(value).match(/^(\d{3,4})(?:\s+(.+))?$/);
+    const truckNo = match ? match[1] : '';
+    if (isKnownCompanyTruckNumber(truckNo)) return truckNo;
+  }
+
+  return '';
 }
 
-function parseDispatchSummaryRows(rows, companyData, separatorRowIndex) {
+function parseDispatchSummaryRows(rows, companyData, separatorRowIndex, ws, XLSX) {
   const summaryData = {};
   const maxRow = rows.length;
 
@@ -2149,14 +2240,14 @@ function parseDispatchSummaryRows(rows, companyData, separatorRowIndex) {
     const row = rows[i] || [];
     const descCols = [];
 
-    for (let c = 0; c < row.length; c++) {
-      if (cleanCell(row[c]) === 'Description') descCols.push(c);
+    for (let c = 0; c < row.length && c <= DISPATCH_IDENTIFIER_MAX_COL; c++) {
+      if (cleanCell(row[c]) === 'Description' && isDispatchIdentifierColumn(c + 1)) descCols.push(c);
     }
 
     if (descCols.length === 0) continue;
 
     for (const bc of descCols) {
-      const truckCell = cleanCell(row[bc + 1]);
+      const truckCell = isDispatchIdentifierColumn(bc + 1) ? cleanCell(row[bc + 1]) : '';
       const localText = getDispatchLocalBlockText(rows, i, bc);
       const belowSeparator = isSummaryBlockBelowSeparator(i, separatorRowIndex);
       const localHasExplicitSubbyMarker = isDispatchSubbyMarkerText(localText);
@@ -2199,7 +2290,7 @@ function parseDispatchSummaryRows(rows, companyData, separatorRowIndex) {
         fleetType = 'subby';
       }
 
-      let blockKey = getDispatchSummaryBlockKey(rows, i, bc, fleetType);
+      let blockKey = getDispatchSummaryBlockKey(rows, i, bc, fleetType, ws, XLSX);
       if (!blockKey) continue;
       if (!isValidExpectedRunIdentifier(blockKey, fleetType)) continue;
 
