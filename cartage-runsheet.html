@@ -1152,7 +1152,12 @@
             <option>Point Wilson</option>
             <option>Wyndham Vale</option>
             <option>Donnybrook</option>
-            <option>Queensland</option>
+            <option>Bromelton</option>
+            <option>Mt Cotton</option>
+            <option>Yatala</option>
+            <option>Mt Marrow</option>
+            <option>Caboolture</option>
+            <option>Harvey Bay/Maryborough</option>
             <option>South Australia</option>
             <option>Other</option>
           </select>
@@ -3066,7 +3071,7 @@ function inferLocationFromSchedule(truckData) {
 
   const exactLocationMatch = matchList(
     truckLocation,
-    ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Queensland','South Australia'],
+    ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Bromelton','Mt Cotton','Yatala','Mt Marrow','Caboolture','Harvey Bay/Maryborough','South Australia'],
     0.92
   );
 
@@ -3074,25 +3079,28 @@ function inferLocationFromSchedule(truckData) {
     return {value: exactLocationMatch, other: ''};
   }
 
-  if (matches('Hervey\\s*Bay')) {
-    return {value: 'Other', other: 'Hervey Bay'};
+  if (matches('Bromelton')) {
+    return {value: 'Bromelton', other: ''};
   }
 
-  if (matches('Maryborough')) {
-    return {value: 'Other', other: 'Maryborough'};
+  if (matches('Mt\\s*Cotton') || matches('Mount\\s*Cotton')) {
+    return {value: 'Mt Cotton', other: ''};
   }
 
-  if (
-    matches('Bromelton') ||
-    matches('Mt\\s*Marrow') ||
-    matches('Mount\\s*Marrow') ||
-    matches('Mt\\s*Cotton') ||
-    matches('Mount\\s*Cotton') ||
-    matches('Elimbah') ||
-    matches('Yatala') ||
-    matches('Stapylton')
-  ) {
-    return {value: 'Queensland', other: ''};
+  if (matches('Yatala')) {
+    return {value: 'Yatala', other: ''};
+  }
+
+  if (matches('Mt\\s*Marrow') || matches('Mount\\s*Marrow')) {
+    return {value: 'Mt Marrow', other: ''};
+  }
+
+  if (matches('Caboolture')) {
+    return {value: 'Caboolture', other: ''};
+  }
+
+  if (matches('Hervey\\s*Bay') || matches('Harvey\\s*Bay') || matches('Maryborough')) {
+    return {value: 'Harvey Bay/Maryborough', other: ''};
   }
 
   return null;
@@ -3393,12 +3401,34 @@ function loadJobsFromSchedule() {
 }
 
 const docketPhotos = {};
+let docketPhotoQualityPopupShown = false;
+
+function showDocketPhotoQualityPopupOnce() {
+  if (docketPhotoQualityPopupShown) return true;
+
+  const proceed = window.confirm(
+    'Photo quality check\n\n' +
+    'Please make sure the docket photo is:\n\n' +
+    '✓ One docket only in the photo\n' +
+    '✓ Taken directly from above\n' +
+    '✓ Not taken on an angle\n' +
+    '✓ Cropped close so the docket fills most of the photo\n' +
+    '✓ Clear and in focus\n' +
+    '✓ No shadows, blur, or cut-off edges\n\n' +
+    'Tap OK to continue.'
+  );
+
+  if (proceed) docketPhotoQualityPopupShown = true;
+  return proceed;
+}
 
 function triggerDocketCamera(idx) {
+  if (!showDocketPhotoQualityPopupOnce()) return;
   document.getElementById('docketCameraInput' + idx)?.click();
 }
 
 function triggerDocketPhoto(idx) {
+  if (!showDocketPhotoQualityPopupOnce()) return;
   document.getElementById('docketInput' + idx)?.click();
 }
 
@@ -3911,7 +3941,7 @@ function lookupTruck() {
     const defaultLocation = TRUCK_LOCATION_LOOKUP[truckNo] || '';
     const depotSel = document.getElementById('depot');
     const depotOther = document.getElementById('depotOther');
-    if (depotSel && defaultLocation) {
+    if (depotSel && defaultLocation && !/^Queensland$/i.test(defaultLocation.trim())) {
       const hasOption = Array.from(depotSel.options).some(opt => opt.value === defaultLocation || opt.textContent === defaultLocation);
       if (hasOption) {
         depotSel.value = defaultLocation;
