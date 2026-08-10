@@ -1890,12 +1890,34 @@ function loadJobsFromSchedule() {
 }
 
 const docketPhotos = {};
+let docketPhotoQualityPopupShown = false;
+
+function showDocketPhotoQualityPopupOnce() {
+  if (docketPhotoQualityPopupShown) return true;
+
+  const proceed = window.confirm(
+    'Photo quality check\n\n' +
+    'Please make sure the docket photo is:\n\n' +
+    '✓ One docket only in the photo\n' +
+    '✓ Taken directly from above\n' +
+    '✓ Not taken on an angle\n' +
+    '✓ Cropped close so the docket fills most of the photo\n' +
+    '✓ Clear and in focus\n' +
+    '✓ No shadows, blur, or cut-off edges\n\n' +
+    'Tap OK to continue.'
+  );
+
+  if (proceed) docketPhotoQualityPopupShown = true;
+  return proceed;
+}
 
 function triggerDocketCamera(idx) {
+  if (!showDocketPhotoQualityPopupOnce()) return;
   document.getElementById('docketCameraInput' + idx)?.click();
 }
 
 function triggerDocketPhoto(idx) {
+  if (!showDocketPhotoQualityPopupOnce()) return;
   document.getElementById('docketInput' + idx)?.click();
 }
 
