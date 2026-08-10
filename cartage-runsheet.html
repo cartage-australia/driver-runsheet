@@ -3423,34 +3423,138 @@ function loadJobsFromSchedule() {
 
 const docketPhotos = {};
 let docketPhotoQualityPopupShown = false;
+let runSheetMissingReminderShown = false;
 
-function showDocketPhotoQualityPopupOnce() {
-  if (docketPhotoQualityPopupShown) return true;
+function showCartagePopup(options) {
+  const title = options && options.title ? options.title : 'Notice';
+  const messageHtml = options && options.messageHtml ? options.messageHtml : '';
+  const okText = options && options.okText ? options.okText : 'OK';
+  const cancelText = options && options.cancelText ? options.cancelText : 'Cancel';
+  const showCancel = !!(options && options.showCancel);
 
-  const proceed = window.confirm(
-    'Photo quality check\n\n' +
-    'Please make sure the docket photo is:\n\n' +
-    '✓ One docket only in the photo\n' +
-    '✓ Taken directly from above\n' +
-    '✓ Not taken on an angle\n' +
-    '✓ Cropped close so the docket fills most of the photo\n' +
-    '✓ Clear and in focus\n' +
-    '✓ No shadows, blur, or cut-off edges\n\n' +
-    'Tap OK to continue.'
-  );
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(15, 23, 42, 0.55)';
+    overlay.style.zIndex = '99999';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '18px';
 
-  if (proceed) docketPhotoQualityPopupShown = true;
-  return proceed;
+    const panel = document.createElement('div');
+    panel.style.width = 'min(420px, 100%)';
+    panel.style.background = '#fff';
+    panel.style.borderRadius = '16px';
+    panel.style.boxShadow = '0 20px 50px rgba(15, 23, 42, 0.25)';
+    panel.style.padding = '20px';
+    panel.style.fontFamily = 'inherit';
+    panel.style.color = 'var(--text)';
+
+    const heading = document.createElement('div');
+    heading.textContent = String(title).toUpperCase();
+    heading.style.fontSize = '15px';
+    heading.style.fontWeight = '900';
+    heading.style.textDecoration = 'underline';
+    heading.style.letterSpacing = '0.04em';
+    heading.style.marginBottom = '12px';
+
+    const body = document.createElement('div');
+    body.innerHTML = messageHtml;
+    body.style.fontSize = '13px';
+    body.style.lineHeight = '1.55';
+    body.style.color = 'var(--label)';
+
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.gap = '10px';
+    actions.style.marginTop = '18px';
+
+    function close(result) {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      resolve(result);
+    }
+
+    if (showCancel) {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.textContent = cancelText;
+      cancelBtn.style.flex = '1';
+      cancelBtn.style.background = '#fff';
+      cancelBtn.style.border = '1.5px solid var(--border)';
+      cancelBtn.style.borderRadius = '10px';
+      cancelBtn.style.padding = '11px';
+      cancelBtn.style.fontSize = '13px';
+      cancelBtn.style.fontWeight = '800';
+      cancelBtn.style.color = 'var(--label)';
+      cancelBtn.onclick = () => close(false);
+      actions.appendChild(cancelBtn);
+    }
+
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.textContent = okText;
+    okBtn.style.flex = '1';
+    okBtn.style.background = 'linear-gradient(135deg,var(--orange),var(--orange-dk))';
+    okBtn.style.border = 'none';
+    okBtn.style.borderRadius = '10px';
+    okBtn.style.padding = '11px';
+    okBtn.style.fontSize = '13px';
+    okBtn.style.fontWeight = '800';
+    okBtn.style.color = '#fff';
+    okBtn.onclick = () => close(true);
+    actions.appendChild(okBtn);
+
+    panel.appendChild(heading);
+    panel.appendChild(body);
+    panel.appendChild(actions);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    okBtn.focus();
+  });
+}
+
+function showDocketPhotoQualityPopupOnce(callback) {
+  if (docketPhotoQualityPopupShown) {
+    callback();
+    return;
+  }
+
+  showCartagePopup({
+    title: 'Photo quality check',
+    okText: 'OK, continue',
+    showCancel: true,
+    cancelText: 'Cancel',
+    messageHtml: `
+      <p style="margin:0 0 8px 0;">Please make sure the docket photo is:</p>
+      <div style="display:grid; gap:5px;">
+        <div>✓ One docket only in the photo</div>
+        <div>✓ Taken directly from above</div>
+        <div>✓ Not taken on an angle</div>
+        <div>✓ Cropped close so the docket fills most of the photo</div>
+        <div>✓ Clear and in focus</div>
+        <div>✓ No shadows, blur, or cut-off edges</div>
+      </div>
+      <p style="margin:10px 0 0 0; font-weight:700; color:var(--text);">Tap OK to continue.</p>
+    `
+  }).then(proceed => {
+    if (!proceed) return;
+    docketPhotoQualityPopupShown = true;
+    callback();
+  });
 }
 
 function triggerDocketCamera(idx) {
-  if (!showDocketPhotoQualityPopupOnce()) return;
-  document.getElementById('docketCameraInput' + idx)?.click();
+  showDocketPhotoQualityPopupOnce(() => {
+    document.getElementById('docketCameraInput' + idx)?.click();
+  });
 }
 
 function triggerDocketPhoto(idx) {
-  if (!showDocketPhotoQualityPopupOnce()) return;
-  document.getElementById('docketInput' + idx)?.click();
+  showDocketPhotoQualityPopupOnce(() => {
+    document.getElementById('docketInput' + idx)?.click();
+  });
 }
 
 async function handleDocketPhoto(idx, input) {
@@ -4617,6 +4721,23 @@ function submitForm() {
     return;
   }
   document.getElementById('valSummary').classList.remove('show');
+
+  if (!runSheetPhotoData && !runSheetMissingReminderShown) {
+    runSheetMissingReminderShown = true;
+    showCartagePopup({
+      title: 'Run sheet photo reminder',
+      okText: 'Submit anyway',
+      showCancel: true,
+      cancelText: 'Go back and upload',
+      messageHtml: `
+        <p style="margin:0 0 8px 0; font-weight:700; color:var(--text);">No run sheet photo has been uploaded.</p>
+        <p style="margin:0;">Please upload a clear photo of the completed paper run sheet before submitting where possible.</p>
+      `
+    }).then(proceed => {
+      if (proceed) submitForm();
+    });
+    return;
+  }
 
   const loads = [];
   for (let i=1;i<=MAX_LOADS;i++) {
