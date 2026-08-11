@@ -2040,7 +2040,17 @@ function isValidSubbyIdentifier(value) {
 }
 
 function isValidExpectedRunIdentifier(value, fleetType) {
-  if (fleetType === 'company') return isKnownCompanyTruckNumber(value);
+  const token = normalizeDispatchRego(value);
+
+  if (fleetType === 'company') {
+    // Company truck numbers can legitimately appear in the dispatch workbook
+    // before they have been added to the Truck Fleet lookup. For the dispatcher
+    // upload/reporting page, accept clean 3-4 digit truck numbers from a valid
+    // company truck header block so active new trucks are not under-counted.
+    // This still rejects Rate/Total/Load/text values through the strict numeric test.
+    return /^\d{3,4}$/.test(token) && !isBlockedDispatchIdentifier(token);
+  }
+
   return isValidSubbyIdentifier(value);
 }
 
@@ -2353,7 +2363,11 @@ function parseDispatchSummaryRows(rows, companyData, separatorRowIndex, ws, XLSX
 function mergeMissingCompanyDispatchTrucks(summaryData, companyData) {
   Object.entries(companyData || {}).forEach(([truckNo, truckData]) => {
     const cleanTruckNo = normalizeDispatchRego(truckNo);
-    if (!cleanTruckNo || !isKnownCompanyTruckNumber(cleanTruckNo)) return;
+    // The standard parser only creates companyData entries from strict truck-number
+    // header cells, so allow clean 3-4 digit truck numbers even if the Truck Fleet
+    // lookup has not been updated yet. This fixes daily summary under-counts for
+    // active company trucks such as new or missing fleet numbers.
+    if (!cleanTruckNo || !/^\d{3,4}$/.test(cleanTruckNo) || isBlockedDispatchIdentifier(cleanTruckNo)) return;
 
     const companyKey = 'COMPANY-' + cleanTruckNo;
     const parsedLoads = Array.isArray(truckData && truckData.loads) ? truckData.loads : [];
