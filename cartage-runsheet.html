@@ -3726,13 +3726,21 @@ You must only return a value for Date, Gross, Tare or Net if it is machine-print
 The docket number may be printed, stamped, or handwritten - it can be read either way, just set confidence accordingly, and still return "" instead of a guess if you are not fully confident.
 For Pronto Concrete / Pronto dockets, the docket number may be labelled "Delivery Docket" and is often printed near the top right of the docket. Actively check the top-right area and any field labelled "Delivery Docket", "Docket No", "Docket Number", "Ticket No", "Document No" or similar before returning docketNumber as not_visible.
 
+HEIDELBERG MATERIALS AUSTRALIA DOCKETS - special rule:
+If the docket is from Heidelberg Materials / heidelbergmaterials.com.au, the docket number to return is the value in the field labelled "Order No." or "Order No". It is usually in the upper-right table beside the Date and above the Plant field, and may look like "X106282003". Do NOT use Customer Number, Purchase Order Number, Truck, ABN, Plant code, Sales Item number, or page number as the docketNumber.
+For Heidelberg dockets, the weights are printed in the horizontal weights table. Read these exact fields:
+- Tare Weight (TO) -> tare
+- Gross Weight (TO) -> gross
+- Net/Load Weight (TO) -> net
+The row may also show Load Quantity (TO), which normally equals Net/Load Weight. If Net/Load Weight is clear, return it as net.
+
 Confidence values (use exactly one of these strings for every field):
 - "high": machine-printed (or clearly legible for docket number), unambiguous - you are certain
 - "low": partially unclear, faded, smudged, or you have any doubt at all
 - "handwritten": the value is handwritten (date/weights only) - value must be ""
 - "not_visible": field is blank or not present on this docket - value must be ""
 
-Weights are in tonnes, typically 2 digits before the decimal and 2 after (e.g. 28.56).
+Weights are in tonnes. Return the number exactly as printed, preserving one or two decimals if shown (e.g. 57.1, 18.52, 38.58).
 Date: read whatever date is printed on the docket (the docket's own date, not today's date) and return it exactly as written, e.g. "18-Dec-2025" or "19/12/25".
 
 Return exactly this JSON shape:
@@ -3841,7 +3849,9 @@ Return exactly this JSON shape:
       notes.push(applyFieldForce('ticketNo' + idx, parsed.docketNumber, 'Docket'));
       notes.push(applyFieldForce('gross' + idx, parsed.gross, 'Gross'));
       notes.push(applyFieldForce('tare' + idx, parsed.tare, 'Tare'));
-      calcNet(idx);
+      const netApplied = applyNetWeightFromScan(idx, parsed.net);
+      if (netApplied) notes.push(netApplied);
+      calcNet(idx, parsed.net);
     } else {
       clearScannedFields();
     }
@@ -4340,20 +4350,66 @@ function updateAddLoadBtn() {
   else btn.style.display = 'flex';
 }
 
-function calcNet(idx) {
+function calcNet(idx, scannedNetInfo = null) {
   const grossEl = document.getElementById(`gross${idx}`);
   const tareEl = document.getElementById(`tare${idx}`);
   const netEl = document.getElementById(`tonnes${idx}`);
   const gross = parseFloat(grossEl.value);
   const tare = parseFloat(tareEl.value);
-  if (isNaN(gross) || isNaN(tare)) { netEl.value = ''; calcTotals(); return; }
+  const scannedNet = scannedNetInfo && scannedNetInfo.confidence === 'high'
+    ? parseFloat(scannedNetInfo.value)
+    : NaN;
+
+  if (isNaN(gross) || isNaN(tare)) {
+    if (!isNaN(scannedNet) && scannedNet > 0) {
+      netEl.value = normaliseWeightDisplay(scannedNetInfo.value);
+      netEl.classList.add('valid');
+      netEl.classList.remove('error');
+    } else {
+      netEl.value = '';
+    }
+    calcTotals();
+    return;
+  }
+
   const net = gross - tare;
   if (net < 0) {
     netEl.value = 'Check weights';
   } else {
-    netEl.value = net.toFixed(2);
+    const calculated = Number(net.toFixed(2));
+    if (!isNaN(scannedNet) && Math.abs(calculated - scannedNet) > 0.08) {
+      netEl.value = 'Check weights';
+      netEl.classList.add('error');
+      netEl.classList.remove('valid');
+    } else {
+      netEl.value = calculated.toFixed(2);
+      netEl.classList.add('valid');
+      netEl.classList.remove('error');
+    }
   }
   calcTotals();
+}
+
+function normaliseWeightDisplay(value) {
+  const n = parseFloat(value);
+  if (isNaN(n)) return String(value || '');
+  return n.toFixed(2);
+}
+
+function applyNetWeightFromScan(idx, info) {
+  if (!info || !info.value || info.confidence !== 'high') {
+    if (info && info.confidence === 'handwritten') return 'Net - handwritten, enter manually';
+    if (info && info.confidence === 'low') return 'Net - not clear, enter manually';
+    return '';
+  }
+
+  const el = document.getElementById('tonnes' + idx);
+  if (el) {
+    el.value = normaliseWeightDisplay(info.value);
+    el.classList.add('valid');
+    el.classList.remove('error');
+  }
+  return `Net ${normaliseWeightDisplay(info.value)}`;
 }
 
 function calcTotals() {
