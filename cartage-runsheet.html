@@ -3653,24 +3653,26 @@ function compressImage(file, maxWidth, quality) {
 
 function parseDocketDateStr(str) {
   if (!str) return null;
-  const s = str.trim();
+  const s = String(str).trim();
   const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
 
-  let m = s.match(/(\d{1,2})[\s-]([A-Za-z]{3,})[\s-](\d{4})/);
+  let m = s.match(/(\d{1,2})[\s-]([A-Za-z]{3,})[\s-](\d{2,4})/);
   if (m) {
     const mon = MONTHS[m[2].slice(0,3).toLowerCase()];
-    if (mon) return { y: parseInt(m[3]), m: mon, d: parseInt(m[1]) };
+    const year = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
+    if (mon) return { y: year, m: mon, d: parseInt(m[1], 10) };
   }
 
-  m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if (m) return { y: parseInt(m[3]), m: parseInt(m[2]), d: parseInt(m[1]) };
+  // Australian date format only: dd.mm.yy, dd.mm.yyyy, dd/mm/yy, dd/mm/yyyy, dd-mm-yy, dd-mm-yyyy.
+  // Heidelberg dockets commonly print dates like 11.08.2026, so dots must be accepted.
+  m = s.match(/(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{4})\b/);
+  if (m) return { y: parseInt(m[3], 10), m: parseInt(m[2], 10), d: parseInt(m[1], 10) };
 
-  m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})\b/);
-  if (m) return { y: 2000 + parseInt(m[3]), m: parseInt(m[2]), d: parseInt(m[1]) };
+  m = s.match(/(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{2})\b/);
+  if (m) return { y: 2000 + parseInt(m[3], 10), m: parseInt(m[2], 10), d: parseInt(m[1], 10) };
 
   return null;
 }
-
 function getRunSheetDate() {
   const val = document.getElementById('jobDate')?.value;
   if (!val) return null;
@@ -3686,7 +3688,8 @@ function formatDateObj(d) {
   if (!d) return '';
   const dd = String(d.d).padStart(2,'0');
   const mm = String(d.m).padStart(2,'0');
-  return `${dd}/${mm}/${d.y}`;
+  const yy = String(d.y).slice(-2);
+  return `${dd}.${mm}.${yy}`;
 }
 
 async function scanDocket(idx) {
@@ -3728,6 +3731,7 @@ For Pronto Concrete / Pronto dockets, the docket number may be labelled "Deliver
 
 HEIDELBERG MATERIALS AUSTRALIA DOCKETS - special rule:
 If the docket is from Heidelberg Materials / heidelbergmaterials.com.au, the docket number to return is the value in the field labelled "Order No." or "Order No". It is usually in the upper-right table beside the Date and above the Plant field, and may look like "X106282003". Do NOT use Customer Number, Purchase Order Number, Truck, ABN, Plant code, Sales Item number, or page number as the docketNumber.
+For Heidelberg dockets, the date is in the small field labelled "Date" in the upper-right table, immediately to the left of "Order No.". This Date field is usually a machine-printed Australian dotted date such as "11.08.2026" or "11.08.26". You must actively read this labelled Date box. If the Date box is visible and machine-printed, return it with confidence "high". Return Heidelberg dates in Australian dd.mm.yy format, for example "11.08.26". Do not return month/day/year. Do not mark the Heidelberg Date as not_visible when the Date box is visible.
 For Heidelberg dockets, the weights are printed in the horizontal weights table. Read these exact fields:
 - Tare Weight (TO) -> tare
 - Gross Weight (TO) -> gross
@@ -3741,7 +3745,7 @@ Confidence values (use exactly one of these strings for every field):
 - "not_visible": field is blank or not present on this docket - value must be ""
 
 Weights are in tonnes. Return the number exactly as printed, preserving one or two decimals if shown (e.g. 57.1, 18.52, 38.58).
-Date: read whatever date is printed on the docket (the docket's own date, not today's date) and return it exactly as written, e.g. "18-Dec-2025" or "19/12/25".
+Date: read whatever date is printed on the docket (the docket's own date, not today's date). Always treat dates as Australian format: day first, then month, then year. Return the date in Australian dotted format dd.mm.yy, e.g. "11.08.26" or "18.12.25". If the printed date has a four-digit year such as "11.08.2026", convert it to "11.08.26". Never interpret dates as US month/day format.
 
 Return exactly this JSON shape:
 {
