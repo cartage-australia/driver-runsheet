@@ -2340,14 +2340,42 @@ function parseDispatchSummaryRows(rows, companyData, separatorRowIndex, ws, XLSX
     }
   }
 
-  // Fallback to the standard company schedule if no summary blocks were found.
-  if (Object.keys(summaryData).length === 0) {
-    Object.entries(companyData || {}).forEach(([truckNo, truckData]) => {
-      summaryData['COMPANY-' + truckNo] = cloneDispatchTruckData(truckData, 'company');
-    });
-  }
+  // Keep the detailed summary parser for material/plant reporting and subbies,
+  // but do not let it under-count company trucks when a dispatch block is missed
+  // because an orange header cell/style was not exposed by the uploaded workbook.
+  // The standard company schedule parser is stricter for Cartage truck numbers,
+  // so merge in any missing company trucks from that parser before reporting.
+  mergeMissingCompanyDispatchTrucks(summaryData, companyData);
 
   return summaryData;
+}
+
+function mergeMissingCompanyDispatchTrucks(summaryData, companyData) {
+  Object.entries(companyData || {}).forEach(([truckNo, truckData]) => {
+    const cleanTruckNo = normalizeDispatchRego(truckNo);
+    if (!cleanTruckNo || !isKnownCompanyTruckNumber(cleanTruckNo)) return;
+
+    const companyKey = 'COMPANY-' + cleanTruckNo;
+    const parsedLoads = Array.isArray(truckData && truckData.loads) ? truckData.loads : [];
+    if (parsedLoads.length === 0) return;
+
+    if (!summaryData[companyKey]) {
+      summaryData[companyKey] = cloneDispatchTruckData(truckData, 'company');
+      summaryData[companyKey].displayTruck = cleanTruckNo;
+      summaryData[companyKey].fleetType = 'company';
+      return;
+    }
+
+    // If the summary parser found the truck but missed all load rows, use the
+    // standard schedule rows so the truck and its loads are still counted.
+    const existingLoads = Array.isArray(summaryData[companyKey].loads) ? summaryData[companyKey].loads : [];
+    if (existingLoads.length === 0) {
+      summaryData[companyKey].loads = parsedLoads.slice();
+    }
+
+    summaryData[companyKey].fleetType = 'company';
+    summaryData[companyKey].displayTruck = cleanTruckNo;
+  });
 }
 let dispatchSummaryTableState = {
   materialRows: [],
