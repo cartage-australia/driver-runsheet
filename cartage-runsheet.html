@@ -1308,6 +1308,8 @@
   </div>
 
   <div class="submit-wrap">
+    <button type="button" onclick="saveProgress()" style="width:100%;background:#fff;border:2px solid var(--orange);border-radius:10px;padding:14px 16px;font-size:15px;font-weight:800;color:var(--orange-dk);cursor:pointer;margin-bottom:10px;">Save Progress</button>
+    <p id="saveProgressStatus" class="submit-note" style="margin-top:0;margin-bottom:12px;">Saves this run sheet and docket photos on this device only</p>
     <button class="submit-btn" onclick="submitForm()">Submit Run Sheet</button>
     <p class="submit-note">Sent directly to the Cartage Australia office</p>
   </div>
@@ -4178,6 +4180,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSignature();
   updateProgress();
   fetchScheduleFromJsonbin();
+  checkForSavedProgress();
 });
 
 function getTodayIsoDate() {
@@ -4926,6 +4929,270 @@ function submitForm() {
   });
 }
 
+
+// Save Progress: local draft storage only. Nothing here is submitted to Apps Script.
+const DRAFT_DB_NAME = 'cartage_driver_runsheet_drafts';
+const DRAFT_DB_VERSION = 1;
+const DRAFT_STORE = 'drafts';
+const DRAFT_KEY = 'current-driver-runsheet';
+
+function openDraftDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DRAFT_DB_NAME, DRAFT_DB_VERSION);
+    req.onupgradeneeded = function(event) {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(DRAFT_STORE)) {
+        db.createObjectStore(DRAFT_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function setDraftFieldValue(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = value == null ? '' : value;
+}
+
+function collectDraftProgress() {
+  const loads = [];
+  for (let i = 1; i <= MAX_LOADS; i++) {
+    const card = document.getElementById('loadCard' + i);
+    if (!card) continue;
+    loads.push({
+      index: i,
+      docketNumber: document.getElementById('ticketNo' + i)?.value || '',
+      pullFrom: document.getElementById('pullFrom' + i)?.value || '',
+      deliverTo: document.getElementById('deliverTo' + i)?.value || '',
+      product: document.getElementById('product' + i)?.value || '',
+      gross: document.getElementById('gross' + i)?.value || '',
+      tare: document.getElementById('tare' + i)?.value || '',
+      netTonnes: document.getElementById('tonnes' + i)?.value || '',
+      comments: document.getElementById('comments' + i)?.value || '',
+      noDocketRequired: card.dataset.noDocketRequired === 'true',
+      dateMismatch: card.dataset.dateMismatch === 'true'
+    });
+  }
+
+  return {
+    id: DRAFT_KEY,
+    savedAt: new Date().toISOString(),
+    jobDate: document.getElementById('jobDate')?.value || '',
+    driverID: document.getElementById('driverID')?.value || '',
+    driverName: document.getElementById('driverName')?.value || '',
+    truckNo: document.getElementById('truckNo')?.value || '',
+    truckRego: document.getElementById('truckRego')?.value || '',
+    depot: document.getElementById('depot')?.value || '',
+    depotOther: document.getElementById('depotOther')?.value || '',
+    shiftType: getShiftType(),
+    notes: document.getElementById('notes')?.value || '',
+    loads,
+    docketPhotos: {...docketPhotos},
+    runSheetPhoto: runSheetPhotoData || null,
+    logbookPhoto: logbookPhotoData || null
+  };
+}
+
+async function saveProgress() {
+  if (!window.indexedDB) {
+    showToast('Save Progress is not supported by this browser.', 'error');
+    return;
+  }
+
+  const status = document.getElementById('saveProgressStatus');
+  if (status) status.textContent = 'Saving progress on this device...';
+
+  try {
+    const draft = collectDraftProgress();
+    const db = await openDraftDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(DRAFT_STORE, 'readwrite');
+      tx.objectStore(DRAFT_STORE).put(draft);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error('Draft save aborted'));
+    });
+    db.close();
+
+    const savedTime = new Date(draft.savedAt).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    if (status) status.textContent = 'Progress saved on this device at ' + savedTime;
+    showToast('Progress saved on this device.', 'success');
+  } catch (err) {
+    console.error('Save Progress failed', err);
+    if (status) status.textContent = 'Could not save progress. Please try again.';
+    showToast('Could not save progress. Check browser storage and try again.', 'error');
+  }
+}
+
+async function getSavedProgress() {
+  if (!window.indexedDB) return null;
+  const db = await openDraftDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DRAFT_STORE, 'readonly');
+    const req = tx.objectStore(DRAFT_STORE).get(DRAFT_KEY);
+    req.onsuccess = () => {
+      const result = req.result || null;
+      db.close();
+      resolve(result);
+    };
+    req.onerror = () => {
+      db.close();
+      reject(req.error);
+    };
+  });
+}
+
+async function clearSavedProgress() {
+  if (!window.indexedDB) return;
+  const db = await openDraftDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DRAFT_STORE, 'readwrite');
+    tx.objectStore(DRAFT_STORE).delete(DRAFT_KEY);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+function restoreDocketPhotoPreview(idx, dataUrl) {
+  if (!dataUrl) return;
+  docketPhotos[idx] = dataUrl;
+  const img = document.getElementById('docketImg' + idx);
+  if (img) img.src = dataUrl;
+  const preview = document.getElementById('docketPreview' + idx);
+  if (preview) preview.style.display = 'block';
+  const photoBtn = document.getElementById('docketPhotoBtn' + idx);
+  if (photoBtn) photoBtn.style.display = 'none';
+  const scanProgress = document.getElementById('docketScanProgress' + idx);
+  if (scanProgress) scanProgress.style.display = 'none';
+}
+
+function restorePhotoPreview(dataUrl, dataName, imgId, previewId, labelId, labelText) {
+  if (!dataUrl) return;
+  if (dataName === 'runSheet') runSheetPhotoData = dataUrl;
+  if (dataName === 'logbook') logbookPhotoData = dataUrl;
+  const img = document.getElementById(imgId);
+  if (img) img.src = dataUrl;
+  const preview = document.getElementById(previewId);
+  if (preview) preview.style.display = 'block';
+  const label = document.getElementById(labelId);
+  if (label) label.textContent = labelText;
+}
+
+async function restoreSavedProgress(draft) {
+  if (!draft) return;
+
+  setDraftFieldValue('jobDate', draft.jobDate || getTodayIsoDate());
+  setDraftFieldValue('driverID', draft.driverID);
+  setDraftFieldValue('driverName', draft.driverName);
+  setDraftFieldValue('truckNo', draft.truckNo);
+  setDraftFieldValue('truckRego', draft.truckRego);
+  setDraftFieldValue('depot', draft.depot);
+  handleDepotChange();
+  setDraftFieldValue('depotOther', draft.depotOther);
+  setDraftFieldValue('notes', draft.notes);
+
+  const shift = draft.shiftType === 'Night' ? 'Night' : 'Day';
+  const shiftRadio = document.querySelector('input[name="shiftType"][value="' + shift + '"]');
+  if (shiftRadio) shiftRadio.checked = true;
+
+  const savedLoads = Array.isArray(draft.loads) ? draft.loads : [];
+  const maxIndex = Math.min(MAX_LOADS, savedLoads.reduce((m, load) => Math.max(m, Number(load.index) || 0), 1));
+  while (loadCount < maxIndex) addLoad();
+
+  const savedIndexSet = new Set(savedLoads.map(load => Number(load.index)));
+  for (let i = 1; i <= maxIndex; i++) {
+    if (!savedIndexSet.has(i) && i > 1) {
+      const card = document.getElementById('loadCard' + i);
+      if (card) card.remove();
+    }
+  }
+
+  for (const load of savedLoads) {
+    const i = Number(load.index);
+    if (!i || i > MAX_LOADS || !document.getElementById('loadCard' + i)) continue;
+    setDraftFieldValue('ticketNo' + i, load.docketNumber);
+    setDraftFieldValue('pullFrom' + i, load.pullFrom);
+    setDraftFieldValue('deliverTo' + i, load.deliverTo);
+    setDraftFieldValue('product' + i, load.product);
+    setDraftFieldValue('gross' + i, load.gross);
+    setDraftFieldValue('tare' + i, load.tare);
+    setDraftFieldValue('tonnes' + i, load.netTonnes);
+    setDraftFieldValue('comments' + i, load.comments);
+
+    const card = document.getElementById('loadCard' + i);
+    if (card) {
+      card.dataset.noDocketRequired = load.noDocketRequired ? 'true' : 'false';
+      card.dataset.dateMismatch = load.dateMismatch ? 'true' : 'false';
+      if (load.noDocketRequired) {
+        const req = document.querySelector('#docketPhotoSection' + i + ' .req');
+        if (req) req.textContent = '(optional)';
+      }
+    }
+
+    restoreDocketPhotoPreview(i, draft.docketPhotos && draft.docketPhotos[i]);
+  }
+
+  restorePhotoPreview(draft.runSheetPhoto, 'runSheet', 'runSheetPhotoImg', 'runSheetPhotoPreview', 'runSheetPhotoBtnLabel', 'Run Sheet Captured');
+  restorePhotoPreview(draft.logbookPhoto, 'logbook', 'logbookPhotoImg', 'logbookPhotoPreview', 'logbookPhotoBtnLabel', 'Logbook Photo Captured');
+  if (draft.logbookPhoto) {
+    const wrap = document.getElementById('logbookUploadWrap');
+    const addBtn = document.getElementById('addLogbookBtn');
+    if (wrap) wrap.style.display = 'block';
+    if (addBtn) addBtn.style.display = 'none';
+  }
+
+  userEditedRego = !!draft.truckRego;
+  calcTotals();
+  updateProgress();
+  updateAddLoadBtn();
+
+  // Re-check the restored driver against the current employee lookup rather than
+  // blindly treating a saved name as verified.
+  verifiedDriverName = null;
+  setTimeout(() => {
+    if (document.getElementById('driverID')?.value) lookupDriver();
+    else if (document.getElementById('driverName')?.value) lookupDriverByName();
+  }, 500);
+
+  const status = document.getElementById('saveProgressStatus');
+  if (status) {
+    const saved = draft.savedAt ? new Date(draft.savedAt) : null;
+    status.textContent = saved && !isNaN(saved) ? 'Restored progress saved ' + saved.toLocaleString() : 'Saved progress restored';
+  }
+  showToast('Saved progress restored.', 'success');
+}
+
+async function checkForSavedProgress() {
+  try {
+    const draft = await getSavedProgress();
+    if (!draft) return;
+
+    const savedDate = draft.savedAt ? new Date(draft.savedAt) : null;
+    const when = savedDate && !isNaN(savedDate) ? savedDate.toLocaleString() : 'earlier';
+    const truck = draft.truckNo ? '<p style="margin:6px 0 0 0;"><strong>Truck:</strong> ' + String(draft.truckNo).replace(/[<>&]/g, '') + '</p>' : '';
+
+    const restore = await showCartagePopup({
+      title: 'Saved progress found',
+      okText: 'Restore progress',
+      showCancel: true,
+      cancelText: 'Start fresh',
+      messageHtml: '<p style="margin:0;">This device has unfinished run sheet progress saved ' + when + '.</p>' + truck + '<p style="margin:8px 0 0 0;">Restore the saved docket photos and entered load details?</p>'
+    });
+
+    if (restore) {
+      await restoreSavedProgress(draft);
+    } else {
+      await clearSavedProgress();
+      const status = document.getElementById('saveProgressStatus');
+      if (status) status.textContent = 'Saves this run sheet and docket photos on this device only';
+    }
+  } catch (err) {
+    console.error('Could not check saved progress', err);
+  }
+}
+
 const OFFLINE_DB_NAME = 'cartage_run_sheets_offline';
 const OFFLINE_STORE = 'submissions';
 
@@ -4997,6 +5264,7 @@ async function processOfflineSubmissions() {
 window.addEventListener('online', processOfflineSubmissions);
 
 function showSuccess(payload, ref) {
+  clearSavedProgress().catch(() => {});
   const d = payload.jobDate.replace(/-/g,'');
   const refNum = ref || `CA-${d}-${Math.floor(Math.random()*9000+1000)}`;
   document.getElementById('refNumber').textContent = refNum;
@@ -5006,6 +5274,7 @@ function showSuccess(payload, ref) {
 }
 
 function resetForm() {
+  clearSavedProgress().catch(() => {});
   document.getElementById('successScreen').classList.remove('show');
   document.getElementById('mainForm').style.display = 'block';
   document.getElementById('loadsContainer').innerHTML = '';
