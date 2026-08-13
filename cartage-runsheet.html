@@ -971,8 +971,8 @@
       <div class="help-step" onclick="helpJump('#depot', 'Step 3. Check the location. If Other is selected, enter the location in the box that appears.')">
         <div class="help-num">3</div><div><h3>Check Location</h3><p>Use the selected location or enter another location if required.</p></div>
       </div>
-      <div class="help-step" onclick="helpJump('#loadJobsBanner', 'Step 4. If allocated jobs are available, tap Load Today's Jobs. Otherwise add loads manually.')">
-        <div class="help-num">4</div><div><h3>Load or add jobs</h3><p>Tap Load Today's Jobs when shown, or add loads manually.</p></div>
+      <div class="help-step" onclick="helpJump('#loadJobsBanner', 'Step 4. If allocated jobs are available, choose Yes in the popup to load them. Otherwise add loads manually.')">
+        <div class="help-num">4</div><div><h3>Load or add jobs</h3><p>When prompted, choose Yes to load today's allocated jobs, or No to add loads manually.</p></div>
       </div>
       <div class="help-step" onclick="helpJump('#loadsContainer', 'Step 5. For each load, add the docket photo first. Take a photo or choose one from Library or File.')">
         <div class="help-num">5</div><div><h3>Scan docket first</h3><p>For each load, add the weighbridge docket photo before entering details.</p></div>
@@ -1183,10 +1183,7 @@
 
   <div class="section">
     <div class="section-title">Loads</div>
-    <div id="loadJobsBanner" style="display:none; margin-bottom:12px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 14px;">
-      <div style="font-size:13px; color:#92400e; font-weight:600; margin-bottom:8px;">Today's allocated loads available</div>
-      <button onclick="loadJobsFromSchedule()" style="width:100%; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:11px; font-size:13px; font-weight:700; color:white; cursor:pointer;">Load Today's Jobs</button>
-    </div>
+    <div id="loadJobsBanner" style="display:none;"></div>
     <div id="loadsContainer"></div>
     <button class="add-load-btn" id="addLoadBtn" onclick="addLoad()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1479,75 +1476,93 @@ function matchNameFuzzy(readName) {
   const readParts = driverNameTokens(normal);
   if (!readParts.length) return null;
 
-  const compactRead = readParts.join('');
+  const uniqueEntries = [];
+  const seenIds = new Set();
+  Object.values(NAME_LOOKUP).forEach(entry => {
+    if (!entry || !entry.id || seenIds.has(entry.id)) return;
+    seenIds.add(entry.id);
+    uniqueEntries.push(entry);
+  });
 
-  // If the dispatch sheet only provides a first name (for example, Phil),
-  // match it only when it uniquely identifies one employee. This fixes short
-  // QLD schedule names without creating unsafe random matches.
+  // A first name on its own is accepted only where it uniquely identifies an
+  // employee. Small one-letter spelling differences are allowed, but the best
+  // match must be clearly ahead of the next candidate.
   if (readParts.length === 1 && readParts[0].length >= 4) {
-    const firstNameMatches = [];
-    const seenIds = new Set();
+    const candidates = uniqueEntries.map(entry => {
+      const parts = driverNameTokens(entry.properName);
+      const first = parts[0] || '';
+      return { entry, score: simScore(readParts[0], first) };
+    }).filter(x => x.score >= 0.88).sort((a,b) => b.score - a.score);
 
-    for (const key in NAME_LOOKUP) {
-      const entry = NAME_LOOKUP[key];
-      if (!entry || seenIds.has(entry.id)) continue;
-      const nameParts = driverNameTokens(entry.properName);
-      const first = nameParts[0] || '';
-      if (first === readParts[0] || first.startsWith(readParts[0]) || readParts[0].startsWith(first)) {
-        firstNameMatches.push(entry);
-        seenIds.add(entry.id);
+    if (candidates.length === 1) return candidates[0].entry;
+    if (candidates.length > 1 && candidates[0].score >= 0.94 && (candidates[0].score - candidates[1].score) >= 0.06) {
+      return candidates[0].entry;
+    }
+    return null;
+  }
+
+  function scoreCandidate(entry) {
+    const parts = driverNameTokens(entry.properName);
+    if (!parts.length) return 0;
+
+    const readFirst = readParts[0] || '';
+    const readLast = readParts[readParts.length - 1] || '';
+    const nameFirst = parts[0] || '';
+    const nameLast = parts[parts.length - 1] || '';
+
+    const firstSim = simScore(readFirst, nameFirst);
+    const lastSim = simScore(readLast, nameLast);
+    const swappedFirstSim = simScore(readFirst, nameLast);
+    const swappedLastSim = simScore(readLast, nameFirst);
+    const fullSim = simScore(readParts.join(' '), parts.join(' '));
+
+    let positional = (firstSim * 0.45) + (lastSim * 0.45) + (fullSim * 0.10);
+    let swapped = (swappedFirstSim * 0.45) + (swappedLastSim * 0.45) + (fullSim * 0.10);
+    let score = Math.max(positional, swapped);
+
+    // For names with middle components, reward close token-by-token matches.
+    if (readParts.length > 2 || parts.length > 2) {
+      let total = 0;
+      let matched = 0;
+      for (const rp of readParts) {
+        let best = 0;
+        for (const np of parts) best = Math.max(best, simScore(rp, np));
+        if (best >= 0.82) {
+          total += best;
+          matched++;
+        }
+      }
+      if (matched >= Math.min(2, readParts.length)) {
+        const tokenScore = (total / readParts.length) * (matched / Math.max(readParts.length, parts.length));
+        score = Math.max(score, tokenScore);
       }
     }
 
-    if (firstNameMatches.length === 1) return firstNameMatches[0];
+    // Do not auto-match two-part names unless both ends are reasonably close.
+    const normalOrderStrong = firstSim >= 0.84 && lastSim >= 0.78;
+    const swappedOrderStrong = swappedFirstSim >= 0.84 && swappedLastSim >= 0.78;
+    if (!normalOrderStrong && !swappedOrderStrong && fullSim < 0.90) return 0;
+
+    return score;
   }
 
-  let bestMatch = null;
-  let bestScore = 0;
+  const ranked = uniqueEntries
+    .map(entry => ({entry, score: scoreCandidate(entry)}))
+    .filter(x => x.score > 0)
+    .sort((a,b) => b.score - a.score);
 
-  for (const fullName in NAME_LOOKUP) {
-    const nameParts = driverNameTokens(fullName);
-    if (!nameParts.length) continue;
+  if (!ranked.length) return null;
 
-    const compactName = nameParts.join('');
-    let score = 0;
+  const best = ranked[0];
+  const second = ranked[1];
+  const margin = second ? best.score - second.score : 1;
 
-    if (compactRead === compactName) {
-      score = 100;
-    } else {
-      const readSet = new Set(readParts);
-      const nameSet = new Set(nameParts);
-      const common = readParts.filter(p => nameSet.has(p)).length;
-      const shorter = Math.min(readSet.size, nameSet.size);
-      const longer = Math.max(readSet.size, nameSet.size);
+  // Small spelling differences such as Austin/Austtin score comfortably above
+  // this threshold. Ambiguous near-ties are left for manual confirmation.
+  if (best.score >= 0.88 && (best.score >= 0.95 || margin >= 0.04)) return best.entry;
 
-      if (common === shorter && shorter >= 2) {
-        score = 80 + (shorter / Math.max(longer, 1));
-      } else if (readParts.length >= 2 && nameParts.length >= 2 && readParts[0] === nameParts[0] && readParts[readParts.length - 1] === nameParts[nameParts.length - 1]) {
-        score = 75;
-      } else if (readParts.length >= 2 && nameParts.length >= 2 && readParts[0] === nameParts[nameParts.length - 1] && readParts[readParts.length - 1] === nameParts[0]) {
-        score = 72;
-      } else {
-        readParts.forEach(rp => nameParts.forEach(np => {
-          if (rp === np) score += 12;
-          else if ((rp.length >= 3 && np.startsWith(rp)) || (np.length >= 3 && rp.startsWith(np))) score += 6;
-          else {
-            const s = simScore(rp, np);
-            if (s >= 0.82) score += 4;
-          }
-        }));
-      }
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = NAME_LOOKUP[fullName];
-    }
-  }
-
-  return bestScore >= 18 ? bestMatch : null;
+  return null;
 }
-
 
 function rebuildNameLookupAliases() {
   const existingEntries = Object.values(NAME_LOOKUP);
@@ -3262,11 +3277,13 @@ function applyScheduleForSelectedDate() {
   checkForScheduledJobs();
 }
 
-function checkForScheduledJobs() {
-  if (!scheduleData || Object.keys(scheduleData).length === 0) return;
+let lastLoadJobsPromptKey = '';
+let loadJobsPromptOpen = false;
 
+function checkForScheduledJobs() {
   const banner = document.getElementById('loadJobsBanner');
-  if (!banner) return;
+  if (banner) banner.style.display = 'none';
+  if (!scheduleData || Object.keys(scheduleData).length === 0) return;
 
   const truckNo = document.getElementById('truckNo')?.value?.trim();
   const driverName = document.getElementById('driverName')?.value?.trim();
@@ -3274,16 +3291,26 @@ function checkForScheduledJobs() {
   const matchedTruck = (truckNo && scheduleData[truckNo]) ? truckNo :
     driverName ? findTruckByDriverName(driverName) : null;
 
-  if (matchedTruck && scheduleData[matchedTruck]?.loads?.length > 0) {
-    banner.style.display = 'block';
-    const bannerMsg = banner.querySelector('div');
-    if (bannerMsg) {
-      bannerMsg.textContent = 'Allocated loads available - tap to load';
-      bannerMsg.style.color = '#92400e';
-    }
-  } else {
-    banner.style.display = 'none';
-  }
+  if (!matchedTruck || !scheduleData[matchedTruck]?.loads?.length) return;
+
+  const jobDate = document.getElementById('jobDate')?.value || scheduleSheetDate || '';
+  const promptKey = `${jobDate}|${matchedTruck}`;
+  if (loadJobsPromptOpen || lastLoadJobsPromptKey === promptKey) return;
+
+  lastLoadJobsPromptKey = promptKey;
+  loadJobsPromptOpen = true;
+
+  showCartagePopup({
+    title: "Would you like to load today's jobs?",
+    okText: 'Yes',
+    showCancel: true,
+    cancelText: 'No',
+    orangePanel: true,
+    messageHtml: `<p style="margin:0; font-weight:700;">Allocated jobs were found for truck ${matchedTruck}.</p>`
+  }).then(loadJobs => {
+    loadJobsPromptOpen = false;
+    if (loadJobs) loadJobsFromSchedule();
+  });
 }
 
 function applyStoredSchedule(json) {
@@ -3460,7 +3487,8 @@ function loadJobsFromSchedule() {
     }
   });
 
-  document.getElementById('loadJobsBanner').style.display = 'none';
+  const loadJobsBanner = document.getElementById('loadJobsBanner');
+  if (loadJobsBanner) loadJobsBanner.style.display = 'none';
   updateProgress();
   showToast(`${jobs.length} loads loaded from today\'s schedule`, 'success');
 }
@@ -3475,6 +3503,7 @@ function showCartagePopup(options) {
   const okText = options && options.okText ? options.okText : 'OK';
   const cancelText = options && options.cancelText ? options.cancelText : 'Cancel';
   const showCancel = !!(options && options.showCancel);
+  const orangePanel = !!(options && options.orangePanel);
 
   return new Promise(resolve => {
     const overlay = document.createElement('div');
@@ -3489,12 +3518,12 @@ function showCartagePopup(options) {
 
     const panel = document.createElement('div');
     panel.style.width = 'min(420px, 100%)';
-    panel.style.background = '#fff';
+    panel.style.background = orangePanel ? 'linear-gradient(135deg,var(--orange),var(--orange-dk))' : '#fff';
     panel.style.borderRadius = '16px';
     panel.style.boxShadow = '0 20px 50px rgba(15, 23, 42, 0.25)';
     panel.style.padding = '20px';
     panel.style.fontFamily = 'inherit';
-    panel.style.color = 'var(--text)';
+    panel.style.color = orangePanel ? '#fff' : 'var(--text)';
 
     const heading = document.createElement('div');
     heading.textContent = String(title).toUpperCase();
@@ -3508,7 +3537,7 @@ function showCartagePopup(options) {
     body.innerHTML = messageHtml;
     body.style.fontSize = '13px';
     body.style.lineHeight = '1.55';
-    body.style.color = 'var(--label)';
+    body.style.color = orangePanel ? '#fff' : 'var(--label)';
 
     const actions = document.createElement('div');
     actions.style.display = 'flex';
@@ -3525,13 +3554,13 @@ function showCartagePopup(options) {
       cancelBtn.type = 'button';
       cancelBtn.textContent = cancelText;
       cancelBtn.style.flex = '1';
-      cancelBtn.style.background = '#fff';
-      cancelBtn.style.border = '1.5px solid var(--border)';
+      cancelBtn.style.background = orangePanel ? 'rgba(255,255,255,0.16)' : '#fff';
+      cancelBtn.style.border = orangePanel ? '1.5px solid rgba(255,255,255,0.75)' : '1.5px solid var(--border)';
       cancelBtn.style.borderRadius = '10px';
       cancelBtn.style.padding = '11px';
       cancelBtn.style.fontSize = '13px';
       cancelBtn.style.fontWeight = '800';
-      cancelBtn.style.color = 'var(--label)';
+      cancelBtn.style.color = orangePanel ? '#fff' : 'var(--label)';
       cancelBtn.onclick = () => close(false);
       actions.appendChild(cancelBtn);
     }
@@ -3540,13 +3569,13 @@ function showCartagePopup(options) {
     okBtn.type = 'button';
     okBtn.textContent = okText;
     okBtn.style.flex = '1';
-    okBtn.style.background = 'linear-gradient(135deg,var(--orange),var(--orange-dk))';
+    okBtn.style.background = orangePanel ? '#fff' : 'linear-gradient(135deg,var(--orange),var(--orange-dk))';
     okBtn.style.border = 'none';
     okBtn.style.borderRadius = '10px';
     okBtn.style.padding = '11px';
     okBtn.style.fontSize = '13px';
     okBtn.style.fontWeight = '800';
-    okBtn.style.color = '#fff';
+    okBtn.style.color = orangePanel ? 'var(--orange-dk)' : '#fff';
     okBtn.onclick = () => close(true);
     actions.appendChild(okBtn);
 
@@ -3851,7 +3880,11 @@ Return exactly this JSON shape:
       notes.push('Date not read. Enter docket details manually.');
     }
 
-    if (dateOk) {
+    // A date mismatch is a warning only. Loads can legitimately carry a docket
+    // from the previous day (for example, a stuck-up/backload), so keep any
+    // confidently-read docket and weight values instead of clearing them. If
+    // the date could not be read at all, retain the previous manual-entry path.
+    if (dateOk || hasMismatch) {
       notes.push(applyFieldForce('ticketNo' + idx, parsed.docketNumber, 'Docket'));
       notes.push(applyFieldForce('gross' + idx, parsed.gross, 'Gross'));
       notes.push(applyFieldForce('tare' + idx, parsed.tare, 'Tare'));
@@ -3868,9 +3901,9 @@ Return exactly this JSON shape:
     resultEl.style.display = 'block';
     resultEl.textContent = 'Read: ' + notes.join(' / ');
     if (hasMismatch) {
-      resultEl.style.background = '#fef2f2';
-      resultEl.style.borderColor = '#fecaca';
-      resultEl.style.color = '#dc2626';
+      resultEl.style.background = '#fff7ed';
+      resultEl.style.borderColor = '#fdba74';
+      resultEl.style.color = '#9a3412';
       resultEl.style.fontWeight = '700';
     } else {
       resultEl.style.background = '#f0fdf4';
@@ -4791,12 +4824,6 @@ function submitForm() {
       errors.push(`Docket Number (Load ${i}) was read by AI - please verify and tap the field to confirm it is correct`);
     }
   }
-  for (let i = 1; i <= MAX_LOADS; i++) {
-    const card = document.getElementById('loadCard' + i);
-    if (card && card.dataset.dateMismatch === 'true') {
-      errors.push(`Docket date does not match the run sheet date (Load ${i}) - check you have attached the correct docket before submitting`);
-    }
-  }
   if (!resolveLocationValue(1,'pullFrom').trim()) {
     document.getElementById('pullFrom1')?.classList.add('error');
     document.getElementById('err-pullFrom1')?.classList.add('show');
@@ -5415,7 +5442,7 @@ function handleProductChange(idx) {
 }
 
 
-const HELP_VOICE_TEXT = `Cartage Australia driver app help. First, enter your truck number. This should be done before anything else so the app can load your rego, location, driver name, and allocated jobs. Next, check your driver name and Driver ID. If anything is missing, enter it manually. Check the location and use Other only when required. If allocated jobs are available, tap Load Today's Jobs. For each load, add the weighbridge docket photo first. You can take a new photo, or choose one from Library or File. Review the scanned docket number, gross, tare, and tonnes. If a docket is handwritten or unclear, manually enter the details. Upload your completed run sheet photo. Add a logbook photo if required. Sign in the signature box. Finally, submit the run sheet and wait for the success message before closing the page.`;
+const HELP_VOICE_TEXT = `Cartage Australia driver app help. First, enter your truck number. This should be done before anything else so the app can load your rego, location, driver name, and allocated jobs. Next, check your driver name and Driver ID. If anything is missing, enter it manually. Check the location and use Other only when required. If allocated jobs are available, choose Yes when the popup asks whether to load today's jobs. For each load, add the weighbridge docket photo first. You can take a new photo, or choose one from Library or File. Review the scanned docket number, gross, tare, and tonnes. If a docket is handwritten or unclear, manually enter the details. Upload your completed run sheet photo. Add a logbook photo if required. Sign in the signature box. Finally, submit the run sheet and wait for the success message before closing the page.`;
 let helpSpeechUtterance = null;
 let helpHighlightTimer = null;
 
