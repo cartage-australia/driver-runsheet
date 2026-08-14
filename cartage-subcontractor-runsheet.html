@@ -820,6 +820,8 @@
   </div>
 
   <div class="submit-wrap">
+    <button type="button" onclick="saveProgress()" style="width:100%;background:#fff;border:2px solid var(--orange);border-radius:10px;padding:14px 16px;font-size:15px;font-weight:800;color:var(--orange-dk);cursor:pointer;margin-bottom:10px;">Save Progress</button>
+    <p id="saveProgressStatus" class="submit-note" style="margin-top:0;margin-bottom:12px;">Saves this run sheet and docket photos on this device only</p>
     <button class="submit-btn" onclick="submitForm()">Submit Run Sheet</button>
     <p class="submit-note">Sent directly to the Cartage Australia office</p>
   </div>
@@ -1890,35 +1892,142 @@ function loadJobsFromSchedule() {
 }
 
 const docketPhotos = {};
+let docketPhotoQualityPromptShown = false;
+
 let docketPhotoQualityPopupShown = false;
 
-function showDocketPhotoQualityPopupOnce() {
-  if (docketPhotoQualityPopupShown) return true;
+function showCartagePopup(options) {
+  const title = options && options.title ? options.title : 'Notice';
+  const messageHtml = options && options.messageHtml ? options.messageHtml : '';
+  const okText = options && options.okText ? options.okText : 'OK';
+  const cancelText = options && options.cancelText ? options.cancelText : 'Cancel';
+  const showCancel = !!(options && options.showCancel);
+  const orangePanel = !!(options && options.orangePanel);
 
-  const proceed = window.confirm(
-    'Photo quality check\n\n' +
-    'Please make sure the docket photo is:\n\n' +
-    '✓ One docket only in the photo\n' +
-    '✓ Taken directly from above\n' +
-    '✓ Not taken on an angle\n' +
-    '✓ Cropped close so the docket fills most of the photo\n' +
-    '✓ Clear and in focus\n' +
-    '✓ No shadows, blur, or cut-off edges\n\n' +
-    'Tap OK to continue.'
-  );
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(15, 23, 42, 0.55)';
+    overlay.style.zIndex = '99999';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '18px';
 
-  if (proceed) docketPhotoQualityPopupShown = true;
-  return proceed;
+    const panel = document.createElement('div');
+    panel.style.width = 'min(420px, 100%)';
+    panel.style.background = orangePanel ? 'linear-gradient(135deg,var(--orange),var(--orange-dk))' : '#fff';
+    panel.style.borderRadius = '16px';
+    panel.style.boxShadow = '0 20px 50px rgba(15, 23, 42, 0.25)';
+    panel.style.padding = '20px';
+    panel.style.fontFamily = 'inherit';
+    panel.style.color = orangePanel ? '#fff' : 'var(--text)';
+
+    const heading = document.createElement('div');
+    heading.textContent = String(title).toUpperCase();
+    heading.style.fontSize = '15px';
+    heading.style.fontWeight = '900';
+    heading.style.textDecoration = 'underline';
+    heading.style.letterSpacing = '0.04em';
+    heading.style.marginBottom = '12px';
+
+    const body = document.createElement('div');
+    body.innerHTML = messageHtml;
+    body.style.fontSize = '13px';
+    body.style.lineHeight = '1.55';
+    body.style.color = orangePanel ? '#fff' : 'var(--label)';
+
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.gap = '10px';
+    actions.style.marginTop = '18px';
+
+    function close(result) {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      resolve(result);
+    }
+
+    if (showCancel) {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.textContent = cancelText;
+      cancelBtn.style.flex = '1';
+      cancelBtn.style.background = orangePanel ? 'rgba(255,255,255,0.16)' : '#fff';
+      cancelBtn.style.border = orangePanel ? '1.5px solid rgba(255,255,255,0.75)' : '1.5px solid var(--border)';
+      cancelBtn.style.borderRadius = '10px';
+      cancelBtn.style.padding = '11px';
+      cancelBtn.style.fontSize = '13px';
+      cancelBtn.style.fontWeight = '800';
+      cancelBtn.style.color = orangePanel ? '#fff' : 'var(--label)';
+      cancelBtn.onclick = () => close(false);
+      actions.appendChild(cancelBtn);
+    }
+
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.textContent = okText;
+    okBtn.style.flex = '1';
+    okBtn.style.background = orangePanel ? '#fff' : 'linear-gradient(135deg,var(--orange),var(--orange-dk))';
+    okBtn.style.border = 'none';
+    okBtn.style.borderRadius = '10px';
+    okBtn.style.padding = '11px';
+    okBtn.style.fontSize = '13px';
+    okBtn.style.fontWeight = '800';
+    okBtn.style.color = orangePanel ? 'var(--orange-dk)' : '#fff';
+    okBtn.onclick = () => close(true);
+    actions.appendChild(okBtn);
+
+    panel.appendChild(heading);
+    panel.appendChild(body);
+    panel.appendChild(actions);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    okBtn.focus();
+  });
+}
+
+function showDocketPhotoQualityPopupOnce(callback) {
+  if (docketPhotoQualityPopupShown) {
+    callback();
+    return;
+  }
+
+  showCartagePopup({
+    title: 'Photo quality check',
+    okText: 'OK, continue',
+    showCancel: true,
+    cancelText: 'Cancel',
+    messageHtml: `
+      <p style="margin:0 0 8px 0;">Please make sure the docket photo is:</p>
+      <div style="display:grid; gap:5px;">
+        <div>✓ One docket only in the photo</div>
+        <div>✓ Taken directly from above</div>
+        <div>✓ Not taken on an angle</div>
+        <div>✓ Cropped close so the docket fills most of the photo</div>
+        <div>✓ Not from a distance</div>
+        <div>✓ Clear and in focus</div>
+        <div>✓ No shadows, blur, or cut-off edges</div>
+      </div>
+      <p style="margin:10px 0 0 0; font-weight:700; color:var(--text);">Tap OK to continue.</p>
+    `
+  }).then(proceed => {
+    if (!proceed) return;
+    docketPhotoQualityPopupShown = true;
+    callback();
+  });
 }
 
 function triggerDocketCamera(idx) {
-  if (!showDocketPhotoQualityPopupOnce()) return;
-  document.getElementById('docketCameraInput' + idx)?.click();
+  showDocketPhotoQualityPopupOnce(() => {
+    document.getElementById('docketCameraInput' + idx)?.click();
+  });
 }
 
 function triggerDocketPhoto(idx) {
-  if (!showDocketPhotoQualityPopupOnce()) return;
-  document.getElementById('docketInput' + idx)?.click();
+  showDocketPhotoQualityPopupOnce(() => {
+    document.getElementById('docketInput' + idx)?.click();
+  });
 }
 
 async function handleDocketPhoto(idx, input) {
@@ -1973,22 +2082,57 @@ function compressImage(file, maxWidth, quality) {
 }
 
 
+function compressDataUrl(dataUrl, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = function() {
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+async function optimizeDocketPhotoForUpload(idx, scanPhoto) {
+  try {
+    // Keep the higher-resolution copy for AI scanning, then store a smaller copy for final upload.
+    if (docketPhotos[idx] !== scanPhoto) return;
+    const smaller = await compressDataUrl(scanPhoto, 1400, 0.65);
+    if (docketPhotos[idx] === scanPhoto) docketPhotos[idx] = smaller;
+  } catch (err) {
+    // Keep the original photo if optimization fails.
+  }
+}
+
+
 function parseDocketDateStr(str) {
   if (!str) return null;
-  const s = str.trim();
+  const s = String(str).trim();
   const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
 
-  let m = s.match(/(\d{1,2})[\s-]([A-Za-z]{3,})[\s-](\d{4})/);
+  let m = s.match(/(\d{1,2})[\s-]([A-Za-z]{3,})[\s-](\d{2,4})/);
   if (m) {
     const mon = MONTHS[m[2].slice(0,3).toLowerCase()];
-    if (mon) return { y: parseInt(m[3]), m: mon, d: parseInt(m[1]) };
+    if (mon) {
+      let y = parseInt(m[3], 10);
+      if (y < 100) y += 2000;
+      return { y, m: mon, d: parseInt(m[1], 10) };
+    }
   }
 
-  m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if (m) return { y: parseInt(m[3]), m: parseInt(m[2]), d: parseInt(m[1]) };
-
-  m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})\b/);
-  if (m) return { y: 2000 + parseInt(m[3]), m: parseInt(m[2]), d: parseInt(m[1]) };
+  // Australian numeric dates: dd/mm/yy, dd-mm-yy or Heidelberg-style dd.mm.yy.
+  m = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/);
+  if (m) {
+    let y = parseInt(m[3], 10);
+    if (y < 100) y += 2000;
+    return { y, m: parseInt(m[2], 10), d: parseInt(m[1], 10) };
+  }
 
   return null;
 }
@@ -2046,6 +2190,13 @@ PRINTED vs HANDWRITTEN (applies to date and weights):
 Weighbridge dockets normally have the Date and the Gross/Tare/Net weights machine-printed by the weighbridge's own printer (typed, dot-matrix or thermal-printer characters, perfectly uniform). Some dockets instead have some of these fields written by hand in pen or pencil.
 You must only return a value for Date, Gross, Tare or Net if it is machine-printed. If any of these is handwritten, return "" for that field's value and set confidence to "handwritten" - do NOT read, guess, or estimate it, even if you think you can make it out.
 The docket number may be printed, stamped, or handwritten - it can be read either way, just set confidence accordingly, and still return "" instead of a guess if you are not fully confident.
+
+HEIDELBERG / HIEDELBERG MATERIALS AUSTRALIA DOCKETS - special rule:
+If the docket is from Heidelberg Materials, Hiedelberg Materials, or heidelbergmaterials.com.au, the docketNumber is NOT the field labelled "Order No.". Ignore "Order No." completely when choosing the docketNumber.
+Instead, actively inspect the UPPER-MOST LEFT CORNER of the docket. The docket number is the prominent number printed at the very top-left of the page and is typically a 9-digit numeric value (for example, 123456789). Return that upper-left number as docketNumber when it is clearly legible. Position on the docket is the key identifier: use the top-left number even if another number elsewhere is labelled Order No.
+Do NOT use Order No., Customer Number, Purchase Order Number, Truck, ABN, Plant code, Sales Item number, or page number as the docketNumber. If the upper-most-left docket number is cropped, obscured, or uncertain, return an empty docketNumber rather than substituting Order No. or another number.
+For Heidelberg/Hiedelberg dockets, the date is in the small field labelled "Date" in the upper-right table, immediately to the left of "Order No.". This Date field is usually a machine-printed Australian dotted date such as "11.08.2026" or "11.08.26". Return Heidelberg dates in Australian dd.mm.yy format.
+For Heidelberg/Hiedelberg dockets, read Tare Weight (TO) as tare, Gross Weight (TO) as gross, and Net/Load Weight (TO) as net.
 
 Confidence values (use exactly one of these strings for every field):
 - "high": machine-printed (or clearly legible for docket number), unambiguous - you are certain
@@ -2158,7 +2309,10 @@ Return exactly this JSON shape:
       notes.push('Date not read. Enter docket details manually.');
     }
 
-    if (dateOk) {
+    // A valid but different docket date is a warning only. A subcontractor may
+    // legitimately be carrying a stuck-up/preloaded load from the previous day.
+    // Keep confidently-read docket and weight values and show the mismatch below.
+    if (dateOk || hasMismatch) {
       notes.push(applyFieldForce('ticketNo' + idx, parsed.docketNumber, 'Docket'));
       notes.push(applyFieldForce('gross' + idx, parsed.gross, 'Gross'));
       notes.push(applyFieldForce('tare' + idx, parsed.tare, 'Tare'));
@@ -2173,9 +2327,9 @@ Return exactly this JSON shape:
     resultEl.style.display = 'block';
     resultEl.textContent = 'Read: ' + notes.join(' / ');
     if (hasMismatch) {
-      resultEl.style.background = '#fef2f2';
-      resultEl.style.borderColor = '#fecaca';
-      resultEl.style.color = '#dc2626';
+      resultEl.style.background = '#fff7ed';
+      resultEl.style.borderColor = '#fdba74';
+      resultEl.style.color = '#9a3412';
       resultEl.style.fontWeight = '700';
     } else {
       resultEl.style.background = '#f0fdf4';
@@ -2193,6 +2347,8 @@ Return exactly this JSON shape:
     errEl.style.display = 'block';
     const isNetwork = err.message.includes('Load failed') || err.message.includes('fetch');
     errEl.textContent = isNetwork ? 'No internet - enter weights manually.' : 'Could not read docket. Enter weights manually. (' + err.message + ')';
+  } finally {
+    optimizeDocketPhotoForUpload(idx, photo);
   }
 }
 
@@ -2203,7 +2359,7 @@ async function handleRunSheetPhoto(input) {
   if (!file) return;
 
   try {
-    const compressed = await compressImage(file, 1800, 0.75);
+    const compressed = await compressImage(file, 1600, 0.70);
     runSheetPhotoData = compressed;
     document.getElementById('runSheetPhotoImg').src = compressed;
     document.getElementById('runSheetPhotoPreview').style.display = 'block';
@@ -2228,7 +2384,7 @@ async function handleLogbookPhoto(input) {
   if (!file) return;
 
   try {
-    const compressed = await compressImage(file, 1800, 0.75);
+    const compressed = await compressImage(file, 1600, 0.70);
     logbookPhotoData = compressed;
     document.getElementById('logbookPhotoImg').src = compressed;
     document.getElementById('logbookPhotoPreview').style.display = 'block';
@@ -2424,6 +2580,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSignature();
   updateProgress();
   fetchScheduleFromJsonbin();
+  checkForSavedProgress();
 });
 
 function getTodayIsoDate() {
@@ -2937,12 +3094,6 @@ function submitForm() {
       errors.push(`Docket Number (Load ${i}) was read by AI - please verify and tap the field to confirm it is correct`);
     }
   }
-  for (let i = 1; i <= MAX_LOADS; i++) {
-    const card = document.getElementById('loadCard' + i);
-    if (card && card.dataset.dateMismatch === 'true') {
-      errors.push(`Docket date does not match the run sheet date (Load ${i}) - check you have attached the correct docket before submitting`);
-    }
-  }
   if (!resolveLocationValue(1,'pullFrom').trim()) {
     document.getElementById('pullFrom1')?.classList.add('error');
     document.getElementById('err-pullFrom1')?.classList.add('show');
@@ -3020,7 +3171,18 @@ function submitForm() {
     submittedAt: new Date().toISOString(),
   };
 
-  showLoading('Submitting your run sheet...');
+  const docketUploadCount = Object.keys(docketPhotos).length;
+  const extras = [];
+  if (runSheetPhotoData) extras.push('run sheet');
+  if (logbookPhotoData) extras.push('logbook');
+  let uploadMessage = 'Submitting your run sheet...';
+  if (docketUploadCount > 0 || extras.length > 0) {
+    const docketText = docketUploadCount > 0 ? `${docketUploadCount} docket${docketUploadCount === 1 ? '' : 's'}` : '';
+    const extraText = extras.length ? extras.join(' + ') : '';
+    const combined = [docketText, extraText].filter(Boolean).join(' + ');
+    uploadMessage = `Uploading ${combined} and submitting run sheet...`;
+  }
+  showLoading(uploadMessage);
 
   if (SUBMIT_URL==='YOUR_POWER_AUTOMATE_URL_HERE') {
     hideLoading();
@@ -3058,6 +3220,247 @@ function submitForm() {
       showToast('Network error and could not save offline. Please retry.', 'error');
     });
   });
+}
+
+// Save Progress: local draft storage only. Nothing here is submitted to Apps Script.
+// Subcontractor drafts use their own database/key so they cannot collide with driver drafts.
+const DRAFT_DB_NAME = 'cartage_subcontractor_runsheet_drafts';
+const DRAFT_DB_VERSION = 1;
+const DRAFT_STORE = 'drafts';
+const DRAFT_KEY = 'current-subcontractor-runsheet';
+
+function openDraftDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DRAFT_DB_NAME, DRAFT_DB_VERSION);
+    req.onupgradeneeded = function(event) {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(DRAFT_STORE)) {
+        db.createObjectStore(DRAFT_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function setDraftFieldValue(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = value == null ? '' : value;
+}
+
+function collectDraftProgress() {
+  const loads = [];
+  for (let i = 1; i <= MAX_LOADS; i++) {
+    const card = document.getElementById('loadCard' + i);
+    if (!card) continue;
+    loads.push({
+      index: i,
+      docketNumber: document.getElementById('ticketNo' + i)?.value || '',
+      pullFrom: document.getElementById('pullFrom' + i)?.value || '',
+      deliverTo: document.getElementById('deliverTo' + i)?.value || '',
+      product: document.getElementById('product' + i)?.value || '',
+      gross: document.getElementById('gross' + i)?.value || '',
+      tare: document.getElementById('tare' + i)?.value || '',
+      netTonnes: document.getElementById('tonnes' + i)?.value || '',
+      comments: document.getElementById('comments' + i)?.value || '',
+      noDocketRequired: card.dataset.noDocketRequired === 'true',
+      dateMismatch: card.dataset.dateMismatch === 'true'
+    });
+  }
+
+  return {
+    id: DRAFT_KEY,
+    savedAt: new Date().toISOString(),
+    jobDate: document.getElementById('jobDate')?.value || '',
+    subcontractorCompany: document.getElementById('subcontractorCompany')?.value || '',
+    driverName: document.getElementById('driverName')?.value || '',
+    truckRego: document.getElementById('truckRego')?.value || '',
+    shiftType: getShiftType(),
+    notes: document.getElementById('notes')?.value || '',
+    loads,
+    docketPhotos: {...docketPhotos},
+    runSheetPhoto: runSheetPhotoData || null,
+    logbookPhoto: logbookPhotoData || null
+  };
+}
+
+async function saveProgress() {
+  if (!window.indexedDB) {
+    showToast('Save Progress is not supported by this browser.', 'error');
+    return;
+  }
+
+  const status = document.getElementById('saveProgressStatus');
+  if (status) status.textContent = 'Saving progress on this device...';
+
+  try {
+    const draft = collectDraftProgress();
+    const db = await openDraftDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(DRAFT_STORE, 'readwrite');
+      tx.objectStore(DRAFT_STORE).put(draft);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error('Draft save aborted'));
+    });
+    db.close();
+
+    const savedTime = new Date(draft.savedAt).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    if (status) status.textContent = 'Progress saved on this device at ' + savedTime;
+    showToast('Progress saved on this device.', 'success');
+  } catch (err) {
+    console.error('Save Progress failed', err);
+    if (status) status.textContent = 'Could not save progress. Please try again.';
+    showToast('Could not save progress. Check browser storage and try again.', 'error');
+  }
+}
+
+async function getSavedProgress() {
+  if (!window.indexedDB) return null;
+  const db = await openDraftDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DRAFT_STORE, 'readonly');
+    const req = tx.objectStore(DRAFT_STORE).get(DRAFT_KEY);
+    req.onsuccess = () => {
+      const result = req.result || null;
+      db.close();
+      resolve(result);
+    };
+    req.onerror = () => {
+      db.close();
+      reject(req.error);
+    };
+  });
+}
+
+async function clearSavedProgress() {
+  if (!window.indexedDB) return;
+  const db = await openDraftDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DRAFT_STORE, 'readwrite');
+    tx.objectStore(DRAFT_STORE).delete(DRAFT_KEY);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+function restoreDocketPhotoPreview(idx, dataUrl) {
+  if (!dataUrl) return;
+  docketPhotos[idx] = dataUrl;
+  const img = document.getElementById('docketImg' + idx);
+  if (img) img.src = dataUrl;
+  const preview = document.getElementById('docketPreview' + idx);
+  if (preview) preview.style.display = 'block';
+  const photoBtn = document.getElementById('docketPhotoBtn' + idx);
+  if (photoBtn) photoBtn.style.display = 'none';
+  const scanProgress = document.getElementById('docketScanProgress' + idx);
+  if (scanProgress) scanProgress.style.display = 'none';
+}
+
+function restorePhotoPreview(dataUrl, dataName, imgId, previewId, labelId, labelText) {
+  if (!dataUrl) return;
+  if (dataName === 'runSheet') runSheetPhotoData = dataUrl;
+  if (dataName === 'logbook') logbookPhotoData = dataUrl;
+  const img = document.getElementById(imgId);
+  if (img) img.src = dataUrl;
+  const preview = document.getElementById(previewId);
+  if (preview) preview.style.display = 'block';
+  const label = document.getElementById(labelId);
+  if (label) label.textContent = labelText;
+}
+
+async function restoreSavedProgress(draft) {
+  if (!draft) return;
+
+  setDraftFieldValue('jobDate', draft.jobDate || getTodayIsoDate());
+  setDraftFieldValue('subcontractorCompany', draft.subcontractorCompany);
+  setDraftFieldValue('driverName', draft.driverName);
+  setDraftFieldValue('truckRego', draft.truckRego);
+  setDraftFieldValue('notes', draft.notes);
+
+  const shift = draft.shiftType === 'Night' ? 'Night' : 'Day';
+  const shiftRadio = document.querySelector('input[name="shiftType"][value="' + shift + '"]');
+  if (shiftRadio) shiftRadio.checked = true;
+
+  const savedLoads = Array.isArray(draft.loads) ? draft.loads : [];
+  const maxIndex = Math.min(MAX_LOADS, savedLoads.reduce((m, load) => Math.max(m, Number(load.index) || 0), 1));
+  while (loadCount < maxIndex) addLoad();
+
+  for (const load of savedLoads) {
+    const i = Number(load.index);
+    if (!i || i > MAX_LOADS || !document.getElementById('loadCard' + i)) continue;
+    setDraftFieldValue('ticketNo' + i, load.docketNumber);
+    setDraftFieldValue('pullFrom' + i, load.pullFrom);
+    setDraftFieldValue('deliverTo' + i, load.deliverTo);
+    setDraftFieldValue('product' + i, load.product);
+    setDraftFieldValue('gross' + i, load.gross);
+    setDraftFieldValue('tare' + i, load.tare);
+    setDraftFieldValue('tonnes' + i, load.netTonnes);
+    setDraftFieldValue('comments' + i, load.comments);
+
+    const card = document.getElementById('loadCard' + i);
+    if (card) {
+      card.dataset.noDocketRequired = load.noDocketRequired ? 'true' : 'false';
+      card.dataset.dateMismatch = load.dateMismatch ? 'true' : 'false';
+      if (load.noDocketRequired) {
+        const req = document.querySelector('#docketPhotoSection' + i + ' .req');
+        if (req) req.textContent = '(optional)';
+      }
+    }
+
+    restoreDocketPhotoPreview(i, draft.docketPhotos && draft.docketPhotos[i]);
+  }
+
+  restorePhotoPreview(draft.runSheetPhoto, 'runSheet', 'runSheetPhotoImg', 'runSheetPhotoPreview', 'runSheetPhotoBtnLabel', 'Run Sheet Captured');
+  restorePhotoPreview(draft.logbookPhoto, 'logbook', 'logbookPhotoImg', 'logbookPhotoPreview', 'logbookPhotoBtnLabel', 'Logbook Photo Captured');
+  if (draft.logbookPhoto) {
+    const wrap = document.getElementById('logbookUploadWrap');
+    const addBtn = document.getElementById('addLogbookBtn');
+    if (wrap) wrap.style.display = 'block';
+    if (addBtn) addBtn.style.display = 'none';
+  }
+
+  userEditedRego = !!draft.truckRego;
+  calcTotals();
+  updateProgress();
+  updateAddLoadBtn();
+
+  const status = document.getElementById('saveProgressStatus');
+  if (status) {
+    const saved = draft.savedAt ? new Date(draft.savedAt) : null;
+    status.textContent = saved && !isNaN(saved) ? 'Restored progress saved ' + saved.toLocaleString() : 'Saved progress restored';
+  }
+  showToast('Saved progress restored.', 'success');
+}
+
+async function checkForSavedProgress() {
+  try {
+    const draft = await getSavedProgress();
+    if (!draft) return;
+
+    const savedDate = draft.savedAt ? new Date(draft.savedAt) : null;
+    const when = savedDate && !isNaN(savedDate) ? savedDate.toLocaleString() : 'earlier';
+    const rego = draft.truckRego ? '<p style="margin:6px 0 0 0;"><strong>Rego:</strong> ' + String(draft.truckRego).replace(/[<>&]/g, '') + '</p>' : '';
+
+    const restore = await showCartagePopup({
+      title: 'Saved progress found',
+      okText: 'Restore progress',
+      showCancel: true,
+      cancelText: 'Start fresh',
+      messageHtml: '<p style="margin:0;">This device has unfinished subcontractor run sheet progress saved ' + when + '.</p>' + rego + '<p style="margin:8px 0 0 0;">Restore the saved docket photos and entered load details?</p>'
+    });
+
+    if (restore) {
+      await restoreSavedProgress(draft);
+    } else {
+      await clearSavedProgress();
+      const status = document.getElementById('saveProgressStatus');
+      if (status) status.textContent = 'Saves this run sheet and docket photos on this device only';
+    }
+  } catch (err) {
+    console.error('Could not check saved progress', err);
+  }
 }
 
 const OFFLINE_DB_NAME = 'cartage_run_sheets_offline';
@@ -3131,6 +3534,7 @@ async function processOfflineSubmissions() {
 window.addEventListener('online', processOfflineSubmissions);
 
 function showSuccess(payload, ref) {
+  clearSavedProgress().catch(() => {});
   const d = payload.jobDate.replace(/-/g,'');
   const refNum = ref || `CA-${d}-${Math.floor(Math.random()*9000+1000)}`;
   document.getElementById('refNumber').textContent = refNum;
@@ -3140,6 +3544,7 @@ function showSuccess(payload, ref) {
 }
 
 function resetForm() {
+  clearSavedProgress().catch(() => {});
   document.getElementById('successScreen').classList.remove('show');
   document.getElementById('mainForm').style.display = 'block';
   document.getElementById('loadsContainer').innerHTML = '';
