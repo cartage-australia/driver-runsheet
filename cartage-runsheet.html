@@ -396,27 +396,6 @@
   .toast.error { border-color: var(--red); color: var(--red); }
   .toast.warning { border-color: var(--yellow); color: var(--orange-dk); }
 
-  .sig-canvas-wrap {
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: #f8fafc;
-    position: relative;
-    overflow: hidden;
-  }
-  canvas#sigCanvas {
-    display: block;
-    width: 100%;
-    height: 120px;
-    touch-action: none;
-  }
-  .sig-clear {
-    position: absolute; top: 6px; right: 8px;
-    background: transparent; border: 1px solid var(--border);
-    color: var(--label); font-size: 11px; font-weight: 600;
-    padding: 3px 8px; border-radius: 4px; cursor: pointer;
-  }
-  .sig-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
-
   .time-picker-trigger {
     width: 100%;
     background: #f8fafc;
@@ -986,11 +965,8 @@
       <div class="help-step" onclick="helpJump('#logbookUploadWrap', 'Step 8. Add a logbook photo if required. This section appears with the run sheet upload area.')">
         <div class="help-num">8</div><div><h3>Upload logbook if required</h3><p>Add a logbook photo when it is required for the day.</p></div>
       </div>
-      <div class="help-step" onclick="helpJump('#sigCanvas', 'Step 9. Sign the run sheet before submitting.')">
-        <div class="help-num">9</div><div><h3>Sign</h3><p>Use your finger to sign in the signature box.</p></div>
-      </div>
       <div class="help-step" onclick="helpJump('.submit-btn', 'Step 10. Submit once everything has been checked. Do not close the page until the success message appears.')">
-        <div class="help-num">10</div><div><h3>Submit</h3><p>Submit after all required photos, load details, and signature are complete.</p></div>
+        <div class="help-num">9</div><div><h3>Submit</h3><p>Submit after all required photos and load details are complete.</p></div>
       </div>
     </div>
   </div>
@@ -1268,21 +1244,6 @@
             <button type="button" onclick="document.getElementById('logbookPhotoInput').click()" style="flex:1; background:transparent; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; font-weight:600; color:var(--label); cursor:pointer;">Library / File</button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Driver Signature</div>
-    <div class="card">
-      <div class="field">
-        <label>Sign below <span class="req">*</span></label>
-        <div class="sig-canvas-wrap">
-          <canvas id="sigCanvas"></canvas>
-          <button class="sig-clear" onclick="clearSignature()">Clear</button>
-        </div>
-        <p class="sig-hint">Use your finger or stylus to sign</p>
-        <div class="field-error" id="err-signature">Please sign before submitting</div>
       </div>
     </div>
   </div>
@@ -3682,6 +3643,35 @@ function compressImage(file, maxWidth, quality) {
 }
 
 
+function compressDataUrl(dataUrl, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = function() {
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+async function optimizeDocketPhotoForUpload(idx, scanPhoto) {
+  try {
+    // Only replace the photo if it has not been retaken while AI scanning was running.
+    if (docketPhotos[idx] !== scanPhoto) return;
+    const smaller = await compressDataUrl(scanPhoto, 1400, 0.65);
+    if (docketPhotos[idx] === scanPhoto) docketPhotos[idx] = smaller;
+  } catch (err) {
+    // Keep the original photo if optimization fails.
+  }
+}
+
+
 function parseDocketDateStr(str) {
   if (!str) return null;
   const s = String(str).trim();
@@ -3923,6 +3913,8 @@ Return exactly this JSON shape:
     errEl.style.display = 'block';
     const isNetwork = err.message.includes('Load failed') || err.message.includes('fetch');
     errEl.textContent = isNetwork ? 'No internet - enter weights manually.' : 'Could not read docket. Enter weights manually. (' + err.message + ')';
+  } finally {
+    optimizeDocketPhotoForUpload(idx, photo);
   }
 }
 
@@ -3933,7 +3925,7 @@ async function handleRunSheetPhoto(input) {
   if (!file) return;
 
   try {
-    const compressed = await compressImage(file, 1800, 0.75);
+    const compressed = await compressImage(file, 1600, 0.70);
     runSheetPhotoData = compressed;
     document.getElementById('runSheetPhotoImg').src = compressed;
     document.getElementById('runSheetPhotoPreview').style.display = 'block';
@@ -3958,7 +3950,7 @@ async function handleLogbookPhoto(input) {
   if (!file) return;
 
   try {
-    const compressed = await compressImage(file, 1800, 0.75);
+    const compressed = await compressImage(file, 1600, 0.70);
     logbookPhotoData = compressed;
     document.getElementById('logbookPhotoImg').src = compressed;
     document.getElementById('logbookPhotoPreview').style.display = 'block';
@@ -4185,7 +4177,6 @@ function lookupTruck() {
 let loadCount = 0;
 const MAX_LOADS = 12;
 const NUM_DOCKETS = 6;
-let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   const isDispatcher = new URLSearchParams(window.location.search).get('dispatcher') === 'true';
@@ -4212,7 +4203,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setTodayDate();
   loadEmployeesFromGoogleSheet();
   addLoad();
-  initSignature();
   updateProgress();
   fetchScheduleFromJsonbin();
   checkForSavedProgress();
@@ -4493,37 +4483,6 @@ function calcTotalKms() {
   }
 }
 
-function initSignature() {
-  sigCanvas = document.getElementById('sigCanvas');
-  sigCtx = sigCanvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = sigCanvas.getBoundingClientRect();
-  sigCanvas.width = (rect.width || 300) * dpr;
-  sigCanvas.height = 120 * dpr;
-  sigCtx.scale(dpr, dpr);
-  sigCtx.strokeStyle = '#1e293b';
-  sigCtx.lineWidth = 2.5;
-  sigCtx.lineCap = 'round';
-  sigCtx.lineJoin = 'round';
-
-  sigCanvas.addEventListener('mousedown', e => { isSigning=true; hasSig=true; sigCtx.beginPath(); const r=sigCanvas.getBoundingClientRect(); sigCtx.moveTo(e.clientX-r.left, e.clientY-r.top); });
-  sigCanvas.addEventListener('mousemove', e => { if(!isSigning) return; const r=sigCanvas.getBoundingClientRect(); sigCtx.lineTo(e.clientX-r.left, e.clientY-r.top); sigCtx.stroke(); });
-  sigCanvas.addEventListener('mouseup', () => isSigning=false);
-  sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); isSigning=true; hasSig=true; const t=e.touches[0]; sigCtx.beginPath(); const r=sigCanvas.getBoundingClientRect(); sigCtx.moveTo(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
-  sigCanvas.addEventListener('touchmove', e => { e.preventDefault(); if(!isSigning) return; const t=e.touches[0]; const r=sigCanvas.getBoundingClientRect(); sigCtx.lineTo(t.clientX-r.left, t.clientY-r.top); sigCtx.stroke(); }, {passive:false});
-  sigCanvas.addEventListener('touchend', () => isSigning=false);
-}
-
-function clearSignature() {
-  const dpr = window.devicePixelRatio || 1;
-  sigCtx.clearRect(0, 0, sigCanvas.width/dpr, sigCanvas.height/dpr);
-  hasSig = false;
-}
-
-function getSignatureDataUrl() {
-  return hasSig ? sigCanvas.toDataURL('image/png') : null;
-}
-
 const ITEM_H = 44;
 let activeTimeFieldId = null;
 let pickerHour = 7;
@@ -4744,7 +4703,7 @@ function validateField(el) {
 
 function updateProgress() {
   const baseFields = ['driverID','truckNo','truckRego'];
-  let filled = 0, total = baseFields.length + 5;
+  let filled = 0, total = baseFields.length + 4;
   baseFields.forEach(id => { const el=document.getElementById(id); if(el&&el.value.trim()!=='') filled++; });
   if (getDepotValue()) filled++;
   if (Object.keys(docketPhotos).length > 0) filled++;
@@ -4753,7 +4712,6 @@ function updateProgress() {
   const tr1 = document.getElementById('tare1');
   if (t1&&t1.value.trim()) filled++;
   if (g1&&g1.value.trim()&&tr1&&tr1.value.trim()) filled++;
-  if (hasSig) filled++;
   const pct = Math.round((filled/total)*100);
 const progressFill = document.getElementById('progressFill');
 const progressPct = document.getElementById('progressPct');
@@ -4845,8 +4803,6 @@ function submitForm() {
       if (docketSection) docketSection.scrollIntoView({behavior:'smooth', block:'center'});
     }
   }
-  if (!hasSig) errors.push('Driver Signature');
-
   if (errors.length>0) {
     const summary=document.getElementById('valSummary');
     document.getElementById('valList').innerHTML=errors.map(e=>`<li>${e}</li>`).join('');
@@ -4911,14 +4867,14 @@ function submitForm() {
     totalLoads: loads.length,
     totalTonnes: document.getElementById('totalTonnesDisplay').textContent,
     notes: document.getElementById('notes').value,
-    signature: getSignatureDataUrl(),
     docketPhotos: docketPhotos,
     runSheetPhoto: runSheetPhotoData,
     logbookPhoto: logbookPhotoData,
     submittedAt: new Date().toISOString(),
   };
 
-  showLoading('Submitting your run sheet...');
+  const uploadPhotoCount = Object.keys(docketPhotos).length + (runSheetPhotoData ? 1 : 0) + (logbookPhotoData ? 1 : 0);
+  showLoading(uploadPhotoCount > 0 ? `Uploading ${uploadPhotoCount} photo${uploadPhotoCount === 1 ? '' : 's'} and submitting run sheet...` : 'Submitting your run sheet...');
 
   if (SUBMIT_URL==='YOUR_POWER_AUTOMATE_URL_HERE') {
     hideLoading();
@@ -5344,7 +5300,7 @@ function resetForm() {
   if (logbookPhotoCameraInput) logbookPhotoCameraInput.value = '';
   if (logbookPhotoInput) logbookPhotoInput.value = '';
   handleDepotChange();
-  clearSignature(); updateProgress(); updateAddLoadBtn();
+  updateProgress(); updateAddLoadBtn();
   window.scrollTo(0,0);
 }
 
@@ -5444,7 +5400,7 @@ function handleProductChange(idx) {
 }
 
 
-const HELP_VOICE_TEXT = `Cartage Australia driver app help. First, enter your truck number. This should be done before anything else so the app can load your rego, location, driver name, and allocated jobs. Next, check your driver name and Driver ID. If anything is missing, enter it manually. Check the location and use Other only when required. If allocated jobs are available, choose Yes when the popup asks whether to load today's jobs. For each load, add the weighbridge docket photo first. You can take a new photo, or choose one from Library or File. Review the scanned docket number, gross, tare, and tonnes. If a docket is handwritten or unclear, manually enter the details. Upload your completed run sheet photo. Add a logbook photo if required. Sign in the signature box. Finally, submit the run sheet and wait for the success message before closing the page.`;
+const HELP_VOICE_TEXT = `Cartage Australia driver app help. First, enter your truck number. This should be done before anything else so the app can load your rego, location, driver name, and allocated jobs. Next, check your driver name and Driver ID. If anything is missing, enter it manually. Check the location and use Other only when required. If allocated jobs are available, choose Yes when the popup asks whether to load today's jobs. For each load, add the weighbridge docket photo first. You can take a new photo, or choose one from Library or File. Review the scanned docket number, gross, tare, and tonnes. If a docket is handwritten or unclear, manually enter the details. Upload your completed run sheet photo. Add a logbook photo if required. Finally, submit the run sheet and wait for the success message before closing the page.`;
 let helpSpeechUtterance = null;
 let helpHighlightTimer = null;
 
