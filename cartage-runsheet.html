@@ -120,21 +120,6 @@
   input.valid, select.valid { border-color: var(--green); }
   input[readonly] { color: var(--label); cursor: default; }
 
-  input[type="radio"] {
-    width: auto;
-    min-width: 13px;
-    height: 13px;
-    padding: 0;
-    margin: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 50%;
-    -webkit-appearance: radio;
-    appearance: auto;
-    accent-color: var(--orange);
-    cursor: pointer;
-  }
-
   select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -395,6 +380,27 @@
   .toast.success { border-color: var(--green); color: var(--green); }
   .toast.error { border-color: var(--red); color: var(--red); }
   .toast.warning { border-color: var(--yellow); color: var(--orange-dk); }
+
+  .sig-canvas-wrap {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #f8fafc;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas#sigCanvas {
+    display: block;
+    width: 100%;
+    height: 120px;
+    touch-action: none;
+  }
+  .sig-clear {
+    position: absolute; top: 6px; right: 8px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--label); font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 4px; cursor: pointer;
+  }
+  .sig-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
 
   .time-picker-trigger {
     width: 100%;
@@ -712,25 +718,6 @@
     margin: 0;
     line-height: 1.45;
   }
-  .dispatch-summary-date-line {
-    margin-top: 9px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.18);
-    font-size: 12px;
-    font-weight: 800;
-    color: #ffffff;
-  }
-  .dispatch-summary-date-line span {
-    opacity: 0.78;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    font-size: 10px;
-  }
   .dispatch-summary-total {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -913,6 +900,39 @@
     }
   }
 
+
+  /* Sensitive company-truck earnings panel (dispatcher only) */
+  .dispatch-earnings-lock {
+    border: 1px solid rgba(26,34,53,0.14);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+  }
+  .dispatch-earnings-head {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 16px; background:#f8fafc;
+  }
+  .dispatch-earnings-title { display:flex; align-items:center; gap:9px; min-width:0; }
+  .dispatch-earnings-title strong { font-size:14px; color:var(--text); }
+  .dispatch-earnings-title small { display:block; color:var(--muted); font-size:11px; margin-top:2px; }
+  .dispatch-earnings-btn {
+    border:0; border-radius:8px; padding:8px 12px; cursor:pointer;
+    font-size:12px; font-weight:800; white-space:nowrap;
+    background:var(--orange); color:#ffffff;
+  }
+  .dispatch-earnings-btn.secondary { background:#eef2f7; color:var(--text); }
+  .dispatch-earnings-content { padding:14px 16px 16px; }
+  .dispatch-earnings-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
+  .dispatch-earnings-kpi { background:#f8fafc; border-radius:9px; padding:10px; }
+  .dispatch-earnings-kpi span { display:block; color:var(--muted); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; }
+  .dispatch-earnings-kpi strong { display:block; color:var(--text); font-size:17px; margin-top:4px; }
+  .dispatch-earnings-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .dispatch-earnings-table th { text-align:left; color:var(--muted); font-size:10px; text-transform:uppercase; padding:7px 8px; border-bottom:1px solid var(--border); }
+  .dispatch-earnings-table td { padding:8px; border-bottom:1px solid #eef2f7; color:var(--text); }
+  .dispatch-earnings-table th:last-child, .dispatch-earnings-table td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+  .dispatch-earnings-note { margin-top:9px; font-size:10px; color:var(--muted); line-height:1.45; }
+  @media (max-width:700px) { .dispatch-earnings-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
 </style>
 </head>
 <body>
@@ -950,8 +970,8 @@
       <div class="help-step" onclick="helpJump('#depot', 'Step 3. Check the location. If Other is selected, enter the location in the box that appears.')">
         <div class="help-num">3</div><div><h3>Check Location</h3><p>Use the selected location or enter another location if required.</p></div>
       </div>
-      <div class="help-step" onclick="helpJump('#loadJobsBanner', 'Step 4. If allocated jobs are available, choose Yes in the popup to load them. Otherwise add loads manually.')">
-        <div class="help-num">4</div><div><h3>Load or add jobs</h3><p>When prompted, choose Yes to load today's allocated jobs, or No to add loads manually.</p></div>
+      <div class="help-step" onclick="helpJump('#loadJobsBanner', 'Step 4. If allocated jobs are available, tap Load Today's Jobs. Otherwise add loads manually.')">
+        <div class="help-num">4</div><div><h3>Load or add jobs</h3><p>Tap Load Today's Jobs when shown, or add loads manually.</p></div>
       </div>
       <div class="help-step" onclick="helpJump('#loadsContainer', 'Step 5. For each load, add the docket photo first. Take a photo or choose one from Library or File.')">
         <div class="help-num">5</div><div><h3>Scan docket first</h3><p>For each load, add the weighbridge docket photo before entering details.</p></div>
@@ -965,8 +985,11 @@
       <div class="help-step" onclick="helpJump('#logbookUploadWrap', 'Step 8. Add a logbook photo if required. This section appears with the run sheet upload area.')">
         <div class="help-num">8</div><div><h3>Upload logbook if required</h3><p>Add a logbook photo when it is required for the day.</p></div>
       </div>
+      <div class="help-step" onclick="helpJump('#sigCanvas', 'Step 9. Sign the run sheet before submitting.')">
+        <div class="help-num">9</div><div><h3>Sign</h3><p>Use your finger to sign in the signature box.</p></div>
+      </div>
       <div class="help-step" onclick="helpJump('.submit-btn', 'Step 10. Submit once everything has been checked. Do not close the page until the success message appears.')">
-        <div class="help-num">9</div><div><h3>Submit</h3><p>Submit after all required photos and load details are complete.</p></div>
+        <div class="help-num">10</div><div><h3>Submit</h3><p>Submit after all required photos, load details, and signature are complete.</p></div>
       </div>
     </div>
   </div>
@@ -1015,7 +1038,6 @@
         <div class="dispatch-summary-head">
           <h3>Daily Dispatch Summary</h3>
           <p id="dispatchSummarySubtext">Summary will refresh each time a dispatch sheet is uploaded.</p>
-          <div class="dispatch-summary-date-line"><span>Summary date</span><strong id="dispatchSummaryDate">Today</strong></div>
         </div>
         <div class="dispatch-summary-total">
           <div class="dispatch-summary-stat"><span>Total Loads</span><strong id="dispatchSummaryTotalLoads">0</strong></div>
@@ -1028,6 +1050,19 @@
           <span id="dispatchSendSummaryStatus" class="dispatch-summary-send-status">Sends the top summary table and 14-day loads/trucks data only.</span>
         </div>
         <div class="dispatch-summary-body">
+
+          <div class="dispatch-summary-block">
+            <div id="dispatchEarningsPanel" class="dispatch-earnings-lock">
+              <div class="dispatch-earnings-head">
+                <div class="dispatch-earnings-title">
+                  <span id="dispatchEarningsLockIcon" aria-hidden="true">&#128274;</span>
+                  <div><strong>Truck Earnings - Management Only</strong><small id="dispatchEarningsStatus">Sensitive company financial information. Locked by default.</small></div>
+                </div>
+                <button type="button" id="dispatchEarningsToggle" class="dispatch-earnings-btn" onclick="unlockDispatchEarnings()">Show earnings</button>
+              </div>
+              <div id="dispatchEarningsContent" class="dispatch-earnings-content" style="display:none;"></div>
+            </div>
+          </div>
           <div class="dispatch-summary-block">
             <h4>Previous 14 Days</h4>
             <div id="dispatchFortnightChart" class="dispatch-chart-wrap"></div>
@@ -1081,7 +1116,7 @@
           <label>Date <span class="auto-tag">Auto</span></label>
           <input type="date" id="jobDate" readonly
             onclick="this.removeAttribute('readonly'); this.showPicker && this.showPicker();"
-            onchange="this.setAttribute('readonly',''); enforceNoFutureJobDate(); applyScheduleForSelectedDate(); resetLoadsForNewDriver();"
+            onchange="this.setAttribute('readonly',''); applyScheduleForSelectedDate(); resetLoadsForNewDriver();"
             style="border-color: var(--orange); background: #fffbeb; font-weight:600;">
         </div>
       </div>
@@ -1128,12 +1163,7 @@
             <option>Point Wilson</option>
             <option>Wyndham Vale</option>
             <option>Donnybrook</option>
-            <option>Bromelton</option>
-            <option>Mt Cotton</option>
-            <option>Yatala</option>
-            <option>Mt Marrow</option>
-            <option>Caboolture</option>
-            <option>Harvey Bay/Maryborough</option>
+            <option>Queensland</option>
             <option>South Australia</option>
             <option>Other</option>
           </select>
@@ -1143,23 +1173,15 @@
           <div class="field-error" id="err-depot">Location is required</div>
         </div>
       </div>
-      <div class="field" style="margin-top:8px;">
-        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--label);">
-          <span style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">Shift</span>
-          <label style="display:inline-flex; align-items:center; gap:5px; margin:0; font-size:12px; font-weight:600; color:var(--text); text-transform:none; letter-spacing:0;">
-            <input type="radio" name="shiftType" value="Day" checked onchange="updateProgress()" style="width:13px; height:13px; margin:0; accent-color:var(--orange);"> Day
-          </label>
-          <label style="display:inline-flex; align-items:center; gap:5px; margin:0; font-size:12px; font-weight:600; color:var(--text); text-transform:none; letter-spacing:0;">
-            <input type="radio" name="shiftType" value="Night" onchange="updateProgress()" style="width:13px; height:13px; margin:0; accent-color:var(--orange);"> Night
-          </label>
-        </div>
-      </div>
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">Loads</div>
-    <div id="loadJobsBanner" style="display:none;"></div>
+    <div id="loadJobsBanner" style="display:none; margin-bottom:12px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 14px;">
+      <div style="font-size:13px; color:#92400e; font-weight:600; margin-bottom:8px;">Today's allocated loads available</div>
+      <button onclick="loadJobsFromSchedule()" style="width:100%; background:linear-gradient(135deg,var(--orange),var(--orange-dk)); border:none; border-radius:8px; padding:11px; font-size:13px; font-weight:700; color:white; cursor:pointer;">Load Today's Jobs</button>
+    </div>
     <div id="loadsContainer"></div>
     <button class="add-load-btn" id="addLoadBtn" onclick="addLoad()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1249,6 +1271,21 @@
   </div>
 
   <div class="section">
+    <div class="section-title">Driver Signature</div>
+    <div class="card">
+      <div class="field">
+        <label>Sign below <span class="req">*</span></label>
+        <div class="sig-canvas-wrap">
+          <canvas id="sigCanvas"></canvas>
+          <button class="sig-clear" onclick="clearSignature()">Clear</button>
+        </div>
+        <p class="sig-hint">Use your finger or stylus to sign</p>
+        <div class="field-error" id="err-signature">Please sign before submitting</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Additional Notes</div>
     <div class="card">
       <div class="field">
@@ -1266,8 +1303,6 @@
   </div>
 
   <div class="submit-wrap">
-    <button type="button" onclick="saveProgress()" style="width:100%;background:#fff;border:2px solid var(--orange);border-radius:10px;padding:14px 16px;font-size:15px;font-weight:800;color:var(--orange-dk);cursor:pointer;margin-bottom:10px;">Save Progress</button>
-    <p id="saveProgressStatus" class="submit-note" style="margin-top:0;margin-bottom:12px;">Saves this run sheet and docket photos on this device only</p>
     <button class="submit-btn" onclick="submitForm()">Submit Run Sheet</button>
     <p class="submit-note">Sent directly to the Cartage Australia office</p>
   </div>
@@ -1326,14 +1361,12 @@ const EMPLOYEE_LOOKUP_URL = SUBMIT_URL;
 const DRIVER_LOOKUP = {"501953":"David Batrouney","500007":"Paul Charalambous","500101":"Justin Dickison","500156":"Daniel Mcintosh","500308":"Daryl Lammas","500316":"James Boasman","500337":"Shibeshi Asqedom","500379":"Patrick Doyle","500380":"Richard Lineham","500393":"Mark Cauchi","500408":"Brett Austin","500574":"Damien Lowry","500624":"Michael Bland","500627":"Sheryl Champion","500636":"Andrew Fulham","500657":"Mesud Keskic","500667":"Mandeep Sekhon","500676":"Surat Singh","500690":"Pankajdeep Singh","500737":"Jaibaaz Singh","500741":"Joga Singh 500741","500750":"Emmanuel Bugeja","500767":"Radek Hermanek","500770":"Sukhpreet Singh Hari Ke","501883":"Mohit Gulati","500793":"Gurhimat Singh","500805":"Kent Wells","500806":"Deborah Thomas","500810":"Gurpreet Singh","500815":"Dean Emery","500822":"Hardeep Singh","500852":"Ervin Agalliu","500857":"Jason Thompson","500863":"Deane Kenneth","500881":"Mark Kinash","500886":"Brayden Pietrzykowski","500909":"Jason Mead","500930":"Maree Batrouney","500945":"Matthew Cox","500984":"Abdel Beitsayah","500988":"Farid Amouri","501019":"Tekotahitanga Beckham-Sionetali","501041":"Frank Bigoni","501054":"Arashdeep Singh Brar","501058":"Lachlan Grant","501062":"Harjit Bassi","501065":"Brendon Derwin","501074":"Andy Olivario","501075":"Craig Macgregor","501081":"Lindsay Jack","501095":"Parwinder Pal Singh","501103":"Ty Skinner","501126":"Gurpreet Singh Rana","501127":"Bayram Kaykisiz","501135":"Amandeep Sarao","501168":"Jagraj Singh","501170":"Parminder Singh","501172":"Paul James","501177":"Emily Rondinella","501188":"Nikola Vesic","501191":"Neville Palmer","501201":"Gurjot Singh 501201","501204":"Luke Shortis","501220":"Mafi Pese","501222":"Jaspreet Singh 501222","501227":"Ajaypal Sekhon","501232":"Thomas John","501239":"Robert Kovac","501244":"Manpreet Singh 501244","501249":"Jarrod Hauser","501250":"Navsangeet Singh","801266":"Matthew Lees","501270":"Varinder Singh","501274":"Manbir Sandhu","501275":"Rohan Taylor","501283":"Viraj Samaranayake","501285":"Michael Sawdon","501294":"Margaret Lorton","501302":"Malinderjeet Hira","501305":"Amrinder Singh 501305","501321":"Ravinesh Jattan","501325":"Vikasjeet Rana","501326":"Dapinder Jawanda","501341":"Wayne Collier","501352":"James Heyden","501354":"Sililo Elia","501356":"Harmanjit Sekhon","501361":"Pokoina Tiaiti","501381":"Nuufou Sauiluma","501386":"Dharani Sai Aluri","501397":"Scott Allen","501398":"Aleksandar Tan","501399":"Jaspreet Singh 501399","501402":"Brennan Pell","501403":"Jasvir Pannu","501405":"Manpreet Singh 501405","501409":"Taulagi Johnson","501413":"Tarsem Singh","501417":"Sanampreet Singh","501423":"Jatindeep Gujral","501425":"Jaswant Dhaliwal","501427":"Andrew Jopp","501432":"Leanne Micallef","501441":"Simon Haslett","501446":"Davood Zolfaghari","501447":"James (Jim) Spiers","801448":"Benjamin Bardzinski","501450":"Amandeep Singh 501450","501454":"Gavin Langton","501455":"Mussa Ali","501463":"Amandeep Singh 501463","501474":"Dwight Neville","501478":"Karandeep Singh","501482":"Rajinderpal Singh","501488":"Tarlok Singh","501498":"Kuldip Singh Maan","501515":"Zakaria Dor","501518":"Satinder Singh","501526":"Riely Holdsworth","501529":"Jasbir Singh","501533":"Harmandeep Singh","501538":"Andrew Mclean","501543":"Adrian Leishman","501548":"Fitugafulu Faafuata","501572":"Sam Sboto","501582":"Gurpreet Singh Sidhu","501585":"Utoikamanu Afemui","501589":"Amandip Singh","501593":"Palwinder Singh Aulakh","501597":"Rahul Gandhi","501598":"Lachlan Mcfarlane","501600":"Steve Siania","501602":"Rajat Mittal","501610":"Richard Adamson","501615":"Rodney Palmer","501625":"Jamie Wassell","501626":"Timbira Kago","501632":"Samuel Hastings","501636":"Tavita Mauigoa","501637":"Shamsher Singh","501639":"Sunil Bishnoi","501643":"Beljeek Ajang Agour Lual","501647":"Mohammad Nazif","501649":"Hassan Latif","501654":"Simranpreet Singh","501657":"Richard Clarke","501659":"Simranjeet Brar","501681":"Amrit Pal Singh","501691":"Harold Paskins","501693":"Amrinder Singh 501693","501697":"Danny Komorr","501699":"Ian Price","501701":"George Mamatis","501704":"Bhupinder Singh 501704","501712":"Julie Heke","501716":"Gurjeet Dhaliwal","501721":"Davinder Randhawa","501726":"Reece Carton","501728":"Gregg Aguado","501730":"Jatin Kataria","S50004":"Raymond Cauchi","S50006":"Ellice Vella","S50007":"Wayne Vella","500153":"Danial Cauchi","500189":"Jake Cauchi","500785":"Caleb Vella","500923":"Jed Vella","501146":"Lisa Thomas","501757":"Das Harpreet Singh","501758":"Sukhvir Singh","501731":"Ashish Bhandari","501734":"Vilmos Kovac","501743":"Dane Barlow","501747":"Yvonne Elkington","501748":"Dayle Pitcon","501756":"Rachel Tamanui","501439":"Dominic Ring","501759":"Emma Johnson","501943":"Ramanvir Singh Mann","501764":"Corey Bisognin","501033":"Mandeep Singh","501768":"Rohitendra Nand","501769":"Manpreet Singh 501769","501771":"Satnamsingh Saini","501619":"Paramjit Singh","501774":"Rafal Pendecki","501777":"Raminder Sandhu","501461":"Mandeep Singh 501461","501778":"Abraham Schultink","500977":"Connor Skillicorn","501787":"Jake White","501805":"John Marinas","501806":"Himanshu Joshi","501810":"John Mari Andan","501812":"Kieth Hansen","501814":"Paul Koolen","501827":"Rampreet Sidhu","501821":"Anthony George","501824":"Varinder Pal","501826":"Harjot Attri","501825":"Eh Doh Hso","401823":"Colin Ginn","501831":"Simon Stalman","501830":"Mohammed Ahsad","401839":"Andrew Coad","501841":"Sukhwinder Singh","801939":"Dishant Patel","501844":"Jaspreet Singh 501844","401845":"Jared Biggs","501849":"Pawan Kumar","401836":"Clint Armstrong","501854":"Melissa Wolfe","501852":"Shivam Gupta","501878":"Karan Behl","501853":"Harbhinder Singh","501862":"Blake Johns","501857":"Harpreet Singh","501860":"John Bardsley","501863":"Satnam Singh","401855":"Imitiaz Shah","401865":"Mark Boys","501864":"Michael Van Breda-Foxwell","501873":"Aseem Pal Utreja","401879":"Paul Edwards","501886":"Jasmin Hawksworth","501888":"Gagandeep Singh Aulakh","801889":"Jarrod Hicks","501895":"Harwinder Marar","801899":"Ruzzell Bondoc","501900":"Jordan Rihs","501901":"Amandeep Singh Sarao 501901","501903":"Maninderjeet Garcha","401898":"Allan Munsie","501905":"Gurwinder Singh","401910":"Marty Watson","401912":"Greg Brownsey","501915":"Michael Van Rijswijk","401917":"Ronald Deane","501918":"Ali Haider","501925":"Harinderjit Singh Mann","501916":"Sukhmandeep S Sidhu","501927":"Darren Morris","401929":"John O'Sullivan","401924":"Nathan Streeter","501932":"Abubakar Abdirahman","501937":"Thomas Atherton","501938":"Amarprit Singh","501940":"Rupinder Masson","501942":"Parvinder Singh Sandhu","501944":"Sourabh -","801945":"Gregory Collins","801948":"Gurpreet Singh 801948","801949":"Amrinder Singh Randhawa","501951":"Lisa Pollard","501952":"Tracy Borkowski","801947":"Rueben Mickan-Keipert"};
 
 let verifiedDriverName = null;
-let googleLookupLoadPending = false;
-let googleLookupLoaded = false;
 
 const CLOUDFLARE_WORKER = 'https://square-dawn-734a.ring-dominic.workers.dev';
 const POWER_AUTOMATE_DISPATCH_SUMMARY_URL = 'https://defaultc5ad633fcce5444187106588f0ffab.e7.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/29/workflows/df3a793168c14ddcaec217fd114dcf03/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=orZ3R-pue1Deshw6kbqilAOEim1_MGKsFYlym8bAPc4';
 
 const NAME_LOOKUP = {"david batrouney":{"id":"501953","properName":"David Batrouney"},"paul charalambous":{"id":"500007","properName":"Paul Charalambous"},"justin dickison":{"id":"500101","properName":"Justin Dickison"},"daniel mcintosh":{"id":"500156","properName":"Daniel Mcintosh"},"daryl lammas":{"id":"500308","properName":"Daryl Lammas"},"james boasman":{"id":"500316","properName":"James Boasman"},"shibeshi asqedom":{"id":"500337","properName":"Shibeshi Asqedom"},"patrick doyle":{"id":"500379","properName":"Patrick Doyle"},"richard lineham":{"id":"500380","properName":"Richard Lineham"},"mark cauchi":{"id":"500393","properName":"Mark Cauchi"},"brett austin":{"id":"500408","properName":"Brett Austin"},"damien lowry":{"id":"500574","properName":"Damien Lowry"},"michael bland":{"id":"500624","properName":"Michael Bland"},"sheryl champion":{"id":"500627","properName":"Sheryl Champion"},"andrew fulham":{"id":"500636","properName":"Andrew Fulham"},"mesud keskic":{"id":"500657","properName":"Mesud Keskic"},"mandeep sekhon":{"id":"500667","properName":"Mandeep Sekhon"},"surat singh":{"id":"500676","properName":"Surat Singh"},"pankajdeep singh":{"id":"500690","properName":"Pankajdeep Singh"},"jaibaaz singh":{"id":"500737","properName":"Jaibaaz Singh"},"joga singh 500741":{"id":"500741","properName":"Joga Singh 500741"},"emmanuel bugeja":{"id":"500750","properName":"Emmanuel Bugeja"},"radek hermanek":{"id":"500767","properName":"Radek Hermanek"},"sukhpreet singh hari ke":{"id":"500770","properName":"Sukhpreet Singh Hari Ke"},"mohit gulati":{"id":"501883","properName":"Mohit Gulati"},"gurhimat singh":{"id":"500793","properName":"Gurhimat Singh"},"kent wells":{"id":"500805","properName":"Kent Wells"},"deborah thomas":{"id":"500806","properName":"Deborah Thomas"},"gurpreet singh":{"id":"500810","properName":"Gurpreet Singh"},"dean emery":{"id":"500815","properName":"Dean Emery"},"hardeep singh":{"id":"500822","properName":"Hardeep Singh"},"ervin agalliu":{"id":"500852","properName":"Ervin Agalliu"},"jason thompson":{"id":"500857","properName":"Jason Thompson"},"deane kenneth":{"id":"500863","properName":"Deane Kenneth"},"mark kinash":{"id":"500881","properName":"Mark Kinash"},"brayden pietrzykowski":{"id":"500886","properName":"Brayden Pietrzykowski"},"jason mead":{"id":"500909","properName":"Jason Mead"},"maree batrouney":{"id":"500930","properName":"Maree Batrouney"},"matthew cox":{"id":"500945","properName":"Matthew Cox"},"abdel beitsayah":{"id":"500984","properName":"Abdel Beitsayah"},"farid amouri":{"id":"500988","properName":"Farid Amouri"},"tekotahitanga beckham-sionetali":{"id":"501019","properName":"Tekotahitanga Beckham-Sionetali"},"frank bigoni":{"id":"501041","properName":"Frank Bigoni"},"arashdeep singh brar":{"id":"501054","properName":"Arashdeep Singh Brar"},"lachlan grant":{"id":"501058","properName":"Lachlan Grant"},"harjit bassi":{"id":"501062","properName":"Harjit Bassi"},"brendon derwin":{"id":"501065","properName":"Brendon Derwin"},"andy olivario":{"id":"501074","properName":"Andy Olivario"},"craig macgregor":{"id":"501075","properName":"Craig Macgregor"},"lindsay jack":{"id":"501081","properName":"Lindsay Jack"},"parwinder pal singh":{"id":"501095","properName":"Parwinder Pal Singh"},"ty skinner":{"id":"501103","properName":"Ty Skinner"},"gurpreet singh rana":{"id":"501126","properName":"Gurpreet Singh Rana"},"bayram kaykisiz":{"id":"501127","properName":"Bayram Kaykisiz"},"amandeep sarao":{"id":"501135","properName":"Amandeep Sarao"},"jagraj singh":{"id":"501168","properName":"Jagraj Singh"},"parminder singh":{"id":"501170","properName":"Parminder Singh"},"paul james":{"id":"501172","properName":"Paul James"},"emily rondinella":{"id":"501177","properName":"Emily Rondinella"},"nikola vesic":{"id":"501188","properName":"Nikola Vesic"},"neville palmer":{"id":"501191","properName":"Neville Palmer"},"gurjot singh 501201":{"id":"501201","properName":"Gurjot Singh 501201"},"luke shortis":{"id":"501204","properName":"Luke Shortis"},"mafi pese":{"id":"501220","properName":"Mafi Pese"},"jaspreet singh 501222":{"id":"501222","properName":"Jaspreet Singh 501222"},"ajaypal sekhon":{"id":"501227","properName":"Ajaypal Sekhon"},"thomas john":{"id":"501232","properName":"Thomas John"},"robert kovac":{"id":"501239","properName":"Robert Kovac"},"manpreet singh 501244":{"id":"501244","properName":"Manpreet Singh 501244"},"jarrod hauser":{"id":"501249","properName":"Jarrod Hauser"},"navsangeet singh":{"id":"501250","properName":"Navsangeet Singh"},"matthew lees":{"id":"801266","properName":"Matthew Lees"},"varinder singh":{"id":"501270","properName":"Varinder Singh"},"manbir sandhu":{"id":"501274","properName":"Manbir Sandhu"},"rohan taylor":{"id":"501275","properName":"Rohan Taylor"},"viraj samaranayake":{"id":"501283","properName":"Viraj Samaranayake"},"michael sawdon":{"id":"501285","properName":"Michael Sawdon"},"margaret lorton":{"id":"501294","properName":"Margaret Lorton"},"malinderjeet hira":{"id":"501302","properName":"Malinderjeet Hira"},"amrinder singh 501305":{"id":"501305","properName":"Amrinder Singh 501305"},"ravinesh jattan":{"id":"501321","properName":"Ravinesh Jattan"},"vikasjeet rana":{"id":"501325","properName":"Vikasjeet Rana"},"dapinder jawanda":{"id":"501326","properName":"Dapinder Jawanda"},"wayne collier":{"id":"501341","properName":"Wayne Collier"},"james heyden":{"id":"501352","properName":"James Heyden"},"sililo elia":{"id":"501354","properName":"Sililo Elia"},"harmanjit sekhon":{"id":"501356","properName":"Harmanjit Sekhon"},"pokoina tiaiti":{"id":"501361","properName":"Pokoina Tiaiti"},"nuufou sauiluma":{"id":"501381","properName":"Nuufou Sauiluma"},"dharani sai aluri":{"id":"501386","properName":"Dharani Sai Aluri"},"scott allen":{"id":"501397","properName":"Scott Allen"},"aleksandar tan":{"id":"501398","properName":"Aleksandar Tan"},"jaspreet singh 501399":{"id":"501399","properName":"Jaspreet Singh 501399"},"brennan pell":{"id":"501402","properName":"Brennan Pell"},"jasvir pannu":{"id":"501403","properName":"Jasvir Pannu"},"manpreet singh 501405":{"id":"501405","properName":"Manpreet Singh 501405"},"taulagi johnson":{"id":"501409","properName":"Taulagi Johnson"},"tarsem singh":{"id":"501413","properName":"Tarsem Singh"},"sanampreet singh":{"id":"501417","properName":"Sanampreet Singh"},"jatindeep gujral":{"id":"501423","properName":"Jatindeep Gujral"},"jaswant dhaliwal":{"id":"501425","properName":"Jaswant Dhaliwal"},"andrew jopp":{"id":"501427","properName":"Andrew Jopp"},"leanne micallef":{"id":"501432","properName":"Leanne Micallef"},"simon haslett":{"id":"501441","properName":"Simon Haslett"},"davood zolfaghari":{"id":"501446","properName":"Davood Zolfaghari"},"james (jim) spiers":{"id":"501447","properName":"James (Jim) Spiers"},"benjamin bardzinski":{"id":"801448","properName":"Benjamin Bardzinski"},"amandeep singh 501450":{"id":"501450","properName":"Amandeep Singh 501450"},"gavin langton":{"id":"501454","properName":"Gavin Langton"},"mussa ali":{"id":"501455","properName":"Mussa Ali"},"amandeep singh 501463":{"id":"501463","properName":"Amandeep Singh 501463"},"dwight neville":{"id":"501474","properName":"Dwight Neville"},"karandeep singh":{"id":"501478","properName":"Karandeep Singh"},"rajinderpal singh":{"id":"501482","properName":"Rajinderpal Singh"},"tarlok singh":{"id":"501488","properName":"Tarlok Singh"},"kuldip singh maan":{"id":"501498","properName":"Kuldip Singh Maan"},"zakaria dor":{"id":"501515","properName":"Zakaria Dor"},"satinder singh":{"id":"501518","properName":"Satinder Singh"},"riely holdsworth":{"id":"501526","properName":"Riely Holdsworth"},"jasbir singh":{"id":"501529","properName":"Jasbir Singh"},"harmandeep singh":{"id":"501533","properName":"Harmandeep Singh"},"andrew mclean":{"id":"501538","properName":"Andrew Mclean"},"adrian leishman":{"id":"501543","properName":"Adrian Leishman"},"fitugafulu faafuata":{"id":"501548","properName":"Fitugafulu Faafuata"},"sam sboto":{"id":"501572","properName":"Sam Sboto"},"gurpreet singh sidhu":{"id":"501582","properName":"Gurpreet Singh Sidhu"},"utoikamanu afemui":{"id":"501585","properName":"Utoikamanu Afemui"},"amandip singh":{"id":"501589","properName":"Amandip Singh"},"palwinder singh aulakh":{"id":"501593","properName":"Palwinder Singh Aulakh"},"rahul gandhi":{"id":"501597","properName":"Rahul Gandhi"},"lachlan mcfarlane":{"id":"501598","properName":"Lachlan Mcfarlane"},"steve siania":{"id":"501600","properName":"Steve Siania"},"rajat mittal":{"id":"501602","properName":"Rajat Mittal"},"richard adamson":{"id":"501610","properName":"Richard Adamson"},"rodney palmer":{"id":"501615","properName":"Rodney Palmer"},"jamie wassell":{"id":"501625","properName":"Jamie Wassell"},"timbira kago":{"id":"501626","properName":"Timbira Kago"},"samuel hastings":{"id":"501632","properName":"Samuel Hastings"},"tavita mauigoa":{"id":"501636","properName":"Tavita Mauigoa"},"shamsher singh":{"id":"501637","properName":"Shamsher Singh"},"sunil bishnoi":{"id":"501639","properName":"Sunil Bishnoi"},"beljeek ajang agour lual":{"id":"501643","properName":"Beljeek Ajang Agour Lual"},"mohammad nazif":{"id":"501647","properName":"Mohammad Nazif"},"hassan latif":{"id":"501649","properName":"Hassan Latif"},"simranpreet singh":{"id":"501654","properName":"Simranpreet Singh"},"richard clarke":{"id":"501657","properName":"Richard Clarke"},"simranjeet brar":{"id":"501659","properName":"Simranjeet Brar"},"amrit pal singh":{"id":"501681","properName":"Amrit Pal Singh"},"harold paskins":{"id":"501691","properName":"Harold Paskins"},"amrinder singh 501693":{"id":"501693","properName":"Amrinder Singh 501693"},"danny komorr":{"id":"501697","properName":"Danny Komorr"},"ian price":{"id":"501699","properName":"Ian Price"},"george mamatis":{"id":"501701","properName":"George Mamatis"},"bhupinder singh 501704":{"id":"501704","properName":"Bhupinder Singh 501704"},"julie heke":{"id":"501712","properName":"Julie Heke"},"gurjeet dhaliwal":{"id":"501716","properName":"Gurjeet Dhaliwal"},"davinder randhawa":{"id":"501721","properName":"Davinder Randhawa"},"reece carton":{"id":"501726","properName":"Reece Carton"},"gregg aguado":{"id":"501728","properName":"Gregg Aguado"},"jatin kataria":{"id":"501730","properName":"Jatin Kataria"},"raymond cauchi":{"id":"S50004","properName":"Raymond Cauchi"},"ellice vella":{"id":"S50006","properName":"Ellice Vella"},"wayne vella":{"id":"S50007","properName":"Wayne Vella"},"danial cauchi":{"id":"500153","properName":"Danial Cauchi"},"jake cauchi":{"id":"500189","properName":"Jake Cauchi"},"caleb vella":{"id":"500785","properName":"Caleb Vella"},"jed vella":{"id":"500923","properName":"Jed Vella"},"lisa thomas":{"id":"501146","properName":"Lisa Thomas"},"das harpreet singh":{"id":"501757","properName":"Das Harpreet Singh"},"sukhvir singh":{"id":"501758","properName":"Sukhvir Singh"},"ashish bhandari":{"id":"501731","properName":"Ashish Bhandari"},"vilmos kovac":{"id":"501734","properName":"Vilmos Kovac"},"dane barlow":{"id":"501743","properName":"Dane Barlow"},"yvonne elkington":{"id":"501747","properName":"Yvonne Elkington"},"dayle pitcon":{"id":"501748","properName":"Dayle Pitcon"},"rachel tamanui":{"id":"501756","properName":"Rachel Tamanui"},"dominic ring":{"id":"501439","properName":"Dominic Ring"},"emma johnson":{"id":"501759","properName":"Emma Johnson"},"ramanvir singh mann":{"id":"501943","properName":"Ramanvir Singh Mann"},"corey bisognin":{"id":"501764","properName":"Corey Bisognin"},"mandeep singh":{"id":"501033","properName":"Mandeep Singh"},"rohitendra nand":{"id":"501768","properName":"Rohitendra Nand"},"manpreet singh 501769":{"id":"501769","properName":"Manpreet Singh 501769"},"satnamsingh saini":{"id":"501771","properName":"Satnamsingh Saini"},"paramjit singh":{"id":"501619","properName":"Paramjit Singh"},"rafal pendecki":{"id":"501774","properName":"Rafal Pendecki"},"raminder sandhu":{"id":"501777","properName":"Raminder Sandhu"},"mandeep singh 501461":{"id":"501461","properName":"Mandeep Singh 501461"},"abraham schultink":{"id":"501778","properName":"Abraham Schultink"},"connor skillicorn":{"id":"500977","properName":"Connor Skillicorn"},"jake white":{"id":"501787","properName":"Jake White"},"john marinas":{"id":"501805","properName":"John Marinas"},"himanshu joshi":{"id":"501806","properName":"Himanshu Joshi"},"john mari andan":{"id":"501810","properName":"John Mari Andan"},"kieth hansen":{"id":"501812","properName":"Kieth Hansen"},"paul koolen":{"id":"501814","properName":"Paul Koolen"},"rampreet sidhu":{"id":"501827","properName":"Rampreet Sidhu"},"anthony george":{"id":"501821","properName":"Anthony George"},"varinder pal":{"id":"501824","properName":"Varinder Pal"},"harjot attri":{"id":"501826","properName":"Harjot Attri"},"eh doh hso":{"id":"501825","properName":"Eh Doh Hso"},"colin ginn":{"id":"401823","properName":"Colin Ginn"},"simon stalman":{"id":"501831","properName":"Simon Stalman"},"mohammed ahsad":{"id":"501830","properName":"Mohammed Ahsad"},"andrew coad":{"id":"401839","properName":"Andrew Coad"},"sukhwinder singh":{"id":"501841","properName":"Sukhwinder Singh"},"dishant patel":{"id":"801939","properName":"Dishant Patel"},"jaspreet singh 501844":{"id":"501844","properName":"Jaspreet Singh 501844"},"jared biggs":{"id":"401845","properName":"Jared Biggs"},"pawan kumar":{"id":"501849","properName":"Pawan Kumar"},"clint armstrong":{"id":"401836","properName":"Clint Armstrong"},"melissa wolfe":{"id":"501854","properName":"Melissa Wolfe"},"shivam gupta":{"id":"501852","properName":"Shivam Gupta"},"karan behl":{"id":"501878","properName":"Karan Behl"},"harbhinder singh":{"id":"501853","properName":"Harbhinder Singh"},"blake johns":{"id":"501862","properName":"Blake Johns"},"harpreet singh":{"id":"501857","properName":"Harpreet Singh"},"john bardsley":{"id":"501860","properName":"John Bardsley"},"satnam singh":{"id":"501863","properName":"Satnam Singh"},"imitiaz shah":{"id":"401855","properName":"Imitiaz Shah"},"mark boys":{"id":"401865","properName":"Mark Boys"},"michael van breda-foxwell":{"id":"501864","properName":"Michael Van Breda-Foxwell"},"aseem pal utreja":{"id":"501873","properName":"Aseem Pal Utreja"},"paul edwards":{"id":"401879","properName":"Paul Edwards"},"jasmin hawksworth":{"id":"501886","properName":"Jasmin Hawksworth"},"gagandeep singh aulakh":{"id":"501888","properName":"Gagandeep Singh Aulakh"},"jarrod hicks":{"id":"801889","properName":"Jarrod Hicks"},"harwinder marar":{"id":"501895","properName":"Harwinder Marar"},"ruzzell bondoc":{"id":"801899","properName":"Ruzzell Bondoc"},"jordan rihs":{"id":"501900","properName":"Jordan Rihs"},"amandeep singh sarao 501901":{"id":"501901","properName":"Amandeep Singh Sarao 501901"},"maninderjeet garcha":{"id":"501903","properName":"Maninderjeet Garcha"},"allan munsie":{"id":"401898","properName":"Allan Munsie"},"gurwinder singh":{"id":"501905","properName":"Gurwinder Singh"},"marty watson":{"id":"401910","properName":"Marty Watson"},"greg brownsey":{"id":"401912","properName":"Greg Brownsey"},"michael van rijswijk":{"id":"501915","properName":"Michael Van Rijswijk"},"ronald deane":{"id":"401917","properName":"Ronald Deane"},"ali haider":{"id":"501918","properName":"Ali Haider"},"harinderjit singh mann":{"id":"501925","properName":"Harinderjit Singh Mann"},"sukhmandeep s sidhu":{"id":"501916","properName":"Sukhmandeep S Sidhu"},"darren morris":{"id":"501927","properName":"Darren Morris"},"john o'sullivan":{"id":"401929","properName":"John O'Sullivan"},"nathan streeter":{"id":"401924","properName":"Nathan Streeter"},"abubakar abdirahman":{"id":"501932","properName":"Abubakar Abdirahman"},"thomas atherton":{"id":"501937","properName":"Thomas Atherton"},"amarprit singh":{"id":"501938","properName":"Amarprit Singh"},"rupinder masson":{"id":"501940","properName":"Rupinder Masson"},"parvinder singh sandhu":{"id":"501942","properName":"Parvinder Singh Sandhu"},"sourabh -":{"id":"501944","properName":"Sourabh -"},"gregory collins":{"id":"801945","properName":"Gregory Collins"},"gurpreet singh 801948":{"id":"801948","properName":"Gurpreet Singh 801948"},"amrinder singh randhawa":{"id":"801949","properName":"Amrinder Singh Randhawa"},"lisa pollard":{"id":"501951","properName":"Lisa Pollard"},"tracy borkowski":{"id":"501952","properName":"Tracy Borkowski"},"rueben mickan-keipert":{"id":"801947","properName":"Rueben Mickan-Keipert"}};
-const KNOWN_LOCATIONS = ["49-55 Quinzeh Creek Rd","Adbri Kalbar","Austrak Point Wilson","B2N","B2N Project","Bellwether Kalbar","Boral Concrete Clayton","Boral Concrete Cranbourne","Boral Concrete Healesville","Boral Concrete Waurn Ponds","Bromelton","Bracalba Quarry","Bromelton Quarry","CCS","CCS Group Jimboomba","Cemix Somerton","Cemix Whittelsea","Central Deer Park","Civil Lines","Cmv Bookings Dandenong","Cmv Bookings Laverton","Coastal Sands","DMC Tenterfield","Di Tullio","Downer","Eastern Freeway","Epping Premix","Fernvale","Flinstones Garden Supplies Donnybrook","Flinstones Garden Supplies Grovedale","Fraser Coast","Grovedale Concrete Plant","Heidelberg Materials Brooklyn","Heidelberg Materials Westall","Heidelberg Wolffdene","Heidelberg Wolfdene","Heidelberg Nerang","Hercules","Hervey Bay Readymix","Holcim","Holcim Beenleigh","Holcim Petrie","Holcim Southport","Hytec Dandenong","Hytec Kilsyth","Hytec Laverton","Hytec Mitcham","Hytec Somerton","Hytec South Wharf","Hytec Swanbank","Ipswich","Kontek","Lantrak","Lantrak Pt Wilson","Maryborough","Maryborough Quarry","Melbourne Sand","Moolap Concrete Plant","Mt Cotton","Mt Marrow","Mulchxpress","North Maclean","Oakridge","Pronto Bacchus Marsh","Pronto Coburg","Pronto Dandenong","Pronto Donnybrook","Pronto Ipswich","Pronto Laverton","Pronto Mt Cotton","Pronto Mt Evelyn","Pronto Port Melbourne","Pronto Pt Melbourne","Pronto Pt Wilson","Pronto Ringwood","Pronto Springvale","Pronto Sunbury","Pronto Sunshine","Pronto Werribee","RAF Base","Riversdale Blvd","Scania","Serman","Sunstate Asphalt","Tarampa","Tamborine","Truganina Workshop","Vic Civil","Visy Spotswood","Wagners - Carrara","Wagners Carrara","Wagners - Pinkenba","Wagners Pinkenba","Westerns","Youleys Garden Supplies"];
+const KNOWN_LOCATIONS = ["49-55 Quinzeh Creek Rd","Adbri Kalbar","Austrak Point Wilson","B2N","B2N Project","Bellwether Kalbar","Boral Concrete Clayton","Boral Concrete Cranbourne","Boral Concrete Healesville","Boral Concrete Waurn Ponds","Bromelton","Bracalba Quarry","Bromelton Quarry","CCS","CCS Group Jimboomba","Cemix Somerton","Cemix Whittelsea","Central Deer Park","Civil Lines","Cmv Bookings Dandenong","Cmv Bookings Laverton","Coastal Sands","DMC Tenterfield","Di Tullio","Downer","Eastern Freeway","Epping Premix","Fernvale","Flinstones Garden Supplies Donnybrook","Flinstones Garden Supplies Grovedale","Fraser Coast","Grovedale Concrete Plant","Heidelberg Materials Brooklyn","Heidelberg Materials Westall","Hercules","Hervey Bay Readymix","Holcim","Holcim Beenleigh","Holcim Petrie","Holcim Southport","Hytec Dandenong","Hytec Kilsyth","Hytec Laverton","Hytec Mitcham","Hytec Somerton","Hytec South Wharf","Hytec Swanbank","Ipswich","Kontek","Lantrak","Lantrak Pt Wilson","Maryborough","Maryborough Quarry","Melbourne Sand","Moolap Concrete Plant","Mt Cotton","Mt Marrow","Mulchxpress","North Maclean","Oakridge","Pronto Bacchus Marsh","Pronto Coburg","Pronto Dandenong","Pronto Donnybrook","Pronto Ipswich","Pronto Laverton","Pronto Mt Cotton","Pronto Mt Evelyn","Pronto Port Melbourne","Pronto Pt Melbourne","Pronto Pt Wilson","Pronto Ringwood","Pronto Springvale","Pronto Sunbury","Pronto Sunshine","Pronto Werribee","RAF Base","Riversdale Blvd","Scania","Serman","Sunstate Asphalt","Tarampa","Tamborine","Truganina Workshop","Vic Civil","Visy Spotswood","Wagners - Carrara","Wagners Carrara","Wagners - Pinkenba","Wagners Pinkenba","Westerns","Youleys Garden Supplies"];
 const KNOWN_PRODUCTS = ["10/7mm","10mm","10mm Natural","14mm","14mm Graded Boral Lysterfield","16mm White","20mm","7mm","Bacchus Marsh 9 Mile Sand","Boral Coldstream 14mm","Boral Coldstream 7mm","Boral Deer Park 14mm","Boral Deer Park 7mm","Boral Lysterfield 14mm","Boral Lysterfield 20mm","Boral Lysterfield 20mm - 100t","Boral Montrose 14/10/7","Boral Montrose 7mm","Boral Montrose Man Sand","Boral Wollert","Boral Wollert Recycled Crushed Concrete - Bin 13","Brown","Brown Transfer","Castella 14mm","Castella 7mm","Castella Dust","Class A","Central Rockbank 14mm","Central Rockbank 20mm","Central Rockbank Mansand","Chelvon Maude Sand","Coarse Sand","Course Sand","Demand","Demand (Lantrak)","Devon Rd Premium Loam","Devon Rd Sandy Loam - Bin 22","FH Tynong 14mm","FH Tynong Dust","Fine Sand","Ivory 16mm","GPQ A4 filter sand","Hanson Lysterfield 14mm","Hanson Lysterfield 20mm","Hanson Wollert 14mm","Hanson Wollert 20mm","Holcim Lang Lang Glass Sand","LTE 80-100mm Rubble","Little River 14mm","Little River 20mm","Little River 7mm","Little River Dust","Local Mix Anakie 20mm CR","MVQ Little River 7mm","MVQ Little River 7mm You Yang Granite - Bin 42","MVQ Little River Mansand","MVQ Point Wilson 14mm","MVQ Point Wilson 20mm","MVQ Wyndhamvale 14mm - Bin 5","MVQ Wyndhamvale 20mm - Bin 6","MVQ Wyndhamvale 7mm - Bin 4","MVQ Wyndhamvale Dust - Bin 10","Mansand","Maude 14mm","Maude 7mm","Maude Sand","Melbourne Sand","Melbourne Sand (Sand)","Melbourne Sands (Sand)","Menheers Loam","Metro Nyora Sand","Natural","Point Wilson 14mm","Point Wilson 20mm","Q10 Black","SES Coastal Beige Brick Sand","Sand Supplies Glen Forbes","Seymour 14mm","Seymour 20mm","South East Sands Coastal Beige Sand","South East Sands Concrete Sand","South East Sands Packing Sand","Tribuzi Quarry","Veolia Dandenong","Visy Amber","Visy Flint","Visy Green","W/Vale 14mm Blue","W/Vale 20mm Blue","W/Vale 7mm Blue","Wyndham Vale 14mm","Wyndham Vale 20mm"];
 
 function levenshtein(a, b) {
@@ -1437,93 +1470,75 @@ function matchNameFuzzy(readName) {
   const readParts = driverNameTokens(normal);
   if (!readParts.length) return null;
 
-  const uniqueEntries = [];
-  const seenIds = new Set();
-  Object.values(NAME_LOOKUP).forEach(entry => {
-    if (!entry || !entry.id || seenIds.has(entry.id)) return;
-    seenIds.add(entry.id);
-    uniqueEntries.push(entry);
-  });
+  const compactRead = readParts.join('');
 
-  // A first name on its own is accepted only where it uniquely identifies an
-  // employee. Small one-letter spelling differences are allowed, but the best
-  // match must be clearly ahead of the next candidate.
+  // If the dispatch sheet only provides a first name (for example, Phil),
+  // match it only when it uniquely identifies one employee. This fixes short
+  // QLD schedule names without creating unsafe random matches.
   if (readParts.length === 1 && readParts[0].length >= 4) {
-    const candidates = uniqueEntries.map(entry => {
-      const parts = driverNameTokens(entry.properName);
-      const first = parts[0] || '';
-      return { entry, score: simScore(readParts[0], first) };
-    }).filter(x => x.score >= 0.88).sort((a,b) => b.score - a.score);
+    const firstNameMatches = [];
+    const seenIds = new Set();
 
-    if (candidates.length === 1) return candidates[0].entry;
-    if (candidates.length > 1 && candidates[0].score >= 0.94 && (candidates[0].score - candidates[1].score) >= 0.06) {
-      return candidates[0].entry;
-    }
-    return null;
-  }
-
-  function scoreCandidate(entry) {
-    const parts = driverNameTokens(entry.properName);
-    if (!parts.length) return 0;
-
-    const readFirst = readParts[0] || '';
-    const readLast = readParts[readParts.length - 1] || '';
-    const nameFirst = parts[0] || '';
-    const nameLast = parts[parts.length - 1] || '';
-
-    const firstSim = simScore(readFirst, nameFirst);
-    const lastSim = simScore(readLast, nameLast);
-    const swappedFirstSim = simScore(readFirst, nameLast);
-    const swappedLastSim = simScore(readLast, nameFirst);
-    const fullSim = simScore(readParts.join(' '), parts.join(' '));
-
-    let positional = (firstSim * 0.45) + (lastSim * 0.45) + (fullSim * 0.10);
-    let swapped = (swappedFirstSim * 0.45) + (swappedLastSim * 0.45) + (fullSim * 0.10);
-    let score = Math.max(positional, swapped);
-
-    // For names with middle components, reward close token-by-token matches.
-    if (readParts.length > 2 || parts.length > 2) {
-      let total = 0;
-      let matched = 0;
-      for (const rp of readParts) {
-        let best = 0;
-        for (const np of parts) best = Math.max(best, simScore(rp, np));
-        if (best >= 0.82) {
-          total += best;
-          matched++;
-        }
-      }
-      if (matched >= Math.min(2, readParts.length)) {
-        const tokenScore = (total / readParts.length) * (matched / Math.max(readParts.length, parts.length));
-        score = Math.max(score, tokenScore);
+    for (const key in NAME_LOOKUP) {
+      const entry = NAME_LOOKUP[key];
+      if (!entry || seenIds.has(entry.id)) continue;
+      const nameParts = driverNameTokens(entry.properName);
+      const first = nameParts[0] || '';
+      if (first === readParts[0] || first.startsWith(readParts[0]) || readParts[0].startsWith(first)) {
+        firstNameMatches.push(entry);
+        seenIds.add(entry.id);
       }
     }
 
-    // Do not auto-match two-part names unless both ends are reasonably close.
-    const normalOrderStrong = firstSim >= 0.84 && lastSim >= 0.78;
-    const swappedOrderStrong = swappedFirstSim >= 0.84 && swappedLastSim >= 0.78;
-    if (!normalOrderStrong && !swappedOrderStrong && fullSim < 0.90) return 0;
-
-    return score;
+    if (firstNameMatches.length === 1) return firstNameMatches[0];
   }
 
-  const ranked = uniqueEntries
-    .map(entry => ({entry, score: scoreCandidate(entry)}))
-    .filter(x => x.score > 0)
-    .sort((a,b) => b.score - a.score);
+  let bestMatch = null;
+  let bestScore = 0;
 
-  if (!ranked.length) return null;
+  for (const fullName in NAME_LOOKUP) {
+    const nameParts = driverNameTokens(fullName);
+    if (!nameParts.length) continue;
 
-  const best = ranked[0];
-  const second = ranked[1];
-  const margin = second ? best.score - second.score : 1;
+    const compactName = nameParts.join('');
+    let score = 0;
 
-  // Small spelling differences such as Austin/Austtin score comfortably above
-  // this threshold. Ambiguous near-ties are left for manual confirmation.
-  if (best.score >= 0.88 && (best.score >= 0.95 || margin >= 0.04)) return best.entry;
+    if (compactRead === compactName) {
+      score = 100;
+    } else {
+      const readSet = new Set(readParts);
+      const nameSet = new Set(nameParts);
+      const common = readParts.filter(p => nameSet.has(p)).length;
+      const shorter = Math.min(readSet.size, nameSet.size);
+      const longer = Math.max(readSet.size, nameSet.size);
 
-  return null;
+      if (common === shorter && shorter >= 2) {
+        score = 80 + (shorter / Math.max(longer, 1));
+      } else if (readParts.length >= 2 && nameParts.length >= 2 && readParts[0] === nameParts[0] && readParts[readParts.length - 1] === nameParts[nameParts.length - 1]) {
+        score = 75;
+      } else if (readParts.length >= 2 && nameParts.length >= 2 && readParts[0] === nameParts[nameParts.length - 1] && readParts[readParts.length - 1] === nameParts[0]) {
+        score = 72;
+      } else {
+        readParts.forEach(rp => nameParts.forEach(np => {
+          if (rp === np) score += 12;
+          else if ((rp.length >= 3 && np.startsWith(rp)) || (np.length >= 3 && rp.startsWith(np))) score += 6;
+          else {
+            const s = simScore(rp, np);
+            if (s >= 0.82) score += 4;
+          }
+        }));
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = NAME_LOOKUP[fullName];
+    }
+  }
+
+  return bestScore >= 18 ? bestMatch : null;
 }
+
 
 function rebuildNameLookupAliases() {
   const existingEntries = Object.values(NAME_LOOKUP);
@@ -1735,6 +1750,159 @@ function applyScanResults(ex) {
 let scheduleData = {};
 let scheduleSheetDate = '';
 
+let dispatchEarningsByDate = {};
+let dispatchActiveEarningsDate = '';
+let dispatchEarningsUnlocked = false;
+let dispatchEarningsHideTimer = null;
+
+function parseCompanyTruckEarnings(rows) {
+  const earnings = new Map();
+  let inCompanyEarnings = false;
+
+  for (let i = 0; i < (rows || []).length; i++) {
+    const row = rows[i] || [];
+    const q = cleanCell(row[16]);
+    const r = cleanCell(row[17]);
+    const rowText = row.map(v => cleanCell(v)).filter(Boolean).join(' ');
+
+    if (/^Truck Earnings$/i.test(q) && /Shift Earnings/i.test(r)) {
+      // The workbook contains a second earnings block for subcontractors.
+      // Only the first/company block is permitted into this sensitive view.
+      if (/Subbie Earnings|Subby Earnings/i.test(rowText)) break;
+      inCompanyEarnings = true;
+      continue;
+    }
+    if (!inCompanyEarnings) continue;
+    if (/^Truck Earnings$/i.test(q) || /Subbie Earnings|Subby Earnings/i.test(rowText)) break;
+
+    const match = q.match(/^(\d{3,4})(?:\s+(.+))?$/);
+    if (!match) continue;
+
+    const raw = String(row[17] ?? '').replace(/[$,\s]/g, '');
+    const value = Number(raw);
+    if (!Number.isFinite(value)) continue;
+
+    const truckNo = match[1];
+    earnings.set(truckNo, {
+      truckNo,
+      location: String(match[2] || '').trim(),
+      earnings: value
+    });
+  }
+
+  return Array.from(earnings.values());
+}
+
+function dispatchCurrency(value) {
+  return new Intl.NumberFormat('en-AU', {style:'currency', currency:'AUD', maximumFractionDigits:0}).format(Number(value) || 0);
+}
+
+async function hashDispatchManagementPin(pin) {
+  const bytes = new TextEncoder().encode('cartage-earnings-v1|' + String(pin));
+  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function setActiveDispatchEarnings(dateKey) {
+  dispatchActiveEarningsDate = dateKey || '';
+  dispatchEarningsUnlocked = false;
+  if (dispatchEarningsHideTimer) clearTimeout(dispatchEarningsHideTimer);
+  renderDispatchEarningsPanel();
+}
+
+function renderDispatchEarningsPanel() {
+  const panel = document.getElementById('dispatchEarningsPanel');
+  const content = document.getElementById('dispatchEarningsContent');
+  const toggle = document.getElementById('dispatchEarningsToggle');
+  const status = document.getElementById('dispatchEarningsStatus');
+  const icon = document.getElementById('dispatchEarningsLockIcon');
+  if (!panel || !content || !toggle || !status || !icon) return;
+
+  const rows = dispatchEarningsByDate[dispatchActiveEarningsDate] || [];
+  if (!rows.length) {
+    dispatchEarningsUnlocked = false;
+    content.style.display = 'none';
+    icon.innerHTML = '&#128274;';
+    status.textContent = 'Upload the Excel dispatch workbook to load company-truck earnings.';
+    toggle.textContent = 'Show earnings';
+    toggle.disabled = true;
+    toggle.style.opacity = '.5';
+    return;
+  }
+
+  toggle.disabled = false;
+  toggle.style.opacity = '1';
+  if (!dispatchEarningsUnlocked) {
+    content.style.display = 'none';
+    icon.innerHTML = '&#128274;';
+    status.textContent = 'Sensitive company financial information. PIN required to reveal.';
+    toggle.textContent = 'Show earnings';
+    toggle.classList.remove('secondary');
+    toggle.onclick = unlockDispatchEarnings;
+    return;
+  }
+
+  const active = rows.filter(x => Number(x.earnings) > 0);
+  const total = active.reduce((sum, x) => sum + Number(x.earnings || 0), 0);
+  const average = active.length ? total / active.length : 0;
+  const sortedActive = active.slice().sort((a,b) => b.earnings - a.earnings);
+  const highest = sortedActive[0] || null;
+  const lowest = sortedActive.length ? sortedActive[sortedActive.length - 1] : null;
+  const sortedRows = rows.slice().sort((a,b) => Number(a.truckNo) - Number(b.truckNo));
+
+  const tableRows = sortedRows.map(x => {
+    const variance = average && x.earnings > 0 ? ((x.earnings / average) - 1) * 100 : null;
+    const varianceText = variance === null ? '-' : ((variance >= 0 ? '+' : '') + variance.toFixed(0) + '%');
+    return '<tr><td><strong>' + x.truckNo + '</strong></td><td>' + (x.location || '-') + '</td><td>' + varianceText + '</td><td><strong>' + dispatchCurrency(x.earnings) + '</strong></td></tr>';
+  }).join('');
+
+  content.innerHTML =
+    '<div class="dispatch-earnings-kpis">' +
+      '<div class="dispatch-earnings-kpi"><span>Fleet earnings</span><strong>' + dispatchCurrency(total) + '</strong></div>' +
+      '<div class="dispatch-earnings-kpi"><span>Avg / active CA truck</span><strong>' + dispatchCurrency(average) + '</strong></div>' +
+      '<div class="dispatch-earnings-kpi"><span>CA trucks earning</span><strong>' + active.length + '</strong></div>' +
+      '<div class="dispatch-earnings-kpi"><span>High / low</span><strong style="font-size:13px;line-height:1.35;">' +
+        (highest ? highest.truckNo + ' ' + dispatchCurrency(highest.earnings) : '-') + '<br>' +
+        (lowest ? lowest.truckNo + ' ' + dispatchCurrency(lowest.earnings) : '-') + '</strong></div>' +
+    '</div>' +
+    '<div style="overflow-x:auto;"><table class="dispatch-earnings-table"><thead><tr><th>Truck</th><th>Location</th><th>vs Fleet Avg</th><th>Daily Earnings</th></tr></thead><tbody>' + tableRows + '</tbody></table></div>' +
+    '<div class="dispatch-earnings-note">Company-owned trucks only. Subcontractor earnings are excluded. Fleet average includes only company trucks with earnings greater than $0. Earnings are kept in memory for this upload only and are not sent to the driver schedule backend or saved in local storage.</div>';
+
+  content.style.display = 'block';
+  icon.innerHTML = '&#128275;';
+  status.textContent = 'Unlocked for this screen. Automatically hides after 10 minutes.';
+  toggle.textContent = 'Hide earnings';
+  toggle.classList.add('secondary');
+  toggle.onclick = hideDispatchEarnings;
+}
+
+async function unlockDispatchEarnings() {
+  const rows = dispatchEarningsByDate[dispatchActiveEarningsDate] || [];
+  if (!rows.length) return;
+
+  // Fixed management PIN. Only the salted SHA-256 hash is embedded in the page.
+  const MANAGEMENT_PIN_HASH = '0ed8d547051ba12fb3f3f2215ebda5cd5aa4146a905154f3e56045d588301b9e';
+  const pin = prompt('Enter management PIN to show truck earnings.');
+  if (pin === null) return;
+  const enteredHash = await hashDispatchManagementPin(pin);
+  if (enteredHash !== MANAGEMENT_PIN_HASH) {
+    alert('Incorrect PIN. Earnings remain locked.');
+    return;
+  }
+
+  dispatchEarningsUnlocked = true;
+  renderDispatchEarningsPanel();
+  if (dispatchEarningsHideTimer) clearTimeout(dispatchEarningsHideTimer);
+  dispatchEarningsHideTimer = setTimeout(hideDispatchEarnings, 10 * 60 * 1000);
+}
+
+function hideDispatchEarnings() {
+  dispatchEarningsUnlocked = false;
+  if (dispatchEarningsHideTimer) clearTimeout(dispatchEarningsHideTimer);
+  dispatchEarningsHideTimer = null;
+  renderDispatchEarningsPanel();
+}
+
 function toggleDispatcher() {
   const wrapper = document.getElementById('dispatcherWrapper');
   if (!wrapper) return;
@@ -1785,6 +1953,7 @@ function processScheduleFile(input) {
 
       const allDaysData = {};
       const allDaysSummaryData = {};
+      const allDaysEarnings = {};
       let todaySheetName = '';
       let activeSummaryDate = todayDate;
 
@@ -1793,10 +1962,11 @@ function processScheduleFile(input) {
         const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: '', blankrows: true});
         const parsed = parseScheduleRows(rows);
         const separatorRowIndex = findDispatchSubbySeparatorRow(ws, rows, XLSX);
-        const parsedSummary = parseDispatchSummaryRows(rows, parsed, separatorRowIndex, ws, XLSX);
+        const parsedSummary = parseDispatchSummaryRows(rows, parsed, separatorRowIndex);
         const dateStr = getScheduleDateFromSheetName(sName) || sName;
         allDaysData[dateStr] = parsed;
         allDaysSummaryData[dateStr] = parsedSummary;
+        allDaysEarnings[dateStr] = parseCompanyTruckEarnings(rows);
         if (dateStr === todayDate) todaySheetName = sName;
       }
 
@@ -1805,20 +1975,30 @@ function processScheduleFile(input) {
       const todayLoadCount = Object.values(scheduleData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
       const todaySummaryLoadCount = Object.values(activeSummaryData).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
 
-      // The dispatcher summary is always for the current day.
-      // If the uploaded workbook does not contain today's dated sheet, show today's date with zero values rather than falling back to an older day.
       if (todayLoadCount === 0 && todaySummaryLoadCount === 0) {
-        scheduleData = {};
-        activeSummaryData = {};
-        todaySheetName = todayDate;
-        activeSummaryDate = todayDate;
+        const sortedDates = Object.keys(allDaysData)
+          .filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k))
+          .sort((a,b) => dateKeyToNum(b) - dateKeyToNum(a));
+        for (const dateStr of sortedDates) {
+          if (dateStr === todayDate) continue;
+          const count = Object.values(allDaysSummaryData[dateStr] || allDaysData[dateStr] || {}).reduce((s,v) => s + (v.loads ? v.loads.length : 0), 0);
+          if (count > 0) {
+            scheduleData = allDaysData[dateStr];
+            activeSummaryData = allDaysSummaryData[dateStr] || scheduleData;
+            todaySheetName = dateStr;
+            activeSummaryDate = dateStr;
+            break;
+          }
+        }
       }
 
       scheduleSheetDate = todayDate;
-      const sheetName = todaySheetName || todayDate;
+      const sheetName = todaySheetName || dateSheets[dateSheets.length - 1];
       const daySummaryForUpload = summariseDispatchDay(activeSummaryData);
       const truckCount = daySummaryForUpload.trucksOnRoad;
       const loadCount = daySummaryForUpload.totalLoads;
+      dispatchEarningsByDate = allDaysEarnings;
+      setActiveDispatchEarnings(activeSummaryDate);
       renderDispatchSummary(activeSummaryData, sheetName, allDaysSummaryData, activeSummaryDate);
 
       const todayPayload = {date: todayDate, sheet: sheetName, sheetDate: todayDate, data: scheduleData};
@@ -1898,154 +2078,19 @@ function normalizeDispatchRego(value) {
   return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
-// Dispatch sheet identifier guardrails:
-// - Truck/rego identifiers must come from columns A to P only.
-// - The real truck/rego heading cells are orange/dark-orange in the workbook.
-// - Random text from columns Q onward or ordinary description/rate/total cells must never become Truck/Rego.
-const DISPATCH_IDENTIFIER_MAX_COL = 15; // A=0, P=15
-
-function isDispatchIdentifierColumn(colIndex) {
-  return Number(colIndex) >= 0 && Number(colIndex) <= DISPATCH_IDENTIFIER_MAX_COL;
-}
-
-function getDispatchCell(ws, XLSX, rowIndex, colIndex) {
-  if (!ws || !XLSX || !XLSX.utils || !isDispatchIdentifierColumn(colIndex)) return null;
-  try {
-    return ws[XLSX.utils.encode_cell({r: rowIndex, c: colIndex})] || null;
-  } catch (e) {
-    return null;
-  }
-}
-
-function dispatchColourToRgb(colour) {
-  if (colour === undefined || colour === null) return '';
-  const text = String(colour).toUpperCase().replace(/[^A-F0-9]/g, '');
-  if (!text) return '';
-  if (text.length === 8) return text.slice(2);
-  if (text.length === 6) return text;
-  return '';
-}
-
-function isOrangeDispatchCell(cell) {
-  if (!cell || !cell.s || !cell.s.fill) return false;
-  const fill = cell.s.fill || {};
-  const colours = [
-    fill.fgColor && (fill.fgColor.rgb || fill.fgColor.indexed || fill.fgColor.theme),
-    fill.bgColor && (fill.bgColor.rgb || fill.bgColor.indexed || fill.bgColor.theme)
-  ].filter(v => v !== undefined && v !== null);
-
-  return colours.some(value => {
-    const rgb = dispatchColourToRgb(value);
-    if (!rgb) return false;
-    const r = parseInt(rgb.slice(0, 2), 16);
-    const g = parseInt(rgb.slice(2, 4), 16);
-    const b = parseInt(rgb.slice(4, 6), 16);
-    if ([r, g, b].some(n => Number.isNaN(n))) return false;
-
-    // Covers dark orange/brown-orange and Excel orange fills while excluding black separator rows,
-    // plain yellow highlights, white cells and blue/green formatting.
-    return r >= 120 && g >= 45 && g <= 190 && b <= 120 && r > g && g > b;
-  });
-}
-
-function getDispatchOrangeHeaderValues(ws, XLSX, rows, rowIndex, bc) {
-  const values = [];
-  const seen = {};
-
-  // Header identifiers are normally on the same row as Description, in the cells to the right.
-  // Look a few rows above as a safety net, but never beyond column P.
-  const rowStart = Math.max(0, rowIndex - 3);
-  const rowEnd = rowIndex;
-  const colStart = Math.max(0, bc + 1);
-  const colEnd = Math.min(DISPATCH_IDENTIFIER_MAX_COL, bc + 5);
-
-  for (let r = rowStart; r <= rowEnd; r++) {
-    const row = rows[r] || [];
-    for (let c = colStart; c <= colEnd; c++) {
-      const cell = getDispatchCell(ws, XLSX, r, c);
-      if (!isOrangeDispatchCell(cell)) continue;
-      const value = cleanCell(row[c]);
-      const key = normalizeDispatchRego(value);
-      if (!value || !key || seen[key]) continue;
-      seen[key] = true;
-      values.push(value);
-    }
-  }
-
-  return values;
-}
-
-function isBlockedDispatchIdentifier(value) {
-  const raw = String(value || '').trim();
-  const token = normalizeDispatchRego(raw);
-  if (!token) return true;
-
-  // Do not ever allow dispatch sheet labels, rate/total cells, load descriptions,
-  // products, plants or other spreadsheet text to become a truck/rego.
-  const blocked = [
-    'RATE','TOTAL','LOAD','PRELOAD','DESCRIPTION','TRUCKEARNINGS','SHIFTEARNINGS',
-    'DEMAND','TONNE','TONNES','TONS','CLASS','PROJECT','QUARRY','HYTEC','PRONTO',
-    'HOLCIM','ADBRI','DMC','IPSWICH','ELIMBAH','SWANBANK','TENTERFIELD',
-    'BRACALBA','PINKENBA','YATALA','STAPYLTON','BROMELTON','MTCOTTON','MTMARROW','SAND','DEPOT','MATERIAL','PRODUCT','CONCRETE'
-  ];
-
-  if (blocked.some(word => token.includes(word))) return true;
-  if (/^\d{1,2}MM$/i.test(token)) return true;
-  if (/^\d+TOTAL$/i.test(token)) return true;
-  if (/^RATE\d*$/i.test(token)) return true;
-
-  return false;
-}
-
-function isKnownCompanyTruckNumber(value) {
-  const token = normalizeDispatchRego(value);
-  return /^\d{3,4}$/.test(token) && !!TRUCK_LOOKUP[token];
-}
-
-function isValidSubbyIdentifier(value) {
-  const token = normalizeDispatchRego(value);
-  if (isBlockedDispatchIdentifier(token)) return false;
-
-  // Named subcontractors we intentionally allow. Add future named subbies here only if needed.
-  if (/^COLMOORE\d*$/i.test(token)) return true;
-
-  // Rego-like identifiers only: must have letters and numbers, 5-8 chars.
-  // This prevents labels like 7Total, Rate460, Total7, Load1, products, plants, etc.
-  if (!/^[A-Z0-9]{5,8}$/i.test(token)) return false;
-  if (!/[A-Z]/i.test(token) || !/[0-9]/.test(token)) return false;
-
-  return true;
-}
-
-function isValidExpectedRunIdentifier(value, fleetType) {
-  const token = normalizeDispatchRego(value);
-
-  if (fleetType === 'company') {
-    // Company truck numbers can legitimately appear in the dispatch workbook
-    // before they have been added to the Truck Fleet lookup. For the dispatcher
-    // upload/reporting page, accept clean 3-4 digit truck numbers from a valid
-    // company truck header block so active new trucks are not under-counted.
-    // This still rejects Rate/Total/Load/text values through the strict numeric test.
-    return /^\d{3,4}$/.test(token) && !isBlockedDispatchIdentifier(token);
-  }
-
-  return isValidSubbyIdentifier(value);
-}
-
 function isDispatchSubbyMarkerText(value) {
-  return /\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/i.test(String(value || '')) || /\bCOL\s+MOORE(?:\s*\d+)?\b/i.test(String(value || ''));
+  return /\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/i.test(String(value || '')) || /\bCOL\s+MOORE\b/i.test(String(value || ''));
 }
 
 function extractDispatchSubbyRegoFromCells() {
   const subbyMarkerRegex = /\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/i;
-  const colMooreRegex = /\bCOL\s+MOORE(?:\s*\d+)?\b/i;
+  const colMooreRegex = /\bCOL\s+MOORE\b/i;
 
   function isLikelyRego(value) {
     const token = normalizeDispatchRego(value);
     if (!token) return '';
     if (!/[A-Z]/.test(token) || !/[0-9]/.test(token)) return '';
     if (!/^[A-Z0-9]{5,8}$/.test(token)) return '';
-    if (/^(RATE|TOTAL)\d*$/i.test(token) || /(?:RATE|TOTAL|LOAD|PRELOAD)/i.test(token)) return '';
     if (/^(LOAD\d*|PRELOAD|\d{1,2}MM|CLASSA|CLASSB|PROJECT|ELIMBAH|IPSWICH|SWANBANK|TENTERFIELD|BRACALBA|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC)$/i.test(token)) return '';
     return token;
   }
@@ -2086,8 +2131,9 @@ function extractDispatchSubbyRegoFromCells() {
 
     const colMooreMatch = text.match(colMooreRegex);
     if (colMooreMatch) {
-      const matchedName = normalizeDispatchRego(colMooreMatch[0]);
-      return matchedName || 'COLMOORE';
+      const rego = findRegoBeforeMarker(text, colMooreMatch);
+      if (rego) return rego;
+      return 'COLMOORE';
     }
   }
 
@@ -2098,11 +2144,10 @@ function findDispatchLikelyRegoFromText(value) {
   const text = String(value || '').toUpperCase().replace(/\s+/g, ' ').trim();
   if (!text) return '';
 
-  const blockedWords = /(?:RATE|TOTAL)|\b(LOAD|PRELOAD|CLASS|PROJECT|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC|IPSWICH|ELIMBAH|SWANBANK|TENTERFIELD|BRACALBA|PINKENBA|SAND|DEPOT|DESCRIPTION)\b/i;
+  const blocked = /\b(LOAD|PRELOAD|CLASS|PROJECT|QUARRY|HYTEC|PRONTO|HOLCIM|ADBRI|DMC|IPSWICH|ELIMBAH|SWANBANK|TENTERFIELD|BRACALBA|PINKENBA|SAND|DEPOT|RATE|DESCRIPTION)\b/i;
   const candidates = text.match(/\b[A-Z0-9]{5,8}\b/g) || [];
   for (const candidate of candidates) {
-    if (/^RATE\d*$/i.test(candidate)) continue;
-    if (/[A-Z]/.test(candidate) && /[0-9]/.test(candidate) && !blockedWords.test(candidate)) return candidate;
+    if (/[A-Z]/.test(candidate) && /[0-9]/.test(candidate) && !blocked.test(candidate)) return candidate;
   }
 
   return '';
@@ -2182,7 +2227,7 @@ function getDispatchLocalBlockText(rows, rowIndex, bc) {
   const parts = [];
   for (let r = Math.max(0, rowIndex - 6); r <= rowIndex; r++) {
     const nearRow = rows[r] || [];
-    for (let c = Math.max(0, bc - 1); c <= Math.min(DISPATCH_IDENTIFIER_MAX_COL, bc + 4); c++) {
+    for (let c = Math.max(0, bc - 1); c <= bc + 4; c++) {
       const val = cleanCell(nearRow[c]);
       if (val) parts.push(val);
     }
@@ -2194,64 +2239,41 @@ function isLikelySubbyHeaderText(value) {
   const text = String(value || '').trim();
   if (!text) return false;
   if (/^\d{3,4}(?:\s+.+)?$/.test(text)) return false;
-  if (isBlockedDispatchIdentifier(text)) return false;
-
-  // Only treat a heading as a subcontractor when it is clearly marked as one,
-  // is an allowed named subbie, or contains a strict rego-like value.
+  if (/^(rate|description|total|truck earnings|shift earnings)$/i.test(text)) return false;
   if (isDispatchSubbyMarkerText(text)) return true;
-  if (/\bCOL\s+MOORE(?:\s*\d+)?\b/i.test(text)) return true;
-
   const rego = findDispatchLikelyRegoFromText(text);
-  return !!rego && isValidSubbyIdentifier(rego);
+  if (rego) return true;
+  if (/\bCOL\s+MOORE\b/i.test(text)) return true;
+  return /[A-Z]/i.test(text) && text.length >= 3;
 }
 
-function getDispatchSummaryBlockKey(rows, rowIndex, bc, fleetType, ws, XLSX) {
+function getDispatchSummaryBlockKey(rows, rowIndex, bc, fleetType) {
   const row = rows[rowIndex] || [];
-  const truckCell = isDispatchIdentifierColumn(bc + 1) ? cleanCell(row[bc + 1]) : '';
-  const orangeValues = getDispatchOrangeHeaderValues(ws, XLSX, rows, rowIndex, bc);
-
-  function candidateValues() {
-    // If orange cells are available, only trust them. That is the strongest guard against
-    // rogue identifiers such as 7Load, Yatala56, Rate460, 7Total, etc.
-    if (orangeValues.length) return orangeValues;
-
-    // Fallback for browsers/workbooks that do not expose fill colours: only use the immediate
-    // header cell beside Description and still validate strictly.
-    return truckCell ? [truckCell] : [];
-  }
+  const truckCell = cleanCell(row[bc + 1]);
+  const localText = getDispatchLocalBlockText(rows, rowIndex, bc);
+  const nearby = [truckCell, cleanCell(row[bc + 2]), cleanCell(row[bc + 3]), localText];
 
   if (fleetType === 'subby') {
-    const values = candidateValues();
-    const text = values.join(' ');
+    const markedRego = extractDispatchSubbyRegoFromCells.apply(null, nearby);
+    if (markedRego) return markedRego;
 
-    const colMooreMatch = text.match(/\bCOL\s+MOORE(?:\s*\d+)?\b/i);
-    if (colMooreMatch) {
-      const colMooreKey = normalizeDispatchRego(colMooreMatch[0]);
-      return isValidSubbyIdentifier(colMooreKey) ? colMooreKey : '';
-    }
+    const likelyRego = findDispatchLikelyRegoFromText(nearby.join(' '));
+    if (likelyRego) return likelyRego;
 
-    const markedRego = extractDispatchSubbyRegoFromCells.apply(null, values);
-    if (markedRego && isValidSubbyIdentifier(markedRego)) return markedRego;
+    if (/\bCOL\s+MOORE\b/i.test(nearby.join(' '))) return 'COLMOORE';
 
-    // If the orange cell itself is a clean rego-like value, accept it.
-    for (const value of values) {
-      const token = normalizeDispatchRego(value);
-      if (token && isValidSubbyIdentifier(token)) return token;
-    }
-
-    return '';
+    const cleanName = (truckCell || cleanCell(row[bc + 2]) || localText)
+      .replace(/\bSUBB(?:Y|IE)(?:S|IES)?\s*\d*\b/ig, '')
+      .replace(/\bCOL\s+MOORE\b/ig, 'COLMOORE')
+      .replace(/[^A-Z0-9]+/ig, '')
+      .toUpperCase();
+    return cleanName || ('SUBBYR' + (rowIndex + 1) + 'C' + (bc + 1));
   }
 
-  for (const value of candidateValues()) {
-    const match = cleanCell(value).match(/^(\d{3,4})(?:\s+(.+))?$/);
-    const truckNo = match ? match[1] : '';
-    if (isKnownCompanyTruckNumber(truckNo)) return truckNo;
-  }
-
-  return '';
+  const truckMatch = truckCell.match(/^(\d{3,4})(?:\s+(.+))?$/);
+  return truckMatch ? truckMatch[1] : '';
 }
-
-function parseDispatchSummaryRows(rows, companyData, separatorRowIndex, ws, XLSX) {
+function parseDispatchSummaryRows(rows, companyData, separatorRowIndex) {
   const summaryData = {};
   const maxRow = rows.length;
 
@@ -2259,14 +2281,14 @@ function parseDispatchSummaryRows(rows, companyData, separatorRowIndex, ws, XLSX
     const row = rows[i] || [];
     const descCols = [];
 
-    for (let c = 0; c < row.length && c <= DISPATCH_IDENTIFIER_MAX_COL; c++) {
-      if (cleanCell(row[c]) === 'Description' && isDispatchIdentifierColumn(c + 1)) descCols.push(c);
+    for (let c = 0; c < row.length; c++) {
+      if (cleanCell(row[c]) === 'Description') descCols.push(c);
     }
 
     if (descCols.length === 0) continue;
 
     for (const bc of descCols) {
-      const truckCell = isDispatchIdentifierColumn(bc + 1) ? cleanCell(row[bc + 1]) : '';
+      const truckCell = cleanCell(row[bc + 1]);
       const localText = getDispatchLocalBlockText(rows, i, bc);
       const belowSeparator = isSummaryBlockBelowSeparator(i, separatorRowIndex);
       const localHasExplicitSubbyMarker = isDispatchSubbyMarkerText(localText);
@@ -2309,9 +2331,9 @@ function parseDispatchSummaryRows(rows, companyData, separatorRowIndex, ws, XLSX
         fleetType = 'subby';
       }
 
-      let blockKey = getDispatchSummaryBlockKey(rows, i, bc, fleetType, ws, XLSX);
+      let blockKey = getDispatchSummaryBlockKey(rows, i, bc, fleetType);
       if (!blockKey) continue;
-      if (!isValidExpectedRunIdentifier(blockKey, fleetType)) continue;
+      if (fleetType === 'company' && !/^\d{3,4}$/.test(blockKey)) continue;
 
       const keyPrefix = fleetType === 'subby' ? 'SUBBY-' : 'COMPANY-';
       const key = keyPrefix + normalizeDispatchRego(blockKey || ('R' + i + 'C' + bc));
@@ -2328,46 +2350,14 @@ function parseDispatchSummaryRows(rows, companyData, separatorRowIndex, ws, XLSX
     }
   }
 
-  // Keep the detailed summary parser for material/plant reporting and subbies,
-  // but do not let it under-count company trucks when a dispatch block is missed
-  // because an orange header cell/style was not exposed by the uploaded workbook.
-  // The standard company schedule parser is stricter for Cartage truck numbers,
-  // so merge in any missing company trucks from that parser before reporting.
-  mergeMissingCompanyDispatchTrucks(summaryData, companyData);
+  // Fallback to the standard company schedule if no summary blocks were found.
+  if (Object.keys(summaryData).length === 0) {
+    Object.entries(companyData || {}).forEach(([truckNo, truckData]) => {
+      summaryData['COMPANY-' + truckNo] = cloneDispatchTruckData(truckData, 'company');
+    });
+  }
 
   return summaryData;
-}
-
-function mergeMissingCompanyDispatchTrucks(summaryData, companyData) {
-  Object.entries(companyData || {}).forEach(([truckNo, truckData]) => {
-    const cleanTruckNo = normalizeDispatchRego(truckNo);
-    // The standard parser only creates companyData entries from strict truck-number
-    // header cells, so allow clean 3-4 digit truck numbers even if the Truck Fleet
-    // lookup has not been updated yet. This fixes daily summary under-counts for
-    // active company trucks such as new or missing fleet numbers.
-    if (!cleanTruckNo || !/^\d{3,4}$/.test(cleanTruckNo) || isBlockedDispatchIdentifier(cleanTruckNo)) return;
-
-    const companyKey = 'COMPANY-' + cleanTruckNo;
-    const parsedLoads = Array.isArray(truckData && truckData.loads) ? truckData.loads : [];
-    if (parsedLoads.length === 0) return;
-
-    if (!summaryData[companyKey]) {
-      summaryData[companyKey] = cloneDispatchTruckData(truckData, 'company');
-      summaryData[companyKey].displayTruck = cleanTruckNo;
-      summaryData[companyKey].fleetType = 'company';
-      return;
-    }
-
-    // If the summary parser found the truck but missed all load rows, use the
-    // standard schedule rows so the truck and its loads are still counted.
-    const existingLoads = Array.isArray(summaryData[companyKey].loads) ? summaryData[companyKey].loads : [];
-    if (existingLoads.length === 0) {
-      summaryData[companyKey].loads = parsedLoads.slice();
-    }
-
-    summaryData[companyKey].fleetType = 'company';
-    summaryData[companyKey].displayTruck = cleanTruckNo;
-  });
 }
 let dispatchSummaryTableState = {
   materialRows: [],
@@ -2437,16 +2427,6 @@ function makeDispatchDateKey(dateObj) {
   return String(dateObj.getDate()).padStart(2, '0') + '.' +
          String(dateObj.getMonth() + 1).padStart(2, '0') + '.' +
          String(dateObj.getFullYear()).slice(2);
-}
-
-function getTodayDispatchDateKey() {
-  return makeDispatchDateKey(new Date());
-}
-
-function formatDispatchSummaryDate(dateKey) {
-  const match = String(dateKey || '').match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
-  if (!match) return dateKey || 'Today';
-  return match[1] + '/' + match[2] + '/20' + match[3];
 }
 
 
@@ -2700,21 +2680,26 @@ function renderStoredDispatchSummaryPayload(payload, sourceText) {
   if (!payload || typeof payload !== 'object') return false;
 
   const allDaysData = payload.allDaysSummary || payload.allDays || {};
-  const activeDateKey = getTodayDispatchDateKey();
-  const dayData = allDaysData[activeDateKey] || {};
+  const preferredDate = payload.sheetDate || payload.date || '';
+  const activeDateKey = getBestDispatchSummaryDate(allDaysData, preferredDate);
+  const dayData = allDaysData[activeDateKey] || payload.data || {};
 
-  const label = activeDateKey;
+  if (!dayData || Object.keys(dayData).length === 0) return false;
+
+  const label = activeDateKey || payload.sheet || 'Previous upload';
   renderDispatchSummary(dayData, label, allDaysData, activeDateKey);
 
   const subtext = document.getElementById('dispatchSummarySubtext');
   if (subtext) {
-    subtext.textContent = 'Showing current-day summary for ' + formatDispatchSummaryDate(activeDateKey) + (sourceText ? ' from ' + sourceText : '') + '. This refreshes when a new dispatch sheet is uploaded.';
+    subtext.textContent = 'Showing previous upload' + (sourceText ? ' from ' + sourceText : '') + ': ' + label + '. This refreshes when a new dispatch sheet is uploaded.';
   }
 
   return true;
 }
 
 function loadPreviousDispatchSummary() {
+  dispatchEarningsByDate = {};
+  setActiveDispatchEarnings('');
   let loadedFromBrowser = false;
 
   try {
@@ -2807,17 +2792,6 @@ function renderDispatchSummary(dayData, sheetLabel, allDaysData, activeDateKey) 
   const summaryEl = document.getElementById('dispatchSummary');
   if (!summaryEl) return;
 
-  const summaryDateKey = getTodayDispatchDateKey();
-  if (allDaysData && allDaysData[summaryDateKey]) {
-    dayData = allDaysData[summaryDateKey];
-    activeDateKey = summaryDateKey;
-    sheetLabel = summaryDateKey;
-  } else {
-    activeDateKey = summaryDateKey;
-    sheetLabel = summaryDateKey;
-    dayData = dayData || {};
-  }
-
   const summary = summariseDispatchDay(dayData);
   const materialCounts = summary.materialCounts;
   const plantCounts = summary.plantCounts;
@@ -2860,9 +2834,7 @@ function renderDispatchSummary(dayData, sheetLabel, allDaysData, activeDateKey) 
   document.getElementById('dispatchSummaryTruckBreakdown').textContent = String(summary.companyTrucksOnRoad) + ' company owned, ' + String(summary.subbyTrucksOnRoad) + ' subbies';
   document.getElementById('dispatchSummaryLoadRatio').textContent = ratioText;
   document.getElementById('dispatchSummaryPlantCount').textContent = String(Object.keys(plantCounts).length);
-  const dateEl = document.getElementById('dispatchSummaryDate');
-  if (dateEl) dateEl.textContent = formatDispatchSummaryDate(activeDateKey || getTodayDispatchDateKey());
-  document.getElementById('dispatchSummarySubtext').textContent = 'This summary is for today: ' + formatDispatchSummaryDate(activeDateKey || getTodayDispatchDateKey()) + '. It refreshes whenever a new dispatch sheet is uploaded.';
+  document.getElementById('dispatchSummarySubtext').textContent = 'Latest uploaded day: ' + (sheetLabel || 'Uploaded sheet') + '. This table refreshes whenever a new dispatch sheet is uploaded.';
 
   populateDispatchPlantFilter(plantOptions);
   setDispatchFilterListeners();
@@ -3031,15 +3003,6 @@ function splitQuarryMaterial(rVal) {
   m = rVal.match(/^ADBRI\s*-\s*Kalbar(?:\s+Quarry)?\s+(.+)$/i);
   if (m) return {pickup: 'Adbri Kalbar', product: m[1].trim()};
 
-  // Heidelberg Wolfdene/Wolffdene needs to be split so the pickup is the quarry
-  // and the material is kept separately as the Product. The dispatch sheets have
-  // used both spellings, and sometimes include "Materials" or "Quarry".
-  m = rVal.match(/^Heidelberg(?:\s+Materials)?(?:\s*-)?\s+(?:Wolfdene|Wolffdene)(?:\s+Quarry)?(?:\s+(.+))?$/i);
-  if (m) return {pickup: 'Heidelberg Wolffdene', product: normaliseHeidelbergProduct(m[1] || '')};
-
-  m = rVal.match(/^Heidelberg(?:\s+Materials)?(?:\s*-)?\s+Nerang(?:\s+Quarry)?(?:\s+(.+))?$/i);
-  if (m) return {pickup: 'Heidelberg Nerang', product: normaliseHeidelbergProduct(m[1] || '')};
-
   m = rVal.match(/^(Ipswich|Tamborine)\s+Washout\s+Waste$/i);
   if (m) return {pickup: m[1], product: 'Washout Waste'};
 
@@ -3080,18 +3043,6 @@ function splitQuarryMaterial(rVal) {
   return {pickup: rVal, product: ''};
 }
 
-function normaliseHeidelbergProduct(product) {
-  const raw = String(product || '').replace(/\s+/g, ' ').trim();
-  if (!raw) return '';
-
-  if (/^man\s*sand$/i.test(raw) || /^mansand$/i.test(raw)) return 'Mansand';
-  if (/^10\s*mm$/i.test(raw)) return '10mm';
-  if (/^20\s*mm$/i.test(raw)) return '20mm';
-  if (/^7\s*mm$/i.test(raw)) return '7mm';
-
-  return raw;
-}
-
 function isNoDocketJob(job) {
   const t = String(job || '').toLowerCase();
   return /\b(vcv\s*-\s*volvo|hercules|test drive|breakdown|maintenance|qrf beaudesert)\b/i.test(t);
@@ -3112,7 +3063,7 @@ function inferLocationFromSchedule(truckData) {
 
   const exactLocationMatch = matchList(
     truckLocation,
-    ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Bromelton','Mt Cotton','Yatala','Mt Marrow','Caboolture','Harvey Bay/Maryborough','South Australia'],
+    ['Devon Meadows','Truganina','Point Wilson','Wyndham Vale','Donnybrook','Queensland','South Australia'],
     0.92
   );
 
@@ -3120,28 +3071,25 @@ function inferLocationFromSchedule(truckData) {
     return {value: exactLocationMatch, other: ''};
   }
 
-  if (matches('Bromelton')) {
-    return {value: 'Bromelton', other: ''};
+  if (matches('Hervey\\s*Bay')) {
+    return {value: 'Other', other: 'Hervey Bay'};
   }
 
-  if (matches('Mt\\s*Cotton') || matches('Mount\\s*Cotton')) {
-    return {value: 'Mt Cotton', other: ''};
+  if (matches('Maryborough')) {
+    return {value: 'Other', other: 'Maryborough'};
   }
 
-  if (matches('Yatala')) {
-    return {value: 'Yatala', other: ''};
-  }
-
-  if (matches('Mt\\s*Marrow') || matches('Mount\\s*Marrow')) {
-    return {value: 'Mt Marrow', other: ''};
-  }
-
-  if (matches('Caboolture')) {
-    return {value: 'Caboolture', other: ''};
-  }
-
-  if (matches('Hervey\\s*Bay') || matches('Harvey\\s*Bay') || matches('Maryborough')) {
-    return {value: 'Harvey Bay/Maryborough', other: ''};
+  if (
+    matches('Bromelton') ||
+    matches('Mt\\s*Marrow') ||
+    matches('Mount\\s*Marrow') ||
+    matches('Mt\\s*Cotton') ||
+    matches('Mount\\s*Cotton') ||
+    matches('Elimbah') ||
+    matches('Yatala') ||
+    matches('Stapylton')
+  ) {
+    return {value: 'Queensland', other: ''};
   }
 
   return null;
@@ -3238,13 +3186,11 @@ function applyScheduleForSelectedDate() {
   checkForScheduledJobs();
 }
 
-let lastLoadJobsPromptKey = '';
-let loadJobsPromptOpen = false;
-
 function checkForScheduledJobs() {
-  const banner = document.getElementById('loadJobsBanner');
-  if (banner) banner.style.display = 'none';
   if (!scheduleData || Object.keys(scheduleData).length === 0) return;
+
+  const banner = document.getElementById('loadJobsBanner');
+  if (!banner) return;
 
   const truckNo = document.getElementById('truckNo')?.value?.trim();
   const driverName = document.getElementById('driverName')?.value?.trim();
@@ -3252,26 +3198,16 @@ function checkForScheduledJobs() {
   const matchedTruck = (truckNo && scheduleData[truckNo]) ? truckNo :
     driverName ? findTruckByDriverName(driverName) : null;
 
-  if (!matchedTruck || !scheduleData[matchedTruck]?.loads?.length) return;
-
-  const jobDate = document.getElementById('jobDate')?.value || scheduleSheetDate || '';
-  const promptKey = `${jobDate}|${matchedTruck}`;
-  if (loadJobsPromptOpen || lastLoadJobsPromptKey === promptKey) return;
-
-  lastLoadJobsPromptKey = promptKey;
-  loadJobsPromptOpen = true;
-
-  showCartagePopup({
-    title: "Would you like to load today's jobs?",
-    okText: 'Yes',
-    showCancel: true,
-    cancelText: 'No',
-    orangePanel: true,
-    messageHtml: `<p style="margin:0; font-weight:700;">Allocated jobs were found for truck ${matchedTruck}.</p>`
-  }).then(loadJobs => {
-    loadJobsPromptOpen = false;
-    if (loadJobs) loadJobsFromSchedule();
-  });
+  if (matchedTruck && scheduleData[matchedTruck]?.loads?.length > 0) {
+    banner.style.display = 'block';
+    const bannerMsg = banner.querySelector('div');
+    if (bannerMsg) {
+      bannerMsg.textContent = 'Allocated loads available - tap to load';
+      bannerMsg.style.color = '#92400e';
+    }
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function applyStoredSchedule(json) {
@@ -3332,21 +3268,15 @@ function populateDriverFromScheduleByTruck(truckNo) {
     document.getElementById('err-driverName')?.classList.remove('show');
   } else {
     // Show the driver name from the dispatch sheet even when it cannot be
-    // matched to the employee ID list. While the Google Sheet employee list is
-    // still loading, do not flash a false "not found" warning; the lookup will
-    // re-run automatically after the list finishes loading.
+    // matched to the employee ID list. The ID stays blank so the driver can
+    // enter it manually, and this also makes unmatched names easy to identify.
     nameField.value = scheduleName;
     idInput.value = '';
     verifiedDriverName = null;
     idInput.classList.remove('valid');
     if (okEl) okEl.style.display = 'none';
-    if (googleLookupLoadPending) {
-      if (warningEl) warningEl.style.display = 'none';
-      if (noMatchEl) noMatchEl.style.display = 'none';
-    } else {
-      if (warningEl) warningEl.style.display = 'block';
-      if (noMatchEl) noMatchEl.style.display = 'block';
-    }
+    if (warningEl) warningEl.style.display = 'block';
+    if (noMatchEl) noMatchEl.style.display = 'block';
   }
 
   driverLookupInProgress = false;
@@ -3448,147 +3378,19 @@ function loadJobsFromSchedule() {
     }
   });
 
-  const loadJobsBanner = document.getElementById('loadJobsBanner');
-  if (loadJobsBanner) loadJobsBanner.style.display = 'none';
+  document.getElementById('loadJobsBanner').style.display = 'none';
   updateProgress();
   showToast(`${jobs.length} loads loaded from today\'s schedule`, 'success');
 }
 
 const docketPhotos = {};
-let docketPhotoQualityPopupShown = false;
-let runSheetMissingReminderShown = false;
-
-function showCartagePopup(options) {
-  const title = options && options.title ? options.title : 'Notice';
-  const messageHtml = options && options.messageHtml ? options.messageHtml : '';
-  const okText = options && options.okText ? options.okText : 'OK';
-  const cancelText = options && options.cancelText ? options.cancelText : 'Cancel';
-  const showCancel = !!(options && options.showCancel);
-  const orangePanel = !!(options && options.orangePanel);
-
-  return new Promise(resolve => {
-    const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.inset = '0';
-    overlay.style.background = 'rgba(15, 23, 42, 0.55)';
-    overlay.style.zIndex = '99999';
-    overlay.style.display = 'flex';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.padding = '18px';
-
-    const panel = document.createElement('div');
-    panel.style.width = 'min(420px, 100%)';
-    panel.style.background = orangePanel ? 'linear-gradient(135deg,var(--orange),var(--orange-dk))' : '#fff';
-    panel.style.borderRadius = '16px';
-    panel.style.boxShadow = '0 20px 50px rgba(15, 23, 42, 0.25)';
-    panel.style.padding = '20px';
-    panel.style.fontFamily = 'inherit';
-    panel.style.color = orangePanel ? '#fff' : 'var(--text)';
-
-    const heading = document.createElement('div');
-    heading.textContent = String(title).toUpperCase();
-    heading.style.fontSize = '15px';
-    heading.style.fontWeight = '900';
-    heading.style.textDecoration = 'underline';
-    heading.style.letterSpacing = '0.04em';
-    heading.style.marginBottom = '12px';
-
-    const body = document.createElement('div');
-    body.innerHTML = messageHtml;
-    body.style.fontSize = '13px';
-    body.style.lineHeight = '1.55';
-    body.style.color = orangePanel ? '#fff' : 'var(--label)';
-
-    const actions = document.createElement('div');
-    actions.style.display = 'flex';
-    actions.style.gap = '10px';
-    actions.style.marginTop = '18px';
-
-    function close(result) {
-      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-      resolve(result);
-    }
-
-    if (showCancel) {
-      const cancelBtn = document.createElement('button');
-      cancelBtn.type = 'button';
-      cancelBtn.textContent = cancelText;
-      cancelBtn.style.flex = '1';
-      cancelBtn.style.background = orangePanel ? 'rgba(255,255,255,0.16)' : '#fff';
-      cancelBtn.style.border = orangePanel ? '1.5px solid rgba(255,255,255,0.75)' : '1.5px solid var(--border)';
-      cancelBtn.style.borderRadius = '10px';
-      cancelBtn.style.padding = '11px';
-      cancelBtn.style.fontSize = '13px';
-      cancelBtn.style.fontWeight = '800';
-      cancelBtn.style.color = orangePanel ? '#fff' : 'var(--label)';
-      cancelBtn.onclick = () => close(false);
-      actions.appendChild(cancelBtn);
-    }
-
-    const okBtn = document.createElement('button');
-    okBtn.type = 'button';
-    okBtn.textContent = okText;
-    okBtn.style.flex = '1';
-    okBtn.style.background = orangePanel ? '#fff' : 'linear-gradient(135deg,var(--orange),var(--orange-dk))';
-    okBtn.style.border = 'none';
-    okBtn.style.borderRadius = '10px';
-    okBtn.style.padding = '11px';
-    okBtn.style.fontSize = '13px';
-    okBtn.style.fontWeight = '800';
-    okBtn.style.color = orangePanel ? 'var(--orange-dk)' : '#fff';
-    okBtn.onclick = () => close(true);
-    actions.appendChild(okBtn);
-
-    panel.appendChild(heading);
-    panel.appendChild(body);
-    panel.appendChild(actions);
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-    okBtn.focus();
-  });
-}
-
-function showDocketPhotoQualityPopupOnce(callback) {
-  if (docketPhotoQualityPopupShown) {
-    callback();
-    return;
-  }
-
-  showCartagePopup({
-    title: 'Photo quality check',
-    okText: 'OK, continue',
-    showCancel: true,
-    cancelText: 'Cancel',
-    messageHtml: `
-      <p style="margin:0 0 8px 0;">Please make sure the docket photo is:</p>
-      <div style="display:grid; gap:5px;">
-        <div>✓ One docket only in the photo</div>
-        <div>✓ Taken directly from above</div>
-        <div>✓ Not taken on an angle</div>
-        <div>✓ Cropped close so the docket fills most of the photo</div>
-        <div>✓ Clear and in focus</div>
-        <div>✓ No shadows, blur, or cut-off edges</div>
-      </div>
-      <p style="margin:10px 0 0 0; font-weight:700; color:var(--text);">Tap OK to continue.</p>
-    `
-  }).then(proceed => {
-    if (!proceed) return;
-    docketPhotoQualityPopupShown = true;
-    callback();
-  });
-}
 
 function triggerDocketCamera(idx) {
-  showDocketPhotoQualityPopupOnce(() => {
-    document.getElementById('docketCameraInput' + idx)?.click();
-  });
+  document.getElementById('docketCameraInput' + idx)?.click();
 }
 
 function triggerDocketPhoto(idx) {
-  showDocketPhotoQualityPopupOnce(() => {
-    document.getElementById('docketInput' + idx)?.click();
-  });
+  document.getElementById('docketInput' + idx)?.click();
 }
 
 async function handleDocketPhoto(idx, input) {
@@ -3643,57 +3445,26 @@ function compressImage(file, maxWidth, quality) {
 }
 
 
-function compressDataUrl(dataUrl, maxWidth, quality) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = function() {
-      const scale = Math.min(1, maxWidth / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = reject;
-    img.src = dataUrl;
-  });
-}
-
-async function optimizeDocketPhotoForUpload(idx, scanPhoto) {
-  try {
-    // Only replace the photo if it has not been retaken while AI scanning was running.
-    if (docketPhotos[idx] !== scanPhoto) return;
-    const smaller = await compressDataUrl(scanPhoto, 1400, 0.65);
-    if (docketPhotos[idx] === scanPhoto) docketPhotos[idx] = smaller;
-  } catch (err) {
-    // Keep the original photo if optimization fails.
-  }
-}
-
-
 function parseDocketDateStr(str) {
   if (!str) return null;
-  const s = String(str).trim();
+  const s = str.trim();
   const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
 
-  let m = s.match(/(\d{1,2})[\s-]([A-Za-z]{3,})[\s-](\d{2,4})/);
+  let m = s.match(/(\d{1,2})[\s-]([A-Za-z]{3,})[\s-](\d{4})/);
   if (m) {
     const mon = MONTHS[m[2].slice(0,3).toLowerCase()];
-    const year = m[3].length === 2 ? 2000 + parseInt(m[3], 10) : parseInt(m[3], 10);
-    if (mon) return { y: year, m: mon, d: parseInt(m[1], 10) };
+    if (mon) return { y: parseInt(m[3]), m: mon, d: parseInt(m[1]) };
   }
 
-  // Australian date format only: dd.mm.yy, dd.mm.yyyy, dd/mm/yy, dd/mm/yyyy, dd-mm-yy, dd-mm-yyyy.
-  // Heidelberg dockets commonly print dates like 11.08.2026, so dots must be accepted.
-  m = s.match(/(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{4})\b/);
-  if (m) return { y: parseInt(m[3], 10), m: parseInt(m[2], 10), d: parseInt(m[1], 10) };
+  m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) return { y: parseInt(m[3]), m: parseInt(m[2]), d: parseInt(m[1]) };
 
-  m = s.match(/(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{2})\b/);
-  if (m) return { y: 2000 + parseInt(m[3], 10), m: parseInt(m[2], 10), d: parseInt(m[1], 10) };
+  m = s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})\b/);
+  if (m) return { y: 2000 + parseInt(m[3]), m: parseInt(m[2]), d: parseInt(m[1]) };
 
   return null;
 }
+
 function getRunSheetDate() {
   const val = document.getElementById('jobDate')?.value;
   if (!val) return null;
@@ -3709,8 +3480,7 @@ function formatDateObj(d) {
   if (!d) return '';
   const dd = String(d.d).padStart(2,'0');
   const mm = String(d.m).padStart(2,'0');
-  const yy = String(d.y).slice(-2);
-  return `${dd}.${mm}.${yy}`;
+  return `${dd}/${mm}/${d.y}`;
 }
 
 async function scanDocket(idx) {
@@ -3750,25 +3520,14 @@ You must only return a value for Date, Gross, Tare or Net if it is machine-print
 The docket number may be printed, stamped, or handwritten - it can be read either way, just set confidence accordingly, and still return "" instead of a guess if you are not fully confident.
 For Pronto Concrete / Pronto dockets, the docket number may be labelled "Delivery Docket" and is often printed near the top right of the docket. Actively check the top-right area and any field labelled "Delivery Docket", "Docket No", "Docket Number", "Ticket No", "Document No" or similar before returning docketNumber as not_visible.
 
-HEIDELBERG / HIEDELBERG MATERIALS AUSTRALIA DOCKETS - special rule:
-If the docket is from Heidelberg Materials, Hiedelberg Materials, or heidelbergmaterials.com.au, the docketNumber is NOT the field labelled "Order No.". Ignore "Order No." completely when choosing the docketNumber.
-Instead, actively inspect the UPPER-MOST LEFT CORNER of the docket. The docket number is the prominent number printed at the very top-left of the page and is typically a 9-digit numeric value (for example, 123456789). Return that upper-left number as docketNumber when it is clearly legible. Position on the docket is the key identifier: use the top-left number even if another number elsewhere is labelled Order No.
-Do NOT use Order No., Customer Number, Purchase Order Number, Truck, ABN, Plant code, Sales Item number, or page number as the docketNumber. If the upper-most-left docket number is cropped, obscured, or uncertain, return an empty docketNumber rather than substituting Order No. or another number.
-For Heidelberg/Hiedelberg dockets, the date is in the small field labelled "Date" in the upper-right table, immediately to the left of "Order No.". This Date field is usually a machine-printed Australian dotted date such as "11.08.2026" or "11.08.26". You must actively read this labelled Date box. If the Date box is visible and machine-printed, return it with confidence "high". Return Heidelberg dates in Australian dd.mm.yy format, for example "11.08.26". Do not return month/day/year. Do not mark the Heidelberg Date as not_visible when the Date box is visible.
-For Heidelberg/Hiedelberg dockets, the weights are printed in the horizontal weights table. Read these exact fields:
-- Tare Weight (TO) -> tare
-- Gross Weight (TO) -> gross
-- Net/Load Weight (TO) -> net
-The row may also show Load Quantity (TO), which normally equals Net/Load Weight. If Net/Load Weight is clear, return it as net.
-
 Confidence values (use exactly one of these strings for every field):
 - "high": machine-printed (or clearly legible for docket number), unambiguous - you are certain
 - "low": partially unclear, faded, smudged, or you have any doubt at all
 - "handwritten": the value is handwritten (date/weights only) - value must be ""
 - "not_visible": field is blank or not present on this docket - value must be ""
 
-Weights are in tonnes. Return the number exactly as printed, preserving one or two decimals if shown (e.g. 57.1, 18.52, 38.58).
-Date: read whatever date is printed on the docket (the docket's own date, not today's date). Always treat dates as Australian format: day first, then month, then year. Return the date in Australian dotted format dd.mm.yy, e.g. "11.08.26" or "18.12.25". If the printed date has a four-digit year such as "11.08.2026", convert it to "11.08.26". Never interpret dates as US month/day format.
+Weights are in tonnes, typically 2 digits before the decimal and 2 after (e.g. 28.56).
+Date: read whatever date is printed on the docket (the docket's own date, not today's date) and return it exactly as written, e.g. "18-Dec-2025" or "19/12/25".
 
 Return exactly this JSON shape:
 {
@@ -3872,17 +3631,11 @@ Return exactly this JSON shape:
       notes.push('Date not read. Enter docket details manually.');
     }
 
-    // A date mismatch is a warning only. Loads can legitimately carry a docket
-    // from the previous day (for example, a stuck-up/backload), so keep any
-    // confidently-read docket and weight values instead of clearing them. If
-    // the date could not be read at all, retain the previous manual-entry path.
-    if (dateOk || hasMismatch) {
+    if (dateOk) {
       notes.push(applyFieldForce('ticketNo' + idx, parsed.docketNumber, 'Docket'));
       notes.push(applyFieldForce('gross' + idx, parsed.gross, 'Gross'));
       notes.push(applyFieldForce('tare' + idx, parsed.tare, 'Tare'));
-      const netApplied = applyNetWeightFromScan(idx, parsed.net);
-      if (netApplied) notes.push(netApplied);
-      calcNet(idx, parsed.net);
+      calcNet(idx);
     } else {
       clearScannedFields();
     }
@@ -3893,9 +3646,9 @@ Return exactly this JSON shape:
     resultEl.style.display = 'block';
     resultEl.textContent = 'Read: ' + notes.join(' / ');
     if (hasMismatch) {
-      resultEl.style.background = '#fff7ed';
-      resultEl.style.borderColor = '#fdba74';
-      resultEl.style.color = '#9a3412';
+      resultEl.style.background = '#fef2f2';
+      resultEl.style.borderColor = '#fecaca';
+      resultEl.style.color = '#dc2626';
       resultEl.style.fontWeight = '700';
     } else {
       resultEl.style.background = '#f0fdf4';
@@ -3913,8 +3666,6 @@ Return exactly this JSON shape:
     errEl.style.display = 'block';
     const isNetwork = err.message.includes('Load failed') || err.message.includes('fetch');
     errEl.textContent = isNetwork ? 'No internet - enter weights manually.' : 'Could not read docket. Enter weights manually. (' + err.message + ')';
-  } finally {
-    optimizeDocketPhotoForUpload(idx, photo);
   }
 }
 
@@ -3925,7 +3676,7 @@ async function handleRunSheetPhoto(input) {
   if (!file) return;
 
   try {
-    const compressed = await compressImage(file, 1600, 0.70);
+    const compressed = await compressImage(file, 1800, 0.75);
     runSheetPhotoData = compressed;
     document.getElementById('runSheetPhotoImg').src = compressed;
     document.getElementById('runSheetPhotoPreview').style.display = 'block';
@@ -3950,7 +3701,7 @@ async function handleLogbookPhoto(input) {
   if (!file) return;
 
   try {
-    const compressed = await compressImage(file, 1600, 0.70);
+    const compressed = await compressImage(file, 1800, 0.75);
     logbookPhotoData = compressed;
     document.getElementById('logbookPhotoImg').src = compressed;
     document.getElementById('logbookPhotoPreview').style.display = 'block';
@@ -3963,64 +3714,31 @@ async function handleLogbookPhoto(input) {
 
 let driverLookupInProgress = false;
 function loadEmployeesFromGoogleSheet() {
-  googleLookupLoadPending = true;
   fetch(EMPLOYEE_LOOKUP_URL + '?t=' + Date.now())
     .then(r => r.json())
     .then(data => {
-      if (!data || !data.ok) return;
+      if (!data.ok || !data.employees) return;
 
-      if (data.employees) {
-        Object.keys(DRIVER_LOOKUP).forEach(k => delete DRIVER_LOOKUP[k]);
-        Object.keys(NAME_LOOKUP).forEach(k => delete NAME_LOOKUP[k]);
+      Object.keys(DRIVER_LOOKUP).forEach(k => delete DRIVER_LOOKUP[k]);
+      Object.keys(NAME_LOOKUP).forEach(k => delete NAME_LOOKUP[k]);
 
-        Object.entries(data.employees).forEach(([driverId, driverName]) => {
-          driverId = String(driverId || '').trim();
-          driverName = String(driverName || '').trim();
+      Object.entries(data.employees).forEach(([driverId, driverName]) => {
+        driverId = String(driverId || '').trim();
+        driverName = String(driverName || '').trim();
 
-          if (!driverId || !driverName) return;
+        if (!driverId || !driverName) return;
 
-          DRIVER_LOOKUP[driverId] = driverName;
-          addNameLookup(driverId, driverName);
-        });
+        DRIVER_LOOKUP[driverId] = driverName;
+        addNameLookup(driverId, driverName);
+      });
 
-        console.log('Employee list loaded from Google Sheet');
-      }
-
-      if (Array.isArray(data.truckFleet) && data.truckFleet.length) {
-        applyTruckFleetFromGoogleSheet(data.truckFleet);
-        console.log('Truck fleet loaded from Google Sheet');
-      }
-
-      googleLookupLoaded = true;
-      googleLookupLoadPending = false;
-
+      console.log('Employee list loaded from Google Sheet');
       const currentTruck = document.getElementById('truckNo')?.value?.trim();
-      if (currentTruck) {
-        lookupTruck();
-        populateDriverFromScheduleByTruck(currentTruck);
-      }
+      if (currentTruck) populateDriverFromScheduleByTruck(currentTruck);
     })
     .catch(() => {
-      googleLookupLoadPending = false;
-      googleLookupLoaded = false;
-      console.log('Could not load employee/truck fleet data from Google Sheet. Using built-in lists.');
+      console.log('Could not load employees from Google Sheet. Using built-in list.');
     });
-}
-
-function applyTruckFleetFromGoogleSheet(truckFleet) {
-  Object.keys(TRUCK_LOOKUP).forEach(k => delete TRUCK_LOOKUP[k]);
-  Object.keys(TRUCK_LOCATION_LOOKUP).forEach(k => delete TRUCK_LOCATION_LOOKUP[k]);
-
-  truckFleet.forEach(truck => {
-    const truckNo = String(truck.truckNo || truck.TruckNo || truck.truck || '').trim();
-    const rego = String(truck.rego || truck.Rego || '').trim().toUpperCase();
-    const defaultLocation = String(truck.defaultLocation || truck.DefaultLocation || truck.location || '').trim();
-
-    if (!truckNo) return;
-
-    TRUCK_LOOKUP[truckNo] = rego;
-    TRUCK_LOCATION_LOOKUP[truckNo] = defaultLocation;
-  });
 }
 function lookupDriver() {
   if (driverLookupInProgress) return;
@@ -4072,13 +3790,8 @@ function lookupDriver() {
     nameField.value = '';
     driverLookupInProgress = false;
     verifiedDriverName = null;
-    if (googleLookupLoadPending) {
-      warningEl.style.display = 'none';
-      idInput.classList.remove('error');
-    } else {
-      warningEl.style.display = 'block';
-      idInput.classList.add('error');
-    }
+    warningEl.style.display = 'block';
+    idInput.classList.add('error');
     idInput.classList.remove('valid');
   }
 }
@@ -4151,7 +3864,7 @@ function lookupTruck() {
     const defaultLocation = TRUCK_LOCATION_LOOKUP[truckNo] || '';
     const depotSel = document.getElementById('depot');
     const depotOther = document.getElementById('depotOther');
-    if (depotSel && defaultLocation && !/^Queensland$/i.test(defaultLocation.trim())) {
+    if (depotSel && defaultLocation) {
       const hasOption = Array.from(depotSel.options).some(opt => opt.value === defaultLocation || opt.textContent === defaultLocation);
       if (hasOption) {
         depotSel.value = defaultLocation;
@@ -4177,6 +3890,7 @@ function lookupTruck() {
 let loadCount = 0;
 const MAX_LOADS = 12;
 const NUM_DOCKETS = 6;
+let sigCanvas, sigCtx, isSigning = false, hasSig = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   const isDispatcher = new URLSearchParams(window.location.search).get('dispatcher') === 'true';
@@ -4194,7 +3908,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) helpBtn.style.display = 'none';
 
-    loadEmployeesFromGoogleSheet();
     loadPreviousDispatchSummary();
 
     return;
@@ -4203,41 +3916,17 @@ document.addEventListener('DOMContentLoaded', () => {
   setTodayDate();
   loadEmployeesFromGoogleSheet();
   addLoad();
+  initSignature();
   updateProgress();
   fetchScheduleFromJsonbin();
-  checkForSavedProgress();
 });
 
-function getTodayIsoDate() {
+function setTodayDate() {
   const d = new Date();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth()+1).padStart(2,'0');
   const dd = String(d.getDate()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function setTodayDate() {
-  const todayIso = getTodayIsoDate();
-  const dateEl = document.getElementById('jobDate');
-  if (!dateEl) return;
-  dateEl.value = todayIso;
-  dateEl.max = todayIso;
-}
-
-function enforceNoFutureJobDate() {
-  const dateEl = document.getElementById('jobDate');
-  if (!dateEl) return true;
-
-  const todayIso = getTodayIsoDate();
-  dateEl.max = todayIso;
-
-  if (dateEl.value && dateEl.value > todayIso) {
-    dateEl.value = todayIso;
-    showToast('Future dates cannot be selected. Date reset to today.', 'error');
-    return false;
-  }
-
-  return true;
+  document.getElementById('jobDate').value = `${yyyy}-${mm}-${dd}`;
 }
 
 
@@ -4382,66 +4071,20 @@ function updateAddLoadBtn() {
   else btn.style.display = 'flex';
 }
 
-function calcNet(idx, scannedNetInfo = null) {
+function calcNet(idx) {
   const grossEl = document.getElementById(`gross${idx}`);
   const tareEl = document.getElementById(`tare${idx}`);
   const netEl = document.getElementById(`tonnes${idx}`);
   const gross = parseFloat(grossEl.value);
   const tare = parseFloat(tareEl.value);
-  const scannedNet = scannedNetInfo && scannedNetInfo.confidence === 'high'
-    ? parseFloat(scannedNetInfo.value)
-    : NaN;
-
-  if (isNaN(gross) || isNaN(tare)) {
-    if (!isNaN(scannedNet) && scannedNet > 0) {
-      netEl.value = normaliseWeightDisplay(scannedNetInfo.value);
-      netEl.classList.add('valid');
-      netEl.classList.remove('error');
-    } else {
-      netEl.value = '';
-    }
-    calcTotals();
-    return;
-  }
-
+  if (isNaN(gross) || isNaN(tare)) { netEl.value = ''; calcTotals(); return; }
   const net = gross - tare;
   if (net < 0) {
     netEl.value = 'Check weights';
   } else {
-    const calculated = Number(net.toFixed(2));
-    if (!isNaN(scannedNet) && Math.abs(calculated - scannedNet) > 0.08) {
-      netEl.value = 'Check weights';
-      netEl.classList.add('error');
-      netEl.classList.remove('valid');
-    } else {
-      netEl.value = calculated.toFixed(2);
-      netEl.classList.add('valid');
-      netEl.classList.remove('error');
-    }
+    netEl.value = net.toFixed(2);
   }
   calcTotals();
-}
-
-function normaliseWeightDisplay(value) {
-  const n = parseFloat(value);
-  if (isNaN(n)) return String(value || '');
-  return n.toFixed(2);
-}
-
-function applyNetWeightFromScan(idx, info) {
-  if (!info || !info.value || info.confidence !== 'high') {
-    if (info && info.confidence === 'handwritten') return 'Net - handwritten, enter manually';
-    if (info && info.confidence === 'low') return 'Net - not clear, enter manually';
-    return '';
-  }
-
-  const el = document.getElementById('tonnes' + idx);
-  if (el) {
-    el.value = normaliseWeightDisplay(info.value);
-    el.classList.add('valid');
-    el.classList.remove('error');
-  }
-  return `Net ${normaliseWeightDisplay(info.value)}`;
 }
 
 function calcTotals() {
@@ -4481,6 +4124,37 @@ function calcTotalKms() {
   } else {
     totalEl.value = `${diff} km`;
   }
+}
+
+function initSignature() {
+  sigCanvas = document.getElementById('sigCanvas');
+  sigCtx = sigCanvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = sigCanvas.getBoundingClientRect();
+  sigCanvas.width = (rect.width || 300) * dpr;
+  sigCanvas.height = 120 * dpr;
+  sigCtx.scale(dpr, dpr);
+  sigCtx.strokeStyle = '#1e293b';
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+
+  sigCanvas.addEventListener('mousedown', e => { isSigning=true; hasSig=true; sigCtx.beginPath(); const r=sigCanvas.getBoundingClientRect(); sigCtx.moveTo(e.clientX-r.left, e.clientY-r.top); });
+  sigCanvas.addEventListener('mousemove', e => { if(!isSigning) return; const r=sigCanvas.getBoundingClientRect(); sigCtx.lineTo(e.clientX-r.left, e.clientY-r.top); sigCtx.stroke(); });
+  sigCanvas.addEventListener('mouseup', () => isSigning=false);
+  sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); isSigning=true; hasSig=true; const t=e.touches[0]; sigCtx.beginPath(); const r=sigCanvas.getBoundingClientRect(); sigCtx.moveTo(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
+  sigCanvas.addEventListener('touchmove', e => { e.preventDefault(); if(!isSigning) return; const t=e.touches[0]; const r=sigCanvas.getBoundingClientRect(); sigCtx.lineTo(t.clientX-r.left, t.clientY-r.top); sigCtx.stroke(); }, {passive:false});
+  sigCanvas.addEventListener('touchend', () => isSigning=false);
+}
+
+function clearSignature() {
+  const dpr = window.devicePixelRatio || 1;
+  sigCtx.clearRect(0, 0, sigCanvas.width/dpr, sigCanvas.height/dpr);
+  hasSig = false;
+}
+
+function getSignatureDataUrl() {
+  return hasSig ? sigCanvas.toDataURL('image/png') : null;
 }
 
 const ITEM_H = 44;
@@ -4703,7 +4377,7 @@ function validateField(el) {
 
 function updateProgress() {
   const baseFields = ['driverID','truckNo','truckRego'];
-  let filled = 0, total = baseFields.length + 4;
+  let filled = 0, total = baseFields.length + 5;
   baseFields.forEach(id => { const el=document.getElementById(id); if(el&&el.value.trim()!=='') filled++; });
   if (getDepotValue()) filled++;
   if (Object.keys(docketPhotos).length > 0) filled++;
@@ -4712,6 +4386,7 @@ function updateProgress() {
   const tr1 = document.getElementById('tare1');
   if (t1&&t1.value.trim()) filled++;
   if (g1&&g1.value.trim()&&tr1&&tr1.value.trim()) filled++;
+  if (hasSig) filled++;
   const pct = Math.round((filled/total)*100);
 const progressFill = document.getElementById('progressFill');
 const progressPct = document.getElementById('progressPct');
@@ -4731,23 +4406,8 @@ function resolveProductValue(idx) {
   return field.value || '';
 }
 
-function getShiftType() {
-  const selected = document.querySelector('input[name="shiftType"]:checked');
-  return selected ? selected.value : 'Day';
-}
-
 function submitForm() {
   const errors = [];
-
-  const jobDateEl = document.getElementById('jobDate');
-  const selectedJobDate = jobDateEl ? jobDateEl.value : '';
-  const todayIso = getTodayIsoDate();
-  if (!selectedJobDate) {
-    errors.push('Run sheet date');
-  } else if (selectedJobDate > todayIso) {
-    if (jobDateEl) jobDateEl.classList.add('error');
-    errors.push('Run sheet date cannot be in the future');
-  }
 
   if (!verifiedDriverName) {
     document.getElementById('driverID').classList.add('error');
@@ -4784,6 +4444,12 @@ function submitForm() {
       errors.push(`Docket Number (Load ${i}) was read by AI - please verify and tap the field to confirm it is correct`);
     }
   }
+  for (let i = 1; i <= MAX_LOADS; i++) {
+    const card = document.getElementById('loadCard' + i);
+    if (card && card.dataset.dateMismatch === 'true') {
+      errors.push(`Docket date does not match the run sheet date (Load ${i}) - check you have attached the correct docket before submitting`);
+    }
+  }
   if (!resolveLocationValue(1,'pullFrom').trim()) {
     document.getElementById('pullFrom1')?.classList.add('error');
     document.getElementById('err-pullFrom1')?.classList.add('show');
@@ -4803,6 +4469,8 @@ function submitForm() {
       if (docketSection) docketSection.scrollIntoView({behavior:'smooth', block:'center'});
     }
   }
+  if (!hasSig) errors.push('Driver Signature');
+
   if (errors.length>0) {
     const summary=document.getElementById('valSummary');
     document.getElementById('valList').innerHTML=errors.map(e=>`<li>${e}</li>`).join('');
@@ -4811,23 +4479,6 @@ function submitForm() {
     return;
   }
   document.getElementById('valSummary').classList.remove('show');
-
-  if (!runSheetPhotoData && !runSheetMissingReminderShown) {
-    runSheetMissingReminderShown = true;
-    showCartagePopup({
-      title: 'Run sheet photo reminder',
-      okText: 'Submit anyway',
-      showCancel: true,
-      cancelText: 'Go back and upload',
-      messageHtml: `
-        <p style="margin:0 0 8px 0; font-weight:700; color:var(--text);">No run sheet photo has been uploaded.</p>
-        <p style="margin:0;">Please upload a clear photo of the completed paper run sheet before submitting where possible.</p>
-      `
-    }).then(proceed => {
-      if (proceed) submitForm();
-    });
-    return;
-  }
 
   const loads = [];
   for (let i=1;i<=MAX_LOADS;i++) {
@@ -4853,8 +4504,6 @@ function submitForm() {
     truckNo: document.getElementById('truckNo').value,
     truckRego: document.getElementById('truckRego').value,
     depot: getDepotValue(),
-    shiftType: getShiftType(),
-    shift: getShiftType(),
     jobDate: document.getElementById('jobDate').value,
     startTime: '',
     finishTime: '',
@@ -4867,14 +4516,14 @@ function submitForm() {
     totalLoads: loads.length,
     totalTonnes: document.getElementById('totalTonnesDisplay').textContent,
     notes: document.getElementById('notes').value,
+    signature: getSignatureDataUrl(),
     docketPhotos: docketPhotos,
     runSheetPhoto: runSheetPhotoData,
     logbookPhoto: logbookPhotoData,
     submittedAt: new Date().toISOString(),
   };
 
-  const uploadPhotoCount = Object.keys(docketPhotos).length + (runSheetPhotoData ? 1 : 0) + (logbookPhotoData ? 1 : 0);
-  showLoading(uploadPhotoCount > 0 ? `Uploading ${uploadPhotoCount} photo${uploadPhotoCount === 1 ? '' : 's'} and submitting run sheet...` : 'Submitting your run sheet...');
+  showLoading('Submitting your run sheet...');
 
   if (SUBMIT_URL==='YOUR_POWER_AUTOMATE_URL_HERE') {
     hideLoading();
@@ -4912,270 +4561,6 @@ function submitForm() {
       showToast('Network error and could not save offline. Please retry.', 'error');
     });
   });
-}
-
-
-// Save Progress: local draft storage only. Nothing here is submitted to Apps Script.
-const DRAFT_DB_NAME = 'cartage_driver_runsheet_drafts';
-const DRAFT_DB_VERSION = 1;
-const DRAFT_STORE = 'drafts';
-const DRAFT_KEY = 'current-driver-runsheet';
-
-function openDraftDb() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DRAFT_DB_NAME, DRAFT_DB_VERSION);
-    req.onupgradeneeded = function(event) {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains(DRAFT_STORE)) {
-        db.createObjectStore(DRAFT_STORE, { keyPath: 'id' });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function setDraftFieldValue(id, value) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.value = value == null ? '' : value;
-}
-
-function collectDraftProgress() {
-  const loads = [];
-  for (let i = 1; i <= MAX_LOADS; i++) {
-    const card = document.getElementById('loadCard' + i);
-    if (!card) continue;
-    loads.push({
-      index: i,
-      docketNumber: document.getElementById('ticketNo' + i)?.value || '',
-      pullFrom: document.getElementById('pullFrom' + i)?.value || '',
-      deliverTo: document.getElementById('deliverTo' + i)?.value || '',
-      product: document.getElementById('product' + i)?.value || '',
-      gross: document.getElementById('gross' + i)?.value || '',
-      tare: document.getElementById('tare' + i)?.value || '',
-      netTonnes: document.getElementById('tonnes' + i)?.value || '',
-      comments: document.getElementById('comments' + i)?.value || '',
-      noDocketRequired: card.dataset.noDocketRequired === 'true',
-      dateMismatch: card.dataset.dateMismatch === 'true'
-    });
-  }
-
-  return {
-    id: DRAFT_KEY,
-    savedAt: new Date().toISOString(),
-    jobDate: document.getElementById('jobDate')?.value || '',
-    driverID: document.getElementById('driverID')?.value || '',
-    driverName: document.getElementById('driverName')?.value || '',
-    truckNo: document.getElementById('truckNo')?.value || '',
-    truckRego: document.getElementById('truckRego')?.value || '',
-    depot: document.getElementById('depot')?.value || '',
-    depotOther: document.getElementById('depotOther')?.value || '',
-    shiftType: getShiftType(),
-    notes: document.getElementById('notes')?.value || '',
-    loads,
-    docketPhotos: {...docketPhotos},
-    runSheetPhoto: runSheetPhotoData || null,
-    logbookPhoto: logbookPhotoData || null
-  };
-}
-
-async function saveProgress() {
-  if (!window.indexedDB) {
-    showToast('Save Progress is not supported by this browser.', 'error');
-    return;
-  }
-
-  const status = document.getElementById('saveProgressStatus');
-  if (status) status.textContent = 'Saving progress on this device...';
-
-  try {
-    const draft = collectDraftProgress();
-    const db = await openDraftDb();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(DRAFT_STORE, 'readwrite');
-      tx.objectStore(DRAFT_STORE).put(draft);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error || new Error('Draft save aborted'));
-    });
-    db.close();
-
-    const savedTime = new Date(draft.savedAt).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
-    if (status) status.textContent = 'Progress saved on this device at ' + savedTime;
-    showToast('Progress saved on this device.', 'success');
-  } catch (err) {
-    console.error('Save Progress failed', err);
-    if (status) status.textContent = 'Could not save progress. Please try again.';
-    showToast('Could not save progress. Check browser storage and try again.', 'error');
-  }
-}
-
-async function getSavedProgress() {
-  if (!window.indexedDB) return null;
-  const db = await openDraftDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DRAFT_STORE, 'readonly');
-    const req = tx.objectStore(DRAFT_STORE).get(DRAFT_KEY);
-    req.onsuccess = () => {
-      const result = req.result || null;
-      db.close();
-      resolve(result);
-    };
-    req.onerror = () => {
-      db.close();
-      reject(req.error);
-    };
-  });
-}
-
-async function clearSavedProgress() {
-  if (!window.indexedDB) return;
-  const db = await openDraftDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DRAFT_STORE, 'readwrite');
-    tx.objectStore(DRAFT_STORE).delete(DRAFT_KEY);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = () => { db.close(); reject(tx.error); };
-  });
-}
-
-function restoreDocketPhotoPreview(idx, dataUrl) {
-  if (!dataUrl) return;
-  docketPhotos[idx] = dataUrl;
-  const img = document.getElementById('docketImg' + idx);
-  if (img) img.src = dataUrl;
-  const preview = document.getElementById('docketPreview' + idx);
-  if (preview) preview.style.display = 'block';
-  const photoBtn = document.getElementById('docketPhotoBtn' + idx);
-  if (photoBtn) photoBtn.style.display = 'none';
-  const scanProgress = document.getElementById('docketScanProgress' + idx);
-  if (scanProgress) scanProgress.style.display = 'none';
-}
-
-function restorePhotoPreview(dataUrl, dataName, imgId, previewId, labelId, labelText) {
-  if (!dataUrl) return;
-  if (dataName === 'runSheet') runSheetPhotoData = dataUrl;
-  if (dataName === 'logbook') logbookPhotoData = dataUrl;
-  const img = document.getElementById(imgId);
-  if (img) img.src = dataUrl;
-  const preview = document.getElementById(previewId);
-  if (preview) preview.style.display = 'block';
-  const label = document.getElementById(labelId);
-  if (label) label.textContent = labelText;
-}
-
-async function restoreSavedProgress(draft) {
-  if (!draft) return;
-
-  setDraftFieldValue('jobDate', draft.jobDate || getTodayIsoDate());
-  setDraftFieldValue('driverID', draft.driverID);
-  setDraftFieldValue('driverName', draft.driverName);
-  setDraftFieldValue('truckNo', draft.truckNo);
-  setDraftFieldValue('truckRego', draft.truckRego);
-  setDraftFieldValue('depot', draft.depot);
-  handleDepotChange();
-  setDraftFieldValue('depotOther', draft.depotOther);
-  setDraftFieldValue('notes', draft.notes);
-
-  const shift = draft.shiftType === 'Night' ? 'Night' : 'Day';
-  const shiftRadio = document.querySelector('input[name="shiftType"][value="' + shift + '"]');
-  if (shiftRadio) shiftRadio.checked = true;
-
-  const savedLoads = Array.isArray(draft.loads) ? draft.loads : [];
-  const maxIndex = Math.min(MAX_LOADS, savedLoads.reduce((m, load) => Math.max(m, Number(load.index) || 0), 1));
-  while (loadCount < maxIndex) addLoad();
-
-  const savedIndexSet = new Set(savedLoads.map(load => Number(load.index)));
-  for (let i = 1; i <= maxIndex; i++) {
-    if (!savedIndexSet.has(i) && i > 1) {
-      const card = document.getElementById('loadCard' + i);
-      if (card) card.remove();
-    }
-  }
-
-  for (const load of savedLoads) {
-    const i = Number(load.index);
-    if (!i || i > MAX_LOADS || !document.getElementById('loadCard' + i)) continue;
-    setDraftFieldValue('ticketNo' + i, load.docketNumber);
-    setDraftFieldValue('pullFrom' + i, load.pullFrom);
-    setDraftFieldValue('deliverTo' + i, load.deliverTo);
-    setDraftFieldValue('product' + i, load.product);
-    setDraftFieldValue('gross' + i, load.gross);
-    setDraftFieldValue('tare' + i, load.tare);
-    setDraftFieldValue('tonnes' + i, load.netTonnes);
-    setDraftFieldValue('comments' + i, load.comments);
-
-    const card = document.getElementById('loadCard' + i);
-    if (card) {
-      card.dataset.noDocketRequired = load.noDocketRequired ? 'true' : 'false';
-      card.dataset.dateMismatch = load.dateMismatch ? 'true' : 'false';
-      if (load.noDocketRequired) {
-        const req = document.querySelector('#docketPhotoSection' + i + ' .req');
-        if (req) req.textContent = '(optional)';
-      }
-    }
-
-    restoreDocketPhotoPreview(i, draft.docketPhotos && draft.docketPhotos[i]);
-  }
-
-  restorePhotoPreview(draft.runSheetPhoto, 'runSheet', 'runSheetPhotoImg', 'runSheetPhotoPreview', 'runSheetPhotoBtnLabel', 'Run Sheet Captured');
-  restorePhotoPreview(draft.logbookPhoto, 'logbook', 'logbookPhotoImg', 'logbookPhotoPreview', 'logbookPhotoBtnLabel', 'Logbook Photo Captured');
-  if (draft.logbookPhoto) {
-    const wrap = document.getElementById('logbookUploadWrap');
-    const addBtn = document.getElementById('addLogbookBtn');
-    if (wrap) wrap.style.display = 'block';
-    if (addBtn) addBtn.style.display = 'none';
-  }
-
-  userEditedRego = !!draft.truckRego;
-  calcTotals();
-  updateProgress();
-  updateAddLoadBtn();
-
-  // Re-check the restored driver against the current employee lookup rather than
-  // blindly treating a saved name as verified.
-  verifiedDriverName = null;
-  setTimeout(() => {
-    if (document.getElementById('driverID')?.value) lookupDriver();
-    else if (document.getElementById('driverName')?.value) lookupDriverByName();
-  }, 500);
-
-  const status = document.getElementById('saveProgressStatus');
-  if (status) {
-    const saved = draft.savedAt ? new Date(draft.savedAt) : null;
-    status.textContent = saved && !isNaN(saved) ? 'Restored progress saved ' + saved.toLocaleString() : 'Saved progress restored';
-  }
-  showToast('Saved progress restored.', 'success');
-}
-
-async function checkForSavedProgress() {
-  try {
-    const draft = await getSavedProgress();
-    if (!draft) return;
-
-    const savedDate = draft.savedAt ? new Date(draft.savedAt) : null;
-    const when = savedDate && !isNaN(savedDate) ? savedDate.toLocaleString() : 'earlier';
-    const truck = draft.truckNo ? '<p style="margin:6px 0 0 0;"><strong>Truck:</strong> ' + String(draft.truckNo).replace(/[<>&]/g, '') + '</p>' : '';
-
-    const restore = await showCartagePopup({
-      title: 'Saved progress found',
-      okText: 'Restore progress',
-      showCancel: true,
-      cancelText: 'Start fresh',
-      messageHtml: '<p style="margin:0;">This device has unfinished run sheet progress saved ' + when + '.</p>' + truck + '<p style="margin:8px 0 0 0;">Restore the saved docket photos and entered load details?</p>'
-    });
-
-    if (restore) {
-      await restoreSavedProgress(draft);
-    } else {
-      await clearSavedProgress();
-      const status = document.getElementById('saveProgressStatus');
-      if (status) status.textContent = 'Saves this run sheet and docket photos on this device only';
-    }
-  } catch (err) {
-    console.error('Could not check saved progress', err);
-  }
 }
 
 const OFFLINE_DB_NAME = 'cartage_run_sheets_offline';
@@ -5249,7 +4634,6 @@ async function processOfflineSubmissions() {
 window.addEventListener('online', processOfflineSubmissions);
 
 function showSuccess(payload, ref) {
-  clearSavedProgress().catch(() => {});
   const d = payload.jobDate.replace(/-/g,'');
   const refNum = ref || `CA-${d}-${Math.floor(Math.random()*9000+1000)}`;
   document.getElementById('refNumber').textContent = refNum;
@@ -5259,14 +4643,11 @@ function showSuccess(payload, ref) {
 }
 
 function resetForm() {
-  clearSavedProgress().catch(() => {});
   document.getElementById('successScreen').classList.remove('show');
   document.getElementById('mainForm').style.display = 'block';
   document.getElementById('loadsContainer').innerHTML = '';
   loadCount = 0;
   addLoad();
-  const dayShift = document.querySelector('input[name="shiftType"][value="Day"]');
-  if (dayShift) dayShift.checked = true;
   ['driverID','driverName','truckNo','truckRego','depot','depotOther','notes'].forEach(id => {
     const el=document.getElementById(id); if(el){el.value='';el.classList.remove('error','valid');}
   });
@@ -5300,7 +4681,7 @@ function resetForm() {
   if (logbookPhotoCameraInput) logbookPhotoCameraInput.value = '';
   if (logbookPhotoInput) logbookPhotoInput.value = '';
   handleDepotChange();
-  updateProgress(); updateAddLoadBtn();
+  clearSignature(); updateProgress(); updateAddLoadBtn();
   window.scrollTo(0,0);
 }
 
@@ -5327,8 +4708,6 @@ const LOCATION_PRODUCT_MAP = [
   { keywords: ['menheers'], products: ['Menheers Loam'] },
   { keywords: ['south east sands','ses'], products: ['South East Sands Concrete Sand','South East Sands Coastal Beige Sand','South East Sands Packing Sand'] },
   { keywords: ['glen forbes','sand supplies'], products: ['Sand Supplies Glen Forbes'] },
-  { keywords: ['heidelberg','wolfdene','wolffdene'], products: ['Mansand','10mm','20mm','7mm'] },
-  { keywords: ['heidelberg','nerang'], products: ['Mansand','10mm','20mm','7mm'] },
   { keywords: ['bacchus marsh','9 mile'], products: ['Bacchus Marsh 9 Mile Sand'] },
   { keywords: ['tribuzi'], products: ['Tribuzi Quarry'] },
   { keywords: ['lte'], products: ['LTE 80-100mm Rubble'] },
@@ -5400,7 +4779,7 @@ function handleProductChange(idx) {
 }
 
 
-const HELP_VOICE_TEXT = `Cartage Australia driver app help. First, enter your truck number. This should be done before anything else so the app can load your rego, location, driver name, and allocated jobs. Next, check your driver name and Driver ID. If anything is missing, enter it manually. Check the location and use Other only when required. If allocated jobs are available, choose Yes when the popup asks whether to load today's jobs. For each load, add the weighbridge docket photo first. You can take a new photo, or choose one from Library or File. Review the scanned docket number, gross, tare, and tonnes. If a docket is handwritten or unclear, manually enter the details. Upload your completed run sheet photo. Add a logbook photo if required. Finally, submit the run sheet and wait for the success message before closing the page.`;
+const HELP_VOICE_TEXT = `Cartage Australia driver app help. First, enter your truck number. This should be done before anything else so the app can load your rego, location, driver name, and allocated jobs. Next, check your driver name and Driver ID. If anything is missing, enter it manually. Check the location and use Other only when required. If allocated jobs are available, tap Load Today's Jobs. For each load, add the weighbridge docket photo first. You can take a new photo, or choose one from Library or File. Review the scanned docket number, gross, tare, and tonnes. If a docket is handwritten or unclear, manually enter the details. Upload your completed run sheet photo. Add a logbook photo if required. Sign in the signature box. Finally, submit the run sheet and wait for the success message before closing the page.`;
 let helpSpeechUtterance = null;
 let helpHighlightTimer = null;
 
