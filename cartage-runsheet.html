@@ -922,7 +922,7 @@
   }
   .dispatch-earnings-btn.secondary { background:#eef2f7; color:var(--text); }
   .dispatch-earnings-content { padding:14px 16px 16px; }
-  .dispatch-earnings-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
+  .dispatch-earnings-kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
   .dispatch-earnings-kpi { background:#f8fafc; border-radius:9px; padding:10px; }
   .dispatch-earnings-kpi span { display:block; color:var(--muted); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; }
   .dispatch-earnings-kpi strong { display:block; color:var(--text); font-size:17px; margin-top:4px; }
@@ -1751,9 +1751,13 @@ let scheduleData = {};
 let scheduleSheetDate = '';
 
 let dispatchEarningsByDate = {};
+let dispatchHistoricalEarningsByDate = {};
 let dispatchActiveEarningsDate = '';
 let dispatchEarningsUnlocked = false;
 let dispatchEarningsHideTimer = null;
+let dispatchEarningsSessionPin = '';
+const DISPATCH_EARNINGS_HISTORY_KEY = 'cartage_dispatch_earnings_history_v1';
+const DISPATCH_MANAGEMENT_PIN_HASH = '0ed8d547051ba12fb3f3f2215ebda5cd5aa4146a905154f3e56045d588301b9e';
 
 function parseCompanyTruckEarnings(rows) {
   const earnings = new Map();
@@ -1803,11 +1807,103 @@ async function hashDispatchManagementPin(pin) {
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
+function dispatchBytesToBase64(bytes) {
+  let binary = '';
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  for (let i = 0; i < view.length; i++) binary += String.fromCharCode(view[i]);
+  return btoa(binary);
+}
+
+function dispatchBase64ToBytes(value) {
+  const binary = atob(value || '');
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+}
+
+async function deriveDispatchEarningsHistoryKey(pin) {
+  const material = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(String(pin)),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: new TextEncoder().encode('cartage-dispatch-earnings-history-v1'),
+      iterations: 120000,
+      hash: 'SHA-256'
+    },
+    material,
+    {name:'AES-GCM', length:256},
+    false,
+    ['encrypt','decrypt']
+  );
+}
+
+async function loadDispatchEarningsHistory(pin) {
+  const stored = localStorage.getItem(DISPATCH_EARNINGS_HISTORY_KEY);
+  if (!stored) return {};
+  try {
+    const envelope = JSON.parse(stored);
+    const key = await deriveDispatchEarningsHistoryKey(pin);
+    const plain = await crypto.subtle.decrypt(
+      {name:'AES-GCM', iv:dispatchBase64ToBytes(envelope.iv)},
+      key,
+      dispatchBase64ToBytes(envelope.data)
+    );
+    const parsed = JSON.parse(new TextDecoder().decode(plain));
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (err) {
+    console.warn('Could not decrypt truck earnings history', err);
+    return {};
+  }
+}
+
+async function saveDispatchEarningsHistory(pin) {
+  if (!pin) return;
+  const merged = Object.assign({}, dispatchHistoricalEarningsByDate, dispatchEarningsByDate);
+  try {
+    const key = await deriveDispatchEarningsHistoryKey(pin);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plain = new TextEncoder().encode(JSON.stringify(merged));
+    const encrypted = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, plain);
+    localStorage.setItem(DISPATCH_EARNINGS_HISTORY_KEY, JSON.stringify({
+      v: 1,
+      iv: dispatchBytesToBase64(iv),
+      data: dispatchBytesToBase64(encrypted)
+    }));
+    dispatchHistoricalEarningsByDate = merged;
+  } catch (err) {
+    console.warn('Could not save encrypted truck earnings history', err);
+  }
+}
+
+function getDispatchEarningsRows(dateKey) {
+  return dispatchEarningsByDate[dateKey] || dispatchHistoricalEarningsByDate[dateKey] || [];
+}
+
 function setActiveDispatchEarnings(dateKey) {
   dispatchActiveEarningsDate = dateKey || '';
   dispatchEarningsUnlocked = false;
+  dispatchEarningsSessionPin = '';
+  dispatchHistoricalEarningsByDate = {};
   if (dispatchEarningsHideTimer) clearTimeout(dispatchEarningsHideTimer);
   renderDispatchEarningsPanel();
+}
+
+function changeDispatchEarningsDate(value) {
+  if (!value) return;
+  dispatchActiveEarningsDate = value;
+  renderDispatchEarningsPanel();
+}
+
+function dispatchDateSortValue(value) {
+  const parts = String(value || '').split('.').map(Number);
+  if (parts.length !== 3) return 0;
+  return (2000 + parts[2]) * 10000 + parts[1] * 100 + parts[0];
 }
 
 function renderDispatchEarningsPanel() {
@@ -1818,8 +1914,10 @@ function renderDispatchEarningsPanel() {
   const icon = document.getElementById('dispatchEarningsLockIcon');
   if (!panel || !content || !toggle || !status || !icon) return;
 
-  const rows = dispatchEarningsByDate[dispatchActiveEarningsDate] || [];
-  if (!rows.length) {
+  const rows = getDispatchEarningsRows(dispatchActiveEarningsDate);
+  const anyCurrentRows = Object.values(dispatchEarningsByDate).some(v => Array.isArray(v) && v.length);
+  const hasStoredHistory = !!localStorage.getItem(DISPATCH_EARNINGS_HISTORY_KEY);
+  if (!rows.length && !anyCurrentRows && !Object.keys(dispatchHistoricalEarningsByDate).length && !hasStoredHistory) {
     dispatchEarningsUnlocked = false;
     content.style.display = 'none';
     icon.innerHTML = '&#128274;';
@@ -1835,20 +1933,34 @@ function renderDispatchEarningsPanel() {
   if (!dispatchEarningsUnlocked) {
     content.style.display = 'none';
     icon.innerHTML = '&#128274;';
-    status.textContent = 'Sensitive company financial information. PIN required to reveal.';
+    status.textContent = hasStoredHistory && !anyCurrentRows ? 'Protected historical truck earnings available. PIN required to reveal.' : 'Sensitive company financial information. PIN required to reveal.';
     toggle.textContent = 'Show earnings';
     toggle.classList.remove('secondary');
     toggle.onclick = unlockDispatchEarnings;
     return;
   }
 
-  const active = rows.filter(x => Number(x.earnings) > 0);
+  const allDates = Array.from(new Set([
+    ...Object.keys(dispatchHistoricalEarningsByDate),
+    ...Object.keys(dispatchEarningsByDate)
+  ])).filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k)).sort((a,b) => dispatchDateSortValue(b) - dispatchDateSortValue(a));
+
+  if (!getDispatchEarningsRows(dispatchActiveEarningsDate).length && allDates.length) {
+    dispatchActiveEarningsDate = allDates[0];
+  }
+
+  const selectedRows = getDispatchEarningsRows(dispatchActiveEarningsDate);
+  const active = selectedRows.filter(x => Number(x.earnings) > 0);
   const total = active.reduce((sum, x) => sum + Number(x.earnings || 0), 0);
   const average = active.length ? total / active.length : 0;
-  const sortedActive = active.slice().sort((a,b) => b.earnings - a.earnings);
-  const highest = sortedActive[0] || null;
-  const lowest = sortedActive.length ? sortedActive[sortedActive.length - 1] : null;
-  const sortedRows = rows.slice().sort((a,b) => Number(a.truckNo) - Number(b.truckNo));
+  const sortedActive = active.slice().sort((a,b) => Number(a.earnings) - Number(b.earnings));
+  const lowest = sortedActive[0] || null;
+  const highest = sortedActive.length ? sortedActive[sortedActive.length - 1] : null;
+  // Default order requested: lowest earning to highest earning. Zero values appear first.
+  const sortedRows = selectedRows.slice().sort((a,b) => {
+    const diff = Number(a.earnings || 0) - Number(b.earnings || 0);
+    return diff || Number(a.truckNo) - Number(b.truckNo);
+  });
 
   const tableRows = sortedRows.map(x => {
     const variance = average && x.earnings > 0 ? ((x.earnings / average) - 1) * 100 : null;
@@ -1856,17 +1968,21 @@ function renderDispatchEarningsPanel() {
     return '<tr><td><strong>' + x.truckNo + '</strong></td><td>' + (x.location || '-') + '</td><td>' + varianceText + '</td><td><strong>' + dispatchCurrency(x.earnings) + '</strong></td></tr>';
   }).join('');
 
+  const dateOptions = allDates.map(date => '<option value="' + date + '"' + (date === dispatchActiveEarningsDate ? ' selected' : '') + '>' + date + '</option>').join('');
+
   content.innerHTML =
+    '<div class="dispatch-filterbar" style="margin-bottom:12px;">' +
+      '<select id="dispatchEarningsDateSelect" class="dispatch-filter-small" onchange="changeDispatchEarningsDate(this.value)" aria-label="Earnings date">' + dateOptions + '</select>' +
+    '</div>' +
     '<div class="dispatch-earnings-kpis">' +
-      '<div class="dispatch-earnings-kpi"><span>Fleet earnings</span><strong>' + dispatchCurrency(total) + '</strong></div>' +
-      '<div class="dispatch-earnings-kpi"><span>Avg / active CA truck</span><strong>' + dispatchCurrency(average) + '</strong></div>' +
-      '<div class="dispatch-earnings-kpi"><span>CA trucks earning</span><strong>' + active.length + '</strong></div>' +
-      '<div class="dispatch-earnings-kpi"><span>High / low</span><strong style="font-size:13px;line-height:1.35;">' +
-        (highest ? highest.truckNo + ' ' + dispatchCurrency(highest.earnings) : '-') + '<br>' +
+      '<div class="dispatch-earnings-kpi"><span>Average truck earnings</span><strong>' + dispatchCurrency(average) + '</strong></div>' +
+      '<div class="dispatch-earnings-kpi"><span>Highest earning truck</span><strong style="font-size:14px;line-height:1.35;">' +
+        (highest ? highest.truckNo + ' ' + dispatchCurrency(highest.earnings) : '-') + '</strong></div>' +
+      '<div class="dispatch-earnings-kpi"><span>Lowest earning truck</span><strong style="font-size:14px;line-height:1.35;">' +
         (lowest ? lowest.truckNo + ' ' + dispatchCurrency(lowest.earnings) : '-') + '</strong></div>' +
     '</div>' +
     '<div style="overflow-x:auto;"><table class="dispatch-earnings-table"><thead><tr><th>Truck</th><th>Location</th><th>vs Fleet Avg</th><th>Daily Earnings</th></tr></thead><tbody>' + tableRows + '</tbody></table></div>' +
-    '<div class="dispatch-earnings-note">Company-owned trucks only. Subcontractor earnings are excluded. Fleet average includes only company trucks with earnings greater than $0. Earnings are kept in memory for this upload only and are not sent to the driver schedule backend or saved in local storage.</div>';
+    '<div class="dispatch-earnings-note">Company-owned trucks only. Subcontractor earnings are excluded. Average truck earnings includes only company trucks with earnings greater than $0. Historical earnings are encrypted in this browser and can only be decrypted after the management PIN is entered. The earnings are not sent to the driver schedule backend.</div>';
 
   content.style.display = 'block';
   icon.innerHTML = '&#128275;';
@@ -1877,17 +1993,28 @@ function renderDispatchEarningsPanel() {
 }
 
 async function unlockDispatchEarnings() {
-  const rows = dispatchEarningsByDate[dispatchActiveEarningsDate] || [];
-  if (!rows.length) return;
+  const hasCurrentRows = Object.values(dispatchEarningsByDate).some(v => Array.isArray(v) && v.length);
+  const hasStoredCiphertext = !!localStorage.getItem(DISPATCH_EARNINGS_HISTORY_KEY);
+  if (!hasCurrentRows && !hasStoredCiphertext) return;
 
-  // Fixed management PIN. Only the salted SHA-256 hash is embedded in the page.
-  const MANAGEMENT_PIN_HASH = '0ed8d547051ba12fb3f3f2215ebda5cd5aa4146a905154f3e56045d588301b9e';
   const pin = prompt('Enter management PIN to show truck earnings.');
   if (pin === null) return;
   const enteredHash = await hashDispatchManagementPin(pin);
-  if (enteredHash !== MANAGEMENT_PIN_HASH) {
+  if (enteredHash !== DISPATCH_MANAGEMENT_PIN_HASH) {
     alert('Incorrect PIN. Earnings remain locked.');
     return;
+  }
+
+  dispatchEarningsSessionPin = pin;
+  dispatchHistoricalEarningsByDate = await loadDispatchEarningsHistory(pin);
+  await saveDispatchEarningsHistory(pin);
+
+  const availableDates = Array.from(new Set([
+    ...Object.keys(dispatchHistoricalEarningsByDate),
+    ...Object.keys(dispatchEarningsByDate)
+  ])).filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k)).sort((a,b) => dispatchDateSortValue(b) - dispatchDateSortValue(a));
+  if (!getDispatchEarningsRows(dispatchActiveEarningsDate).length && availableDates.length) {
+    dispatchActiveEarningsDate = availableDates[0];
   }
 
   dispatchEarningsUnlocked = true;
@@ -1898,6 +2025,8 @@ async function unlockDispatchEarnings() {
 
 function hideDispatchEarnings() {
   dispatchEarningsUnlocked = false;
+  dispatchEarningsSessionPin = '';
+  dispatchHistoricalEarningsByDate = {};
   if (dispatchEarningsHideTimer) clearTimeout(dispatchEarningsHideTimer);
   dispatchEarningsHideTimer = null;
   renderDispatchEarningsPanel();
