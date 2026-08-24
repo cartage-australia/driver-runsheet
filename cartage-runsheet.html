@@ -1885,6 +1885,11 @@ function getDispatchEarningsRows(dateKey) {
   return dispatchEarningsByDate[dateKey] || dispatchHistoricalEarningsByDate[dateKey] || [];
 }
 
+function getDispatchTodayDateKey() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getFullYear()).slice(2);
+}
+
 function setActiveDispatchEarnings(dateKey) {
   dispatchActiveEarningsDate = dateKey || '';
   dispatchEarningsUnlocked = false;
@@ -1921,10 +1926,12 @@ function renderDispatchEarningsPanel() {
     dispatchEarningsUnlocked = false;
     content.style.display = 'none';
     icon.innerHTML = '&#128274;';
-    status.textContent = 'Upload the Excel dispatch workbook to load company-truck earnings.';
+    status.textContent = 'Sensitive company financial information. PIN required to reveal.';
     toggle.textContent = 'Show earnings';
-    toggle.disabled = true;
-    toggle.style.opacity = '.5';
+    toggle.disabled = false;
+    toggle.style.opacity = '1';
+    toggle.classList.remove('secondary');
+    toggle.onclick = unlockDispatchEarnings;
     return;
   }
 
@@ -1940,14 +1947,14 @@ function renderDispatchEarningsPanel() {
     return;
   }
 
+  const todayKey = getDispatchTodayDateKey();
   const allDates = Array.from(new Set([
+    todayKey,
     ...Object.keys(dispatchHistoricalEarningsByDate),
     ...Object.keys(dispatchEarningsByDate)
   ])).filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k)).sort((a,b) => dispatchDateSortValue(b) - dispatchDateSortValue(a));
 
-  if (!getDispatchEarningsRows(dispatchActiveEarningsDate).length && allDates.length) {
-    dispatchActiveEarningsDate = allDates[0];
-  }
+  if (!dispatchActiveEarningsDate) dispatchActiveEarningsDate = todayKey;
 
   const selectedRows = getDispatchEarningsRows(dispatchActiveEarningsDate);
   const active = selectedRows.filter(x => Number(x.earnings) > 0);
@@ -1956,17 +1963,17 @@ function renderDispatchEarningsPanel() {
   const sortedActive = active.slice().sort((a,b) => Number(a.earnings) - Number(b.earnings));
   const lowest = sortedActive[0] || null;
   const highest = sortedActive.length ? sortedActive[sortedActive.length - 1] : null;
-  // Default order requested: lowest earning to highest earning. Zero values appear first.
-  const sortedRows = selectedRows.slice().sort((a,b) => {
+  // Default order requested: lowest earning to highest earning. Trucks with $0 earnings are hidden.
+  const sortedRows = active.slice().sort((a,b) => {
     const diff = Number(a.earnings || 0) - Number(b.earnings || 0);
     return diff || Number(a.truckNo) - Number(b.truckNo);
   });
 
-  const tableRows = sortedRows.map(x => {
-    const variance = average && x.earnings > 0 ? ((x.earnings / average) - 1) * 100 : null;
+  const tableRows = sortedRows.length ? sortedRows.map(x => {
+    const variance = average ? ((x.earnings / average) - 1) * 100 : null;
     const varianceText = variance === null ? '-' : ((variance >= 0 ? '+' : '') + variance.toFixed(0) + '%');
     return '<tr><td><strong>' + x.truckNo + '</strong></td><td>' + (x.location || '-') + '</td><td>' + varianceText + '</td><td><strong>' + dispatchCurrency(x.earnings) + '</strong></td></tr>';
-  }).join('');
+  }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px;">No company-truck earnings recorded for this date.</td></tr>';
 
   const dateOptions = allDates.map(date => '<option value="' + date + '"' + (date === dispatchActiveEarningsDate ? ' selected' : '') + '>' + date + '</option>').join('');
 
@@ -1982,7 +1989,7 @@ function renderDispatchEarningsPanel() {
         (lowest ? lowest.truckNo + ' ' + dispatchCurrency(lowest.earnings) : '-') + '</strong></div>' +
     '</div>' +
     '<div style="overflow-x:auto;"><table class="dispatch-earnings-table"><thead><tr><th>Truck</th><th>Location</th><th>vs Fleet Avg</th><th>Daily Earnings</th></tr></thead><tbody>' + tableRows + '</tbody></table></div>' +
-    '<div class="dispatch-earnings-note">Company-owned trucks only. Subcontractor earnings are excluded. Average truck earnings includes only company trucks with earnings greater than $0. Historical earnings are encrypted in this browser and can only be decrypted after the management PIN is entered. The earnings are not sent to the driver schedule backend.</div>';
+    '<div class="dispatch-earnings-note">Company-owned trucks only. Subcontractor earnings and company trucks with $0 earnings are excluded from this view. Average truck earnings includes only company trucks with earnings greater than $0. Historical earnings are encrypted in this browser and can only be decrypted after the management PIN is entered. The earnings are not sent to the driver schedule backend.</div>';
 
   content.style.display = 'block';
   icon.innerHTML = '&#128275;';
@@ -1993,10 +2000,6 @@ function renderDispatchEarningsPanel() {
 }
 
 async function unlockDispatchEarnings() {
-  const hasCurrentRows = Object.values(dispatchEarningsByDate).some(v => Array.isArray(v) && v.length);
-  const hasStoredCiphertext = !!localStorage.getItem(DISPATCH_EARNINGS_HISTORY_KEY);
-  if (!hasCurrentRows && !hasStoredCiphertext) return;
-
   const pin = prompt('Enter management PIN to show truck earnings.');
   if (pin === null) return;
   const enteredHash = await hashDispatchManagementPin(pin);
@@ -2009,13 +2012,8 @@ async function unlockDispatchEarnings() {
   dispatchHistoricalEarningsByDate = await loadDispatchEarningsHistory(pin);
   await saveDispatchEarningsHistory(pin);
 
-  const availableDates = Array.from(new Set([
-    ...Object.keys(dispatchHistoricalEarningsByDate),
-    ...Object.keys(dispatchEarningsByDate)
-  ])).filter(k => /^\d{2}\.\d{2}\.\d{2}$/.test(k)).sort((a,b) => dispatchDateSortValue(b) - dispatchDateSortValue(a));
-  if (!getDispatchEarningsRows(dispatchActiveEarningsDate).length && availableDates.length) {
-    dispatchActiveEarningsDate = availableDates[0];
-  }
+  // Always open on today's date. Users can then select an older date from history.
+  dispatchActiveEarningsDate = getDispatchTodayDateKey();
 
   dispatchEarningsUnlocked = true;
   renderDispatchEarningsPanel();
@@ -2127,7 +2125,7 @@ function processScheduleFile(input) {
       const truckCount = daySummaryForUpload.trucksOnRoad;
       const loadCount = daySummaryForUpload.totalLoads;
       dispatchEarningsByDate = allDaysEarnings;
-      setActiveDispatchEarnings(activeSummaryDate);
+      setActiveDispatchEarnings(todayDate);
       renderDispatchSummary(activeSummaryData, sheetName, allDaysSummaryData, activeSummaryDate);
 
       const todayPayload = {date: todayDate, sheet: sheetName, sheetDate: todayDate, data: scheduleData};
