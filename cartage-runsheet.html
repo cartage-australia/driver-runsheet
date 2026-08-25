@@ -3944,6 +3944,64 @@ function formatDateObj(d) {
   return `${dd}.${mm}.${yy}`;
 }
 
+const DOCKET_FAMILIAR_PRODUCTS = [
+  '7mm','10mm','10/7mm','14mm','20mm','10mm Natural','16mm White','Ivory 16mm',
+  'Mansand','Fine Sand','Coarse Sand','Class A','Dust','Natural','Q10 Black',
+  'Filter Sand','Rubble','Loam','Sand','14/10/7'
+];
+
+function normaliseDocketProduct(value) {
+  let raw = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!raw) return '';
+  const low = raw.toLowerCase();
+
+  // Prefer familiar size/material tokens, even where the docket has a longer
+  // sales description such as "20mm aggregate".
+  if (/\b10\s*\/\s*7(?:\s*mm)?\b/i.test(raw)) return '10/7mm';
+  if (/\b14\s*\/\s*10\s*\/\s*7(?:\s*mm)?\b/i.test(raw)) return '14/10/7';
+  if (/\b20\s*mm\b/i.test(raw)) return '20mm';
+  if (/\b14\s*mm\b/i.test(raw)) return '14mm';
+  if (/\b10\s*mm\b/i.test(raw)) return /natural/i.test(raw) ? '10mm Natural' : '10mm';
+  if (/\b7\s*mm\b/i.test(raw)) return '7mm';
+  if (/\b16\s*mm\b/i.test(raw) && /ivory/i.test(raw)) return 'Ivory 16mm';
+  if (/\b16\s*mm\b/i.test(raw) && /white/i.test(raw)) return '16mm White';
+  if (/\bman\s*sand\b|\bmansand\b/i.test(raw)) return 'Mansand';
+  if (/\bfine\s+sand\b/i.test(raw)) return 'Fine Sand';
+  if (/\bcoarse\s+sand\b|\bcourse\s+sand\b/i.test(raw)) return 'Coarse Sand';
+  if (/\bclass\s*a\b/i.test(raw)) return 'Class A';
+  if (/\bq10\s*black\b/i.test(raw)) return 'Q10 Black';
+  if (/\bfilter\s+sand\b/i.test(raw)) return 'Filter Sand';
+  if (/\brubble\b/i.test(raw)) return 'Rubble';
+  if (/\bdust\b/i.test(raw)) return 'Dust';
+  if (/\bloam\b/i.test(raw)) return 'Loam';
+  if (/\bnatural\b/i.test(raw)) return 'Natural';
+  if (/\bsand\b/i.test(raw) && !/fine|coarse|man\s*sand|mansand|filter/i.test(raw)) return 'Sand';
+
+  // Exact/fuzzy acceptance is deliberately strict. Only use values that map
+  // very closely to an existing familiar product in the app.
+  const familiar = matchList(raw, DOCKET_FAMILIAR_PRODUCTS, 0.92);
+  if (familiar) return familiar;
+  const known = matchList(raw, KNOWN_PRODUCTS, 0.94);
+  return known || '';
+}
+
+function applyDocketProductFallback(idx, productInfo, notes) {
+  const productEl = document.getElementById('product' + idx);
+  if (!productEl || String(productEl.value || '').trim()) return;
+  if (!productInfo || productInfo.confidence !== 'high' || !productInfo.value) return;
+
+  const familiar = normaliseDocketProduct(productInfo.value);
+  if (!familiar) {
+    notes.push('Product - not recognised, enter manually');
+    return;
+  }
+
+  productEl.value = familiar;
+  productEl.classList.add('valid');
+  productEl.classList.remove('error');
+  notes.push(`Product ${familiar} ✓ from docket`);
+}
+
 async function scanDocket(idx) {
   const photo = docketPhotos[idx];
   if (!photo) return;
@@ -3970,7 +4028,7 @@ async function scanDocket(idx) {
           role: 'user',
           content: [
             {type: 'image', source: {type: 'base64', media_type: mediaType, data: base64Data}},
-            {type: 'text', text: `Read this weighbridge docket. Extract the docket number, the docket date, and the three tonnage weights (Gross, Tare, Net). Return strict JSON only, no markdown fences, no preamble.
+            {type: 'text', text: `Read this weighbridge docket. Extract the docket number, the docket date, the three tonnage weights (Gross, Tare, Net), and the product/material if it is clearly printed. Return strict JSON only, no markdown fences, no preamble.
 
 CRITICAL ACCURACY RULE - applies to every field below:
 Only return a value if you are fully confident it is correct. If you are not certain - including cases where a number is handwritten, faded, smudged, cropped, or ambiguous - you MUST return an empty string "" for that field. Never return your best guess. A wrong value is worse than a blank one.
@@ -3992,6 +4050,10 @@ For Heidelberg/Hiedelberg dockets, the weights are printed in the horizontal wei
 - Net/Load Weight (TO) -> net
 The row may also show Load Quantity (TO), which normally equals Net/Load Weight. If Net/Load Weight is clear, return it as net.
 
+PRODUCT / MATERIAL FALLBACK RULE:
+Read the material/product only when it is clearly printed on the docket. Return a short, familiar material name or size rather than a long sales description. Examples of acceptable familiar products include 7mm, 10mm, 10/7mm, 14mm, 20mm, 16mm White, Ivory 16mm, Mansand, Fine Sand, Coarse Sand, Class A, Dust, Natural, Q10 Black, Filter Sand, Rubble, Loam and similar standard quarry/sand products.
+If the docket contains a longer description such as "20mm aggregate", return the familiar core product "20mm". If it says "10/7" or "10/7 aggregate", return "10/7mm". Do not guess from the quarry, customer, destination, price, docket number, order number or other context. If the material is not clearly visible or is unfamiliar/ambiguous, return an empty product value.
+
 Confidence values (use exactly one of these strings for every field):
 - "high": machine-printed (or clearly legible for docket number), unambiguous - you are certain
 - "low": partially unclear, faded, smudged, or you have any doubt at all
@@ -4005,6 +4067,7 @@ Return exactly this JSON shape:
 {
   "docketNumber": {"value": "", "confidence": ""},
   "docketDate": {"value": "", "confidence": ""},
+  "product": {"value": "", "confidence": ""},
   "gross": {"value": "", "confidence": ""},
   "tare": {"value": "", "confidence": ""},
   "net": {"value": "", "confidence": ""}
@@ -4114,8 +4177,12 @@ Return exactly this JSON shape:
       const netApplied = applyNetWeightFromScan(idx, parsed.net);
       if (netApplied) notes.push(netApplied);
       calcNet(idx, parsed.net);
+      applyDocketProductFallback(idx, parsed.product, notes);
     } else {
       clearScannedFields();
+      // Even if the docket date cannot be read, a clearly printed familiar
+      // material is still useful as a fallback for a blank Product field.
+      applyDocketProductFallback(idx, parsed.product, notes);
     }
 
     if (loadCard) loadCard.dataset.dateMismatch = hasMismatch ? 'true' : 'false';
