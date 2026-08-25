@@ -1023,6 +1023,39 @@
           <div class="dispatch-summary-stat"><span>Loads / Truck</span><strong id="dispatchSummaryLoadRatio">0.00</strong></div>
           <div class="dispatch-summary-stat"><span>Concrete Plants</span><strong id="dispatchSummaryPlantCount">0</strong></div>
         </div>
+        <div id="dispatchEarningsManagement" style="margin:14px 0 0; border:1px solid #fed7aa; border-radius:12px; background:#fff7ed; overflow:hidden;">
+          <div style="padding:14px 16px; background:linear-gradient(135deg,#fff7ed,#ffedd5); border-bottom:1px solid #fed7aa;">
+            <div style="font-size:14px; font-weight:800; color:#9a3412;">Management - Truck Earnings</div>
+            <div style="font-size:11px; color:#9a3412; opacity:.8; margin-top:3px;">Company trucks only. Average excludes trucks with $0 earnings.</div>
+          </div>
+          <div id="dispatchEarningsLocked" style="padding:16px;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <input id="dispatchEarningsPassword" type="password" inputmode="numeric" autocomplete="off" placeholder="Management password" maxlength="4"
+                onkeydown="if(event.key==='Enter'){event.preventDefault(); unlockDispatchEarnings();}"
+                style="flex:1; min-width:180px; border:1.5px solid #fdba74; border-radius:9px; padding:10px 12px; font-size:14px; background:white;">
+              <button type="button" onclick="unlockDispatchEarnings()" style="border:none; border-radius:9px; padding:10px 16px; font-size:13px; font-weight:800; color:white; background:#ea580c; cursor:pointer;">Unlock</button>
+            </div>
+            <div id="dispatchEarningsPasswordError" style="display:none; margin-top:8px; font-size:12px; color:#dc2626; font-weight:700;">Incorrect password.</div>
+          </div>
+          <div id="dispatchEarningsUnlocked" style="display:none; padding:16px; background:white;">
+            <div style="display:flex; align-items:end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+              <div>
+                <label for="dispatchEarningsDate" style="display:block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:5px;">Earnings date</label>
+                <input id="dispatchEarningsDate" type="date" onchange="renderDispatchEarningsReport()" style="border:1.5px solid var(--border); border-radius:8px; padding:9px 10px; font-size:14px; background:white;">
+              </div>
+              <button type="button" onclick="lockDispatchEarnings()" style="border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:11px; font-weight:700; background:white; color:var(--label); cursor:pointer;">Lock</button>
+            </div>
+            <div id="dispatchEarningsNoData" style="display:none; padding:14px; border-radius:8px; background:#f8fafc; color:var(--muted); font-size:12px;">No company truck earnings data is stored for this date. Upload the monthly booking workbook on this dispatcher page to populate earnings history.</div>
+            <div id="dispatchEarningsReport">
+              <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:12px;">
+                <div class="dispatch-summary-stat" style="min-width:0;"><span>Average Earnings</span><strong id="dispatchEarningsAverage">$0.00</strong><small>Excludes $0 trucks</small></div>
+                <div class="dispatch-summary-stat" style="min-width:0;"><span>Maximum Earner</span><strong id="dispatchEarningsMaximum">$0.00</strong><small id="dispatchEarningsMaximumTruck">-</small></div>
+                <div class="dispatch-summary-stat" style="min-width:0;"><span>Minimum Earner</span><strong id="dispatchEarningsMinimum">$0.00</strong><small id="dispatchEarningsMinimumTruck">-</small></div>
+              </div>
+              <div id="dispatchEarningsTable"></div>
+            </div>
+          </div>
+        </div>
         <div class="dispatch-summary-send">
           <button type="button" id="dispatchSendSummaryBtn" onclick="sendDailyDispatchSummaryToPowerAutomate()">Send Daily Summary</button>
           <span id="dispatchSendSummaryStatus" class="dispatch-summary-send-status">Sends the top summary table and 14-day loads/trucks data only.</span>
@@ -1785,6 +1818,7 @@ function processScheduleFile(input) {
 
       const allDaysData = {};
       const allDaysSummaryData = {};
+      const allDaysEarningsData = {};
       let todaySheetName = '';
       let activeSummaryDate = todayDate;
 
@@ -1794,11 +1828,16 @@ function processScheduleFile(input) {
         const parsed = parseScheduleRows(rows);
         const separatorRowIndex = findDispatchSubbySeparatorRow(ws, rows, XLSX);
         const parsedSummary = parseDispatchSummaryRows(rows, parsed, separatorRowIndex, ws, XLSX);
+        const parsedEarnings = parseDispatchEarningsRows(rows);
         const dateStr = getScheduleDateFromSheetName(sName) || sName;
         allDaysData[dateStr] = parsed;
         allDaysSummaryData[dateStr] = parsedSummary;
+        allDaysEarningsData[dateStr] = parsedEarnings;
         if (dateStr === todayDate) todaySheetName = sName;
       }
+
+      saveDispatchEarningsHistory(allDaysEarningsData);
+      initDispatchEarningsReport();
 
       scheduleData = allDaysData[todayDate] || {};
       let activeSummaryData = allDaysSummaryData[todayDate] || {};
@@ -2249,6 +2288,198 @@ function getDispatchSummaryBlockKey(rows, rowIndex, bc, fleetType, ws, XLSX) {
   }
 
   return '';
+}
+
+const DISPATCH_EARNINGS_STORAGE_KEY = 'cartage_dispatch_earnings_history_v1';
+const DISPATCH_EARNINGS_UNLOCK_KEY = 'cartage_dispatch_earnings_unlocked_v1';
+
+function parseDispatchMoney(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const text = String(value == null ? '' : value).replace(/[$,\s]/g, '').trim();
+  if (!text) return null;
+  const num = Number(text);
+  return Number.isFinite(num) ? num : null;
+}
+
+function parseDispatchEarningsRows(rows) {
+  const result = [];
+  let headerRow = -1;
+  let truckCol = -1;
+  let earningsCol = -1;
+
+  // The company earnings table is the first "Truck Earnings / Shift Earnings"
+  // section in each dated QLD sheet. A later earnings section belongs to subbies
+  // and must not be included in management company-truck reporting.
+  for (let r = 0; r < (rows || []).length; r++) {
+    const row = rows[r] || [];
+    for (let c = 0; c < row.length - 1; c++) {
+      if (/^Truck\s+Earnings$/i.test(cleanCell(row[c])) && /^Shift\s+Earnings$/i.test(cleanCell(row[c + 1]))) {
+        headerRow = r;
+        truckCol = c;
+        earningsCol = c + 1;
+        break;
+      }
+    }
+    if (headerRow >= 0) break;
+  }
+
+  if (headerRow < 0) return result;
+
+  const byTruck = {};
+  for (let r = headerRow + 1; r < rows.length; r++) {
+    const row = rows[r] || [];
+    const truckText = cleanCell(row[truckCol]);
+
+    // Stop when the workbook reaches the next earnings table (subcontractors).
+    if (/^Truck\s+Earnings$/i.test(truckText) && /^Shift\s+Earnings$/i.test(cleanCell(row[earningsCol]))) break;
+
+    const match = truckText.match(/^(\d{3,4})(?:\s+(.+))?$/);
+    if (!match) continue;
+
+    const truckNo = match[1];
+    if (isBlockedDispatchIdentifier(truckNo)) continue;
+
+    const earnings = parseDispatchMoney(row[earningsCol]);
+    if (earnings === null) continue;
+
+    byTruck[truckNo] = {
+      truckNo,
+      label: truckText.replace(/\s+/g, ' ').trim(),
+      earnings
+    };
+  }
+
+  return Object.values(byTruck).sort((a, b) => {
+    if (a.earnings !== b.earnings) return a.earnings - b.earnings;
+    return Number(a.truckNo) - Number(b.truckNo);
+  });
+}
+
+function loadDispatchEarningsHistory() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DISPATCH_EARNINGS_STORAGE_KEY) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveDispatchEarningsHistory(newHistory) {
+  const existing = loadDispatchEarningsHistory();
+  Object.entries(newHistory || {}).forEach(([dateKey, rows]) => {
+    if (!/^\d{2}\.\d{2}\.\d{2}$/.test(dateKey)) return;
+    existing[dateKey] = Array.isArray(rows) ? rows : [];
+  });
+  try {
+    localStorage.setItem(DISPATCH_EARNINGS_STORAGE_KEY, JSON.stringify(existing));
+  } catch (e) {
+    console.warn('Could not save dispatcher earnings history locally:', e);
+  }
+}
+
+function dispatchIsoToDateKey(isoDate) {
+  const m = String(isoDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  return m[3] + '.' + m[2] + '.' + m[1].slice(2);
+}
+
+function formatDispatchCurrency(value) {
+  const amount = Number(value || 0);
+  try {
+    return new Intl.NumberFormat('en-AU', {style:'currency', currency:'AUD', minimumFractionDigits:2, maximumFractionDigits:2}).format(amount);
+  } catch (e) {
+    return '$' + amount.toFixed(2);
+  }
+}
+
+function isDispatchEarningsUnlocked() {
+  try { return sessionStorage.getItem(DISPATCH_EARNINGS_UNLOCK_KEY) === '1'; }
+  catch (e) { return false; }
+}
+
+function initDispatchEarningsReport() {
+  const dateInput = document.getElementById('dispatchEarningsDate');
+  if (dateInput) dateInput.value = getTodayIsoDate();
+
+  const unlocked = isDispatchEarningsUnlocked();
+  const lockedEl = document.getElementById('dispatchEarningsLocked');
+  const unlockedEl = document.getElementById('dispatchEarningsUnlocked');
+  if (lockedEl) lockedEl.style.display = unlocked ? 'none' : 'block';
+  if (unlockedEl) unlockedEl.style.display = unlocked ? 'block' : 'none';
+  if (unlocked) renderDispatchEarningsReport();
+}
+
+function unlockDispatchEarnings() {
+  const input = document.getElementById('dispatchEarningsPassword');
+  const error = document.getElementById('dispatchEarningsPasswordError');
+  if (!input || input.value !== '3999') {
+    if (error) error.style.display = 'block';
+    if (input) { input.value = ''; input.focus(); }
+    return;
+  }
+
+  try { sessionStorage.setItem(DISPATCH_EARNINGS_UNLOCK_KEY, '1'); } catch (e) {}
+  if (error) error.style.display = 'none';
+  input.value = '';
+  initDispatchEarningsReport();
+}
+
+function lockDispatchEarnings() {
+  try { sessionStorage.removeItem(DISPATCH_EARNINGS_UNLOCK_KEY); } catch (e) {}
+  const lockedEl = document.getElementById('dispatchEarningsLocked');
+  const unlockedEl = document.getElementById('dispatchEarningsUnlocked');
+  if (lockedEl) lockedEl.style.display = 'block';
+  if (unlockedEl) unlockedEl.style.display = 'none';
+}
+
+function renderDispatchEarningsReport() {
+  if (!isDispatchEarningsUnlocked()) return;
+
+  const dateInput = document.getElementById('dispatchEarningsDate');
+  if (!dateInput) return;
+  if (!dateInput.value) dateInput.value = getTodayIsoDate();
+
+  const dateKey = dispatchIsoToDateKey(dateInput.value);
+  const history = loadDispatchEarningsHistory();
+  const rows = (Array.isArray(history[dateKey]) ? history[dateKey] : [])
+    .map(row => ({
+      truckNo: String(row.truckNo || '').trim(),
+      label: String(row.label || row.truckNo || '').trim(),
+      earnings: Number(row.earnings || 0)
+    }))
+    .filter(row => /^\d{3,4}$/.test(row.truckNo) && Number.isFinite(row.earnings))
+    .sort((a, b) => a.earnings !== b.earnings ? a.earnings - b.earnings : Number(a.truckNo) - Number(b.truckNo));
+
+  const noData = document.getElementById('dispatchEarningsNoData');
+  const report = document.getElementById('dispatchEarningsReport');
+  if (rows.length === 0) {
+    if (noData) noData.style.display = 'block';
+    if (report) report.style.display = 'none';
+    return;
+  }
+
+  if (noData) noData.style.display = 'none';
+  if (report) report.style.display = 'block';
+
+  const positiveRows = rows.filter(row => row.earnings > 0);
+  const avg = positiveRows.length ? positiveRows.reduce((sum, row) => sum + row.earnings, 0) / positiveRows.length : 0;
+  const minRow = rows[0];
+  const maxRow = rows[rows.length - 1];
+
+  const avgEl = document.getElementById('dispatchEarningsAverage');
+  const minEl = document.getElementById('dispatchEarningsMinimum');
+  const maxEl = document.getElementById('dispatchEarningsMaximum');
+  const minTruckEl = document.getElementById('dispatchEarningsMinimumTruck');
+  const maxTruckEl = document.getElementById('dispatchEarningsMaximumTruck');
+  if (avgEl) avgEl.textContent = formatDispatchCurrency(avg);
+  if (minEl) minEl.textContent = formatDispatchCurrency(minRow.earnings);
+  if (maxEl) maxEl.textContent = formatDispatchCurrency(maxRow.earnings);
+  if (minTruckEl) minTruckEl.textContent = 'Truck ' + minRow.truckNo;
+  if (maxTruckEl) maxTruckEl.textContent = 'Truck ' + maxRow.truckNo;
+
+  const tableRows = rows.map(row => [row.label || row.truckNo, formatDispatchCurrency(row.earnings)]);
+  const tableEl = document.getElementById('dispatchEarningsTable');
+  if (tableEl) tableEl.innerHTML = makeDispatchSummaryTable(['Truck', 'Shift Earnings'], tableRows);
 }
 
 function parseDispatchSummaryRows(rows, companyData, separatorRowIndex, ws, XLSX) {
@@ -4196,6 +4427,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadEmployeesFromGoogleSheet();
     loadPreviousDispatchSummary();
+    initDispatchEarningsReport();
 
     return;
   }
