@@ -4154,8 +4154,12 @@ Return exactly this JSON shape:
     document.getElementById('scanDocketBtn' + idx).style.display = 'block';
     const errEl = document.getElementById('docketScanError' + idx);
     errEl.style.display = 'block';
-    const isNetwork = err.message.includes('Load failed') || err.message.includes('fetch');
-    errEl.textContent = isNetwork ? 'No internet - enter weights manually.' : 'Could not read docket. Enter weights manually. (' + err.message + ')';
+    const errorMessage = String(err && err.message ? err.message : err || '');
+    const isNetwork = errorMessage.includes('Load failed') || errorMessage.toLowerCase().includes('fetch') || !navigator.onLine;
+    console.error('Docket scan failed for load ' + idx + ':', err);
+    errEl.textContent = isNetwork
+      ? 'No internet connection. Please enter the docket details manually.'
+      : 'Could not read docket. Please enter the docket details manually.';
   } finally {
     optimizeDocketPhotoForUpload(idx, photo);
   }
