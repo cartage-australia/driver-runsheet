@@ -834,10 +834,10 @@
       <polyline points="20 6 9 17 4 12"/>
     </svg>
   </div>
-  <h2>Run Sheet Submitted</h2>
-  <p>Your run sheet and dockets have been received by the Cartage Australia office.</p>
+  <h2 id="submissionResultTitle">Run Sheet Submitted</h2>
+  <p id="submissionResultMessage">Your run sheet and dockets have been received by the Cartage Australia office.</p>
   <div class="success-ref">
-    Reference Number
+    <span id="submissionResultRefLabel">Reference Number</span>
     <strong id="refNumber">-</strong>
   </div>
   <button class="new-submission-btn" onclick="resetForm()">Submit Another Run Sheet</button>
@@ -3193,7 +3193,7 @@ function submitForm() {
   if (!navigator.onLine) {
     saveOfflineSubmission(payload).then(() => {
       hideLoading();
-      showSuccess(payload, 'SAVED-OFFLINE');
+      showOfflineSaved(payload);
     }).catch(() => {
       hideLoading();
       showToast('Could not save offline. Please try again.', 'error');
@@ -3214,7 +3214,7 @@ function submitForm() {
   .catch(() => {
     saveOfflineSubmission(payload).then(() => {
       hideLoading();
-      showSuccess(payload, 'SAVED-OFFLINE');
+      showOfflineSaved(payload);
     }).catch(() => {
       hideLoading();
       showToast('Network error and could not save offline. Please retry.', 'error');
@@ -3463,12 +3463,13 @@ async function checkForSavedProgress() {
   }
 }
 
-const OFFLINE_DB_NAME = 'cartage_run_sheets_offline';
+const OFFLINE_DB_NAME = 'cartage_subcontractor_run_sheets_offline';
+const LEGACY_OFFLINE_DB_NAME = 'cartage_run_sheets_offline';
 const OFFLINE_STORE = 'submissions';
 
-function openOfflineDb() {
+function openOfflineDbByName(dbName) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(OFFLINE_DB_NAME, 1);
+    const req = indexedDB.open(dbName, 1);
     req.onupgradeneeded = function(event) {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(OFFLINE_STORE)) {
@@ -3480,15 +3481,19 @@ function openOfflineDb() {
   });
 }
 
+function openOfflineDb() {
+  return openOfflineDbByName(OFFLINE_DB_NAME);
+}
+
 async function saveOfflineSubmission(payload) {
   const db = await openOfflineDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(OFFLINE_STORE, 'readwrite');
     const store = tx.objectStore(OFFLINE_STORE);
-    const id = payload.submissionId || ('offline-' + Date.now());
+    const id = payload.submissionId || ('subcontractor-offline-' + Date.now());
     store.put({ id, payload, savedAt: new Date().toISOString() });
-    tx.oncomplete = resolve;
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => { db.close(); resolve(id); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
   });
 }
 
@@ -3497,8 +3502,8 @@ async function getOfflineSubmissions() {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(OFFLINE_STORE, 'readonly');
     const req = tx.objectStore(OFFLINE_STORE).getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { const items = req.result || []; db.close(); resolve(items); };
+    req.onerror = () => { db.close(); reject(req.error); };
   });
 }
 
@@ -3507,15 +3512,59 @@ async function deleteOfflineSubmission(id) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(OFFLINE_STORE, 'readwrite');
     tx.objectStore(OFFLINE_STORE).delete(id);
-    tx.oncomplete = resolve;
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
   });
+}
+
+function isSubcontractorOfflinePayload(payload) {
+  if (!payload) return false;
+  return !!String(payload.subcontractorCompany || '').trim() ||
+         String(payload.depot || '').trim().toLowerCase() === 'subcontractor';
+}
+
+async function migrateLegacySubcontractorOfflineSubmissions() {
+  if (!window.indexedDB || LEGACY_OFFLINE_DB_NAME === OFFLINE_DB_NAME) return;
+  try {
+    const legacyDb = await openOfflineDbByName(LEGACY_OFFLINE_DB_NAME);
+    const legacyItems = await new Promise((resolve, reject) => {
+      const tx = legacyDb.transaction(OFFLINE_STORE, 'readonly');
+      const req = tx.objectStore(OFFLINE_STORE).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+
+    const subbieItems = legacyItems.filter(item => isSubcontractorOfflinePayload(item && item.payload));
+    if (!subbieItems.length) { legacyDb.close(); return; }
+
+    const newDb = await openOfflineDb();
+    await new Promise((resolve, reject) => {
+      const tx = newDb.transaction(OFFLINE_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_STORE);
+      subbieItems.forEach(item => store.put(item));
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    newDb.close();
+
+    await new Promise((resolve, reject) => {
+      const tx = legacyDb.transaction(OFFLINE_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_STORE);
+      subbieItems.forEach(item => store.delete(item.id));
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    legacyDb.close();
+  } catch (err) {
+    console.error('Could not migrate legacy subcontractor offline submissions', err);
+  }
 }
 
 async function processOfflineSubmissions() {
   if (!navigator.onLine || SUBMIT_URL === 'YOUR_POWER_AUTOMATE_URL_HERE') return;
 
   try {
+    await migrateLegacySubcontractorOfflineSubmissions();
     const items = await getOfflineSubmissions();
     for (const item of items) {
       await fetch(SUBMIT_URL, {
@@ -3527,21 +3576,73 @@ async function processOfflineSubmissions() {
     }
     if (items.length > 0) showToast(items.length + ' offline run sheet(s) sent.', 'success');
   } catch (err) {
+    console.error('Offline subcontractor resend failed', err);
     // Leave offline submissions saved and try again next time.
   }
 }
 
 window.addEventListener('online', processOfflineSubmissions);
 
+async function showOfflineSaved(payload) {
+  clearSavedProgress().catch(() => {});
+  let pendingCount = 1;
+  try {
+    await migrateLegacySubcontractorOfflineSubmissions();
+    pendingCount = (await getOfflineSubmissions()).length || 1;
+  } catch (err) {
+    console.error('Could not count offline subcontractor submissions', err);
+  }
+
+  const title = document.getElementById('submissionResultTitle');
+  const message = document.getElementById('submissionResultMessage');
+  const label = document.getElementById('submissionResultRefLabel');
+  const icon = document.querySelector('#successScreen .success-icon');
+  const iconSvg = icon ? icon.querySelector('svg') : null;
+
+  if (title) title.textContent = 'Saved on this device - not yet submitted';
+  if (message) message.textContent = 'Your run sheet and docket photos are safely queued on this device. Keep this device/browser available and reconnect to the internet. The app will retry automatically. Pending offline run sheets on this device: ' + pendingCount + '.';
+  if (label) label.textContent = 'Status';
+  document.getElementById('refNumber').textContent = 'PENDING OFFLINE';
+  if (icon) {
+    icon.style.background = 'rgba(249,115,22,0.10)';
+    icon.style.borderColor = 'var(--orange)';
+  }
+  if (iconSvg) iconSvg.style.stroke = 'var(--orange)';
+  document.getElementById('mainForm').style.display = 'none';
+  document.getElementById('successScreen').classList.add('show');
+  window.scrollTo(0,0);
+}
+
 function showSuccess(payload, ref) {
   clearSavedProgress().catch(() => {});
   const d = payload.jobDate.replace(/-/g,'');
   const refNum = ref || `CA-${d}-${Math.floor(Math.random()*9000+1000)}`;
+  const title = document.getElementById('submissionResultTitle');
+  const message = document.getElementById('submissionResultMessage');
+  const label = document.getElementById('submissionResultRefLabel');
+  const icon = document.querySelector('#successScreen .success-icon');
+  const iconSvg = icon ? icon.querySelector('svg') : null;
+  if (title) title.textContent = 'Run Sheet Submitted';
+  if (message) message.textContent = 'Your run sheet and dockets have been received by the Cartage Australia office.';
+  if (label) label.textContent = 'Reference Number';
+  if (icon) {
+    icon.style.background = 'rgba(16,185,129,0.1)';
+    icon.style.borderColor = 'var(--green)';
+  }
+  if (iconSvg) iconSvg.style.stroke = 'var(--green)';
   document.getElementById('refNumber').textContent = refNum;
   document.getElementById('mainForm').style.display = 'none';
   document.getElementById('successScreen').classList.add('show');
   window.scrollTo(0,0);
 }
+
+// Migrate any subcontractor submissions previously saved in the old shared queue,
+// then retry them whenever the app opens online.
+setTimeout(() => {
+  migrateLegacySubcontractorOfflineSubmissions().then(() => {
+    if (navigator.onLine) processOfflineSubmissions();
+  });
+}, 1200);
 
 function resetForm() {
   clearSavedProgress().catch(() => {});
