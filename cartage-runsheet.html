@@ -1107,7 +1107,7 @@
         <div class="field">
           <label>Truck No. <span style="color:var(--orange);font-weight:700;text-transform:none;letter-spacing:0;">(enter first)</span> <span class="req">*</span></label>
           <input type="text" id="truckNo" placeholder="e.g. 305"
-                 oninput="lookupTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
+                 oninput="confirmedUnrecognisedTruckIdentity=''; lookupTruck(); resetLoadsForNewDriver(); validateField(this); updateProgress()" autocomplete="off" inputmode="numeric">
           <div class="field-error" id="err-truckNo">Required</div>
         </div>
         <div class="field">
@@ -1145,7 +1145,7 @@
         <div class="field">
           <label>Rego <span class="req">*</span> <span class="auto-tag" id="regoAutoTag" style="display:none;">v Auto</span></label>
           <input type="text" id="truckRego" placeholder="e.g. XV67VO"
-                 oninput="this.value=this.value.toUpperCase(); userEditedRego=true; validateField(this); updateProgress()"
+                 oninput="confirmedUnrecognisedTruckIdentity=''; this.value=this.value.toUpperCase(); userEditedRego=true; validateField(this); updateProgress()"
                  autocomplete="off" autocapitalize="characters">
           <div class="field-error" id="err-truckRego">Required</div>
           <div id="truckNoWarning" style="display:none; margin-top:6px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:8px 11px; font-size:11px; color:#dc2626; line-height:1.5;">
@@ -4988,6 +4988,53 @@ function getShiftType() {
   return selected ? selected.value : 'Day';
 }
 
+let confirmedUnrecognisedTruckIdentity = '';
+
+function normaliseVehicleIdentity(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function getTruckRecognitionState() {
+  const truckNo = String(document.getElementById('truckNo')?.value || '').trim();
+  const rego = String(document.getElementById('truckRego')?.value || '').trim();
+  const truckKey = normaliseVehicleIdentity(truckNo);
+  const regoKey = normaliseVehicleIdentity(rego);
+
+  let truckMatchedRego = '';
+  let regoMatchedTruck = '';
+
+  if (truckKey && TRUCK_LOOKUP[truckKey]) {
+    truckMatchedRego = normaliseVehicleIdentity(TRUCK_LOOKUP[truckKey]);
+  }
+
+  if (regoKey) {
+    const match = Object.entries(TRUCK_LOOKUP).find(([, fleetRego]) => normaliseVehicleIdentity(fleetRego) === regoKey);
+    if (match) regoMatchedTruck = normaliseVehicleIdentity(match[0]);
+  }
+
+  let recognised = false;
+  let mismatch = false;
+
+  if (truckKey && regoKey) {
+    recognised = !!truckMatchedRego && !!regoMatchedTruck && truckMatchedRego === regoKey && regoMatchedTruck === truckKey;
+    mismatch = (!!truckMatchedRego || !!regoMatchedTruck) && !recognised;
+  } else if (truckKey) {
+    recognised = !!truckMatchedRego;
+  } else if (regoKey) {
+    recognised = !!regoMatchedTruck;
+  }
+
+  return {
+    truckNo,
+    rego,
+    truckKey,
+    regoKey,
+    recognised,
+    mismatch,
+    identityKey: truckKey + '|' + regoKey
+  };
+}
+
 function submitForm() {
   const errors = [];
 
@@ -5007,23 +5054,27 @@ function submitForm() {
     errors.push('A valid, verified Driver ID');
   }
 
-  const required = [
-    {id:'truckNo',label:'Truck Number'},
-    {id:'truckRego',label:'Truck Rego'},
-    {id:'depot',label:'Location'},
-  ];
-  required.forEach(f => {
-    const el = document.getElementById(f.id);
-    const value = f.id === 'depot' ? getDepotValue() : (el ? el.value.trim() : '');
-    if (!el || !value) {
-      el&&el.classList.add('error');
-      if (f.id === 'depot') validateDepotField();
-      const trigger = document.getElementById(`${f.id}_trigger`);
-      if (trigger) trigger.classList.add('error');
-      document.getElementById(`err-${f.id}`)?.classList.add('show');
-      errors.push(f.label);
-    }
-  });
+  // A driver may submit using Truck Number, Rego, or both.
+  // Recognition is checked separately below and is warning-only.
+  const truckNoEl = document.getElementById('truckNo');
+  const truckRegoEl = document.getElementById('truckRego');
+  const enteredTruckNo = truckNoEl ? truckNoEl.value.trim() : '';
+  const enteredTruckRego = truckRegoEl ? truckRegoEl.value.trim() : '';
+  if (!enteredTruckNo && !enteredTruckRego) {
+    truckNoEl?.classList.add('error');
+    truckRegoEl?.classList.add('error');
+    document.getElementById('err-truckNo')?.classList.add('show');
+    document.getElementById('err-truckRego')?.classList.add('show');
+    errors.push('Truck Number or Truck Rego');
+  }
+
+  const depotEl = document.getElementById('depot');
+  if (!depotEl || !getDepotValue()) {
+    depotEl?.classList.add('error');
+    validateDepotField();
+    document.getElementById('err-depot')?.classList.add('show');
+    errors.push('Location');
+  }
   if (loadRequiresDocket(1)) {
     ['ticketNo1','gross1','tare1'].forEach((id,i) => {
       const el = document.getElementById(id);
@@ -5063,6 +5114,37 @@ function submitForm() {
     return;
   }
   document.getElementById('valSummary').classList.remove('show');
+
+  const vehicleState = getTruckRecognitionState();
+  if ((vehicleState.truckKey || vehicleState.regoKey) &&
+      !vehicleState.recognised &&
+      confirmedUnrecognisedTruckIdentity !== vehicleState.identityKey) {
+    const enteredDetails = [
+      vehicleState.truckNo ? '<strong>Truck:</strong> ' + vehicleState.truckNo.replace(/[<>&]/g, '') : '',
+      vehicleState.rego ? '<strong>Rego:</strong> ' + vehicleState.rego.replace(/[<>&]/g, '') : ''
+    ].filter(Boolean).join('<br>');
+    const warningText = vehicleState.mismatch
+      ? 'The truck number and rego do not match the recognised fleet details.'
+      : 'The truck number/rego is not recognised in the current fleet list.';
+
+    showCartagePopup({
+      title: 'Truck / rego not recognised',
+      okText: 'Yes, submit anyway',
+      showCancel: true,
+      cancelText: 'No, go back',
+      messageHtml: `
+        <p style="margin:0 0 8px 0; font-weight:700; color:var(--text);">${warningText}</p>
+        <p style="margin:0 0 8px 0;">${enteredDetails}</p>
+        <p style="margin:0;">Would you still like to submit this run sheet?</p>
+      `
+    }).then(proceed => {
+      if (proceed) {
+        confirmedUnrecognisedTruckIdentity = vehicleState.identityKey;
+        submitForm();
+      }
+    });
+    return;
+  }
 
   if (!runSheetPhotoData && !runSheetMissingReminderShown) {
     runSheetMissingReminderShown = true;
