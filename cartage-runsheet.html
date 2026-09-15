@@ -1830,10 +1830,26 @@ function processScheduleFile(input) {
         const parsedSummary = parseDispatchSummaryRows(rows, parsed, separatorRowIndex, ws, XLSX);
         const parsedEarnings = parseDispatchEarningsRows(rows);
         const dateStr = getScheduleDateFromSheetName(sName) || sName;
-        allDaysData[dateStr] = parsed;
-        allDaysSummaryData[dateStr] = parsedSummary;
-        allDaysEarningsData[dateStr] = parsedEarnings;
-        if (dateStr === todayDate) todaySheetName = sName;
+        // A workbook can accidentally contain two tabs with the same date (for example,
+        // TUE 15.09.26 and WED 15.09.26). Do not let a later incorrectly-named
+        // duplicate overwrite the correctly-named day. Prefer the tab whose weekday
+        // label agrees with the actual calendar date; otherwise keep the first tab.
+        const weekdayMatch = String(sName || '').trim().toUpperCase().match(/^(MON|TUE|WED|THU|FRI|SAT|SUN)\b/);
+        const [dd, mm, yy] = dateStr.split('.').map(Number);
+        const weekdayNames = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+        const expectedWeekday = weekdayNames[new Date(2000 + yy, mm - 1, dd).getDay()];
+        const candidateWeekdayScore = !weekdayMatch ? 1 : (weekdayMatch[1] === expectedWeekday ? 2 : 0);
+        const existingWeekdayScore = allDaysData[dateStr] && allDaysData[dateStr].__sourceWeekdayScore != null
+          ? allDaysData[dateStr].__sourceWeekdayScore
+          : -1;
+
+        if (!allDaysData[dateStr] || candidateWeekdayScore > existingWeekdayScore) {
+          Object.defineProperty(parsed, '__sourceWeekdayScore', {value: candidateWeekdayScore, enumerable: false});
+          allDaysData[dateStr] = parsed;
+          allDaysSummaryData[dateStr] = parsedSummary;
+          allDaysEarningsData[dateStr] = parsedEarnings;
+          if (dateStr === todayDate) todaySheetName = sName;
+        }
       }
 
       saveDispatchEarningsHistory(allDaysEarningsData);
